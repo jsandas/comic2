@@ -18,7 +18,7 @@ This project aims to create a fully-annotated, functionally-equivalent assembly 
 - **unpacked.exe.test.c** (9,357 lines) - Ghidra decompilation
 - **unpacked.exe.test copy.c** - Backup copy
 
-### Original Game Files (in `orig/` directory)
+### Original Game Files (in `original/` directory)
 - FR*.* - Level data files (FR000.0 through FR014.2)
 - FRDATA.* - Game data files
 - FRDEMO.* - Demo mode data
