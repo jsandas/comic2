@@ -5,10 +5,10 @@
 
 ### Initialization and Setup
 ```
-start (Line 71)             → main entry point, game initialization
-sub_9C9 (Line 1427)         → install_interrupt_handlers
-sub_A5E (Line 1482)         → restore_interrupt_handlers  
-sub_27A (Line 399)          → wait_n_ticks(ax) - waits for game ticks
+start (Line 68)             → main entry point, game initialization
+sub_9C9 (Line 1464)         → install_interrupt_handlers
+sub_A5E (Line 1519)         → restore_interrupt_handlers  
+sub_27A (Line 435)          → wait_n_ticks(ax) - waits for game ticks
 ```
 
 ### Interrupt Handlers  
@@ -21,8 +21,8 @@ INT 3 Handler               → Sound system control (priority queue)
 
 ### Input System
 ```
-sub_96F (Line 1356)         → read_joystick_axis - analog stick reading
-sub_9AF (Line 1407)         → pit_count - get PIT counter for timing
+sub_96F (Line 1393)         → read_joystick_axis - analog stick reading
+sub_9AF (Line 1444)         → pit_count - get PIT counter for timing
 
 Key State Variables:
 byte_245 / game_tick_flag   → Set to 1 by INT 08h each tick
@@ -39,8 +39,8 @@ byte_263 scancode_fire      → 'R' key (52h)
 
 ### EGA Video Operations
 ```
-sub_2B4 (Line 417)          → Main graphics/blitting function
-sub_451C (Line 7443)        → Level/sprite rendering system
+sub_2B4 (Line 454)          → Main graphics/blitting function
+sub_451C (Line 7480)        → Level/sprite rendering system
 sub_79C7                    → EGA plane blit helper
 sub_7A13                    → EGA plane blit with mask
 
@@ -63,7 +63,7 @@ INT 10h, AX=1000h           → Set palette register
 
 ### Main Game Loop
 ```
-sub_35DE (Line 5534)        → Main game loop (FRAGMENTED function)
+sub_35DE (Line 5571)        → Main game loop (FRAGMENTED function)
                               - 7 non-contiguous code chunks
                               - Similar to Comic 1's game_loop
 
@@ -179,18 +179,18 @@ Sound Effects (to locate):
 
 ### Segment Overview
 ```
-seg000 (CODE)               → Lines 32-16449 - Game logic
-seg001 (STRINGS)            → Lines 16449-48522 - Messages, prompts
-seg002 (STACK)              → Lines 48522+ - Stack space
-seg003 (DATA)               → Lines 48530-97625 - Game state variables
-seg004 (GRAPHICS)           → Lines 97625-109792 - Palette, sprite data
-seg005 (DATA)               → Lines 109792-153580 - More game data
+seg000 (CODE)               → Lines 32-16486 - Game logic
+seg001 (STRINGS)            → Lines 16486-48559 - Messages, prompts
+seg002 (STACK)              → Lines 48559-48567 - Stack space
+seg003 (DATA)               → Lines 48567-97662 - Game state variables
+seg004 (GRAPHICS)           → Lines 97662-109829 - Palette, sprite data
+seg005 (DATA)               → Lines 109829-153617 - More game data
 seg006-seg009               → Additional segments
 ```
 
 ### Important String Data (seg001)
 ```
-Line 16449+:
+Line 16486+:
 - "Calibrate Joystick"
 - "Center Joystick and Press Button"
 - "Move Left  : "

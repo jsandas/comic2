@@ -12,7 +12,7 @@ mov  cs:byte_245, 0
 dec  ax
 jnz  <loop>
 ```
-**→ This is `wait_n_ticks` (sub_27A at line 399)**
+**→ This is `wait_n_ticks` (sub_27A at line 435)**
 
 ### 2. EGA Plane Write Setup
 ```asm
@@ -68,7 +68,7 @@ loop <check>
 test al, <bit>
 sti                    ; Re-enable interrupts
 ```
-**→ Joystick input (sub_96F at line 1356)**
+**→ Joystick input (sub_96F at line 1393)**
 
 ### 7. PC Speaker Sound
 ```asm
@@ -87,7 +87,7 @@ mov  ah, al
 in   al, 40h           ; High byte
 xchg ah, al
 ```
-**→ Timing/speed detection (sub_9AF at line 1407)**
+**→ Timing/speed detection (sub_9AF at line 1444)**
 
 ## Key Memory Locations
 
@@ -224,21 +224,21 @@ Search: cmp.*byte_245
 ### File Start
 - Line 1-30: IDA header
 - Line 32: Copyright string (identifies as Comic 2 v1.5)
-- Line 71: `start` procedure (main entry)
+- Line 68: `start` procedure (main entry)
 
 ### Core Functions
-- Line 399: sub_27A (wait_n_ticks)
-- Line 417: sub_2B4 (graphics operation)
-- Line 1356: sub_96F (joystick)
-- Line 1407: sub_9AF (PIT timer)  
-- Line 1427: sub_9C9 (install interrupts)
-- Line 5534: sub_35DE (main game loop - fragmented)
-- Line 7443: sub_451C (rendering)
+- Line 435: sub_27A (wait_n_ticks)
+- Line 454: sub_2B4 (graphics operation)
+- Line 1393: sub_96F (joystick)
+- Line 1444: sub_9AF (PIT timer)  
+- Line 1464: sub_9C9 (install interrupts)
+- Line 5571: sub_35DE (main game loop - fragmented)
+- Line 7480: sub_451C (rendering)
 
 ### Data Sections
-- Line 16449+: String data (seg001)
-- Line 48522+: Stack (seg002)
-- Line 97625+: Graphics data (seg004)
+- Line 16486+: String data (seg001)
+- Line 48559+: Stack (seg002)
+- Line 97662+: Graphics data (seg004)
 
 ## Validation Checklist
 
