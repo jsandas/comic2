@@ -1,1 +1,11 @@
 reference/original
+*.obj
+*.exe
+*.com
+*.map
+*.lst
+tools/djlink/djlink
+tools/djlink/objdump
+tools/djlink/bindiff
+tools/djlink/*.o
+tools/djlink/*.d

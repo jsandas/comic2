@@ -2,9 +2,7 @@
 # Based on Captain Comic 1 build process
 
 NASM = nasm
-DJLINK = djlink
-# Assuming djlink is in the path or in a specific directory.
-# For now, we'll just define the commands.
+DJLINK = tools/djlink/djlink
 
 ASFLAGS = -f obj
 LDFLAGS = 
@@ -15,13 +13,17 @@ OBJ = comic2.obj
 
 all: $(TARGET)
 
+$(DJLINK):
+	$(MAKE) -C tools/djlink djlink
+
 $(OBJ): $(SRC)
 	$(NASM) $(ASFLAGS) $(SRC) -o $(OBJ)
 
-$(TARGET): $(OBJ)
+$(TARGET): $(OBJ) $(DJLINK)
 	$(DJLINK) $(OBJ) $(TARGET)
 
 clean:
 	rm -f $(OBJ) $(TARGET)
+	$(MAKE) -C tools/djlink clean
 
 .PHONY: all clean

@@ -221,12 +221,20 @@ grep -n "int.*" comic2.asm
 grep -n "sub_27A" comic2.asm
 ```
 
-### Building (Future)
+### Building
+The project uses `NASM` and `djlink` to build the game. A `Makefile` is provided to orchestrate the build process.
+
 ```bash
-# Not yet ready to build, but eventually:
-# nasm -f bin comic2.asm -o comic2.com
-# dosbox comic2.com
+# To build the game:
+make
+
+# This will:
+# 1. Build the djlink tool if it's missing (requires g++)
+# 2. Assemble comic2.asm into comic2.obj
+# 3. Link comic2.obj into comic2.exe
 ```
+
+The `djlink` source is located in `tools/djlink/`.
 
 ## Contributing
 
