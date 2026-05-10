@@ -138,14 +138,14 @@ mov dx, 3DAh; .loop: in al, dx; test al, 8; jz .loop
 ## Memory Map
 
 ### Code Segments
-- **seg000** (Lines 32-16449) - Main game logic, procedures
-- **seg001** (Lines 16449-48522) - String constants, UI text
-- **seg002** (Lines 48522+) - Stack space
+- **seg000** (Lines 32-16486) - Main game logic, procedures
+- **seg001** (Lines 16486-48559) - String constants, UI text
+- **seg002** (Lines 48559-48567) - Stack space
 
 ### Data Segments
-- **seg003** (Lines 48530-97625) - Game state variables
-- **seg004** (Lines 97625-109792) - Graphics, palettes, sprites
-- **seg005** (Lines 109792-153580) - Additional game data
+- **seg003** (Lines 48567-97662) - Game state variables
+- **seg004** (Lines 97662-109829) - Graphics, palettes, sprites
+- **seg005** (Lines 109829-153617) - Additional game data
 - **seg006-seg009** - Miscellaneous segments
 
 ### Key Variables
@@ -244,7 +244,7 @@ This project is for **educational and preservation purposes only**.
 
 - **Captain Comic II** is © 1990 Michael A. Denio
 - Original game is available as freeware
-- This disassembly is a transformative work for study
+- This disassembly is a disassembly of a transformative work for study
 - No commercial use intended
 - Respect original author's rights
 
