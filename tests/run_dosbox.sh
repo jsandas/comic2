@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# scripts/run-dosbox.sh
+# tests/run_dosbox.sh
 # Start DOSBox-X and mount $PWD/reference/original as C:
-# Usage: ./scripts/run-dosbox.sh
+# Usage: ./tests/run_dosbox.sh
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
