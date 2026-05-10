@@ -20,7 +20,7 @@ $(OBJ): $(SRC)
 	$(NASM) $(ASFLAGS) $(SRC) -o $(OBJ)
 
 $(TARGET): $(OBJ) $(DJLINK)
-	$(DJLINK) $(OBJ) $(TARGET)
+	$(DJLINK) $(OBJ) -o $(TARGET)
 
 clean:
 	rm -f $(OBJ) $(TARGET)
