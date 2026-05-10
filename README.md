@@ -252,7 +252,7 @@ This project is for **educational and preservation purposes only**.
 
 - **Captain Comic II** is © 1990 Michael A. Denio
 - Original game is available as freeware
-- This disassembly is a disassembly of a transformative work for study
+- This disassembly is a transformative work for study
 - No commercial use intended
 - Respect original author's rights
 
