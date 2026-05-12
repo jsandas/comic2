@@ -2081,11 +2081,11 @@ jmp	loc_227B
 
 
 sub_18E0 proc near
-mov	al, byte_2588D
+mov	al, comic_facing
 mov	byte_251F8, al
 mov	al, byte_2587D
 mov	byte_251F9, al
-mov	ax, word_256A6
+mov	ax, comic_x
 mov	word_251F0, ax
 sub	ax, 60h	; '`'
 jnb	short loc_18F9
@@ -2100,7 +2100,7 @@ mov	ax, bx
 
 loc_1907:
 mov	word_256A2, ax
-mov	ax, word_256A8
+mov	ax, comic_y
 mov	word_251F2, ax
 sub	ax, 40h	; '@'
 jnb	short loc_1917
@@ -2119,7 +2119,7 @@ cmp	word_256DA, 2
 jnz	short loc_1959
 cmp	word_256DC, 1
 jnz	short loc_1959
-cmp	word_256A6, 0
+cmp	comic_x, 0
 jnz	short loc_1959
 mov	byte_25904, 2
 mov	word_25908, 0
@@ -2132,7 +2132,7 @@ cmp	word_256DA, 9
 jnz	short loc_198A
 cmp	word_256DC, 1
 jnz	short loc_198A
-cmp	word_256A6, 0
+cmp	comic_x, 0
 jnz	short loc_198A
 mov	byte_2590C, 2
 mov	word_25910, 0
@@ -3438,7 +3438,7 @@ jmp	loc_386F
 loc_23A2:
 cmp	byte ptr ds:89Dh, 0
 jz	short loc_23AC
-jmp	loc_2EDC
+jmp	handle_airborne_physics
 
 loc_23AC:
 cmp	byte ptr ds:896h, 2
@@ -3463,7 +3463,7 @@ mov	cs:byte_25A, 0
 loc_23E0:
 cmp	byte ptr ds:897h, 0
 jz	short loc_23EA
-jmp	loc_2A10
+jmp	handle_grounded_physics
 
 loc_23EA:
 cmp	byte ptr ds:8A3h, 0
@@ -3522,7 +3522,7 @@ mov	ax, 1
 lea	bx, ds:96DEh
 mov	cx, 0
 int	3		; Trap to Debugger
-jmp	loc_2A10
+jmp	handle_grounded_physics
 
 loc_247A:
 mov	byte ptr ds:897h, 1
@@ -3534,7 +3534,7 @@ mov	ax, 1
 lea	bx, ds:96F6h
 mov	cx, 0
 int	3		; Trap to Debugger
-jmp	loc_2A10
+jmp	handle_grounded_physics
 
 loc_24A3:
 cmp	byte ptr ds:962Ah, 0
@@ -3611,13 +3611,13 @@ mov	word ptr ds:892h, 0
 cmp	cs:byte_258, 1
 jnz	short loc_255F
 mov	word ptr ds:892h, 0FFFBh
-call	sub_2BDC
+call	move_player_left
 
 loc_255F:
 cmp	cs:byte_259, 1
 jnz	short loc_2570
 mov	word ptr ds:892h, 5
-call	sub_2C39
+call	move_player_right
 
 loc_2570:
 mov	ax, ds:6C6h
@@ -3928,12 +3928,12 @@ jmp	loc_2902
 
 loc_2874:
 mov	si, 4882h
-cmp	byte_2588D, 1
+cmp	comic_facing, 1
 jz	short loc_2881
 mov	si, 4860h
 
 loc_2881:
-mov	al, byte_2588E
+mov	al, comic_state
 or	al, al
 jz	short loc_28EC
 dec	al
@@ -3982,7 +3982,7 @@ shl	ax, 1
 add	si, ax
 cmp	byte_25885, 1
 jz	short loc_28EC
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 8
 jmp	short loc_28EF
 
@@ -3995,10 +3995,10 @@ add	si, ax
 jmp	short $+2
 
 loc_28EC:
-mov	ax, word_256A6
+mov	ax, comic_x
 
 loc_28EF:
-mov	bx, word_256A8
+mov	bx, comic_y
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	si, [si]
@@ -4049,8 +4049,8 @@ jz	short loc_297F
 test	byte_2E60B, 1
 jz	short loc_297F
 mov	si, word_258FF
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 sub	bx, 10h
 call	sub_7DBB
 
@@ -4083,14 +4083,14 @@ mov	cs:byte_61, 0
 mov	byte_25901, 0
 
 loc_29C9:
-cmp	byte_258CD, 0
+cmp	comic_hp, 0
 jz	short loc_29D7
-dec	byte_258CD
+dec	comic_hp
 call	sub_3B51
 
 loc_29D7:
 call	sub_774E
-mov	ax, word_256A8
+mov	ax, comic_y
 cmp	ax, word_2527E
 jle	short loc_2A07
 
@@ -4115,28 +4115,28 @@ mov	ax, 1
 call	sub_27A
 jmp	loc_2341
 
-loc_2A10:
-cmp	byte_25878, 0
+handle_grounded_physics:
+cmp	comic_jump_counter, 0
 jz	short loc_2A31
-dec	byte_25878
+dec	comic_jump_counter
 jz	short loc_2A31
 cmp	cs:byte_25C, 1
 jnz	short loc_2A2C
-sub	word_25874, 7
+sub	comic_y_vel, 7
 jmp	short loc_2A31
 
 loc_2A2C:
-mov	byte_25878, 0
+mov	comic_jump_counter, 0
 
 loc_2A31:
-mov	ax, word_25874
+mov	ax, comic_y_vel
 mov	cx, ax
-add	ax, word_256A8
+add	ax, comic_y
 jge	short loc_2A3E
 xor	ax, ax
 
 loc_2A3E:
-mov	word_256A8, ax
+mov	comic_y, ax
 mov	word_2E600, cx
 add	cx, 5
 cmp	cx, 17h
@@ -4144,11 +4144,11 @@ jle	short loc_2A50
 mov	cx, 17h
 
 loc_2A50:
-mov	word_25874, cx
-mov	cx, word_25872
+mov	comic_y_vel, cx
+mov	cx, comic_x_vel
 cmp	cs:byte_258, 1
 jnz	short loc_2A6E
-mov	byte_2588D, 2
+mov	comic_facing, 2
 dec	cx
 cmp	cx, 0FFFBh
 jge	short loc_2A6E
@@ -4157,38 +4157,38 @@ mov	cx, 0FFFBh
 loc_2A6E:
 cmp	cs:byte_259, 1
 jnz	short loc_2A84
-mov	byte_2588D, 1
+mov	comic_facing, 1
 inc	cx
 cmp	cx, 5
 jle	short loc_2A84
 mov	cx, 5
 
 loc_2A84:
-mov	word_25872, cx
+mov	comic_x_vel, cx
 or	cx, cx
 jz	short loc_2A9E
 jg	short loc_2A97
-inc	word_25872
+inc	comic_x_vel
 call	sub_2BF7
 jmp	short loc_2A9E
 
 loc_2A97:
-dec	word_25872
+dec	comic_x_vel
 call	sub_2C54
 
 loc_2A9E:
-cmp	word_25874, 0
+cmp	comic_y_vel, 0
 jg	short loc_2AD2
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	di, word_25272
 mov	byte_25890, 2
 call	sub_2C9D
 mov	byte_25890, 0
 jnb	short loc_2AD2
-mov	word_25874, 0
-and	word_256A8, 0FFF0h
-add	word_256A8, 0Ah
+mov	comic_y_vel, 0
+and	comic_y, 0FFF0h
+add	comic_y, 0Ah
 jmp	short loc_2B4C
 ; END OF FUNCTION CHUNK	FOR sub_35DE
 align 2
@@ -4211,8 +4211,8 @@ dec	byte_2587A
 mov	di, word_25272
 
 loc_2AFB:
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 add	bx, 20h	; ' '
 mov	byte_25890, 1
 call	sub_2C9D
@@ -4233,8 +4233,8 @@ loc_2B2C:
 mov	byte_2587B, 1
 
 loc_2B31:
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 add	bx, 28h	; '('
 mov	byte_25890, 1
 call	sub_2C9D
@@ -4243,8 +4243,8 @@ jb	short loc_2B73
 jmp	short loc_2B6B
 
 loc_2B4C:
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 add	bx, 20h	; ' '
 mov	di, word_25274
 call	sub_2C9D
@@ -4256,19 +4256,19 @@ loc_2B66:
 mov	byte_2587B, 1
 
 loc_2B6B:
-mov	byte_2588E, 2
+mov	comic_state, 2
 jmp	short loc_2B88
 ; END OF FUNCTION CHUNK	FOR sub_35DE
 db 90h
 ; START	OF FUNCTION CHUNK FOR sub_35DE
 
 loc_2B73:
-add	word_256A8, 8
+add	comic_y, 8
 
 loc_2B78:
-and	word_256A8, 0FFF0h
-mov	byte_25877, 0
-mov	word_25874, 0
+and	comic_y, 0FFF0h
+mov	comic_is_physics_active, 0
+mov	comic_y_vel, 0
 
 loc_2B88:
 call	sub_2B8E
@@ -4278,7 +4278,7 @@ jmp	loc_267F
 
 
 sub_2B8E proc near
-mov	ax, word_256A8
+mov	ax, comic_y
 mov	bx, word_256A4
 sub	ax, bx
 cmp	ax, 30h	; '0'
@@ -4322,25 +4322,25 @@ sub_2B8E endp
 
 
 
-sub_2BDC proc near
-cmp	byte_2588D, 2
+move_player_left proc near
+cmp	comic_facing, 2
 jz	short loc_2BEA
-mov	byte_2588D, 2
+mov	comic_facing, 2
 jmp	short locret_2C38
 
 loc_2BEA:
 cmp	byte_2E608, 1
 jnz	short sub_2BF7
-mov	byte_2588E, 1
+mov	comic_state, 1
 retn
-sub_2BDC endp
+move_player_left endp
 
 
 
 
 sub_2BF7 proc near
 mov	byte_2E609, 0FFh
-mov	ax, word_256A6
+mov	ax, comic_x
 or	ax, ax
 jnz	short loc_2C09
 call	sub_35DE
@@ -4353,8 +4353,8 @@ push	ax
 call	sub_2D61
 pop	ax
 jb	short loc_2C32
-mov	word_256A6, ax
-mov	byte_2588E, 1
+mov	comic_x, ax
+mov	comic_state, 1
 sub	ax, word_256A2
 cmp	ax, 50h	; 'P'
 jge	short locret_2C38
@@ -4364,7 +4364,7 @@ sub	word_256A2, 8
 jmp	short locret_2C38
 
 loc_2C32:
-mov	word_25872, 0
+mov	comic_x_vel, 0
 
 locret_2C38:
 retn
@@ -4373,25 +4373,25 @@ sub_2BF7 endp
 
 
 
-sub_2C39 proc near
-cmp	byte_2588D, 1
+move_player_right proc near
+cmp	comic_facing, 1
 jz	short loc_2C47
-mov	byte_2588D, 1
+mov	comic_facing, 1
 jmp	short locret_2C38
 
 loc_2C47:
 cmp	byte_2E608, 1
 jnz	short sub_2C54
-mov	byte_2588E, 1
+mov	comic_state, 1
 retn
-sub_2C39 endp
+move_player_right endp
 
 
 
 
 sub_2C54 proc near
 mov	byte_2E609, 1
-mov	ax, word_256A6
+mov	ax, comic_x
 mov	bx, ax
 add	bx, 10h
 cmp	bx, word_2527C
@@ -4406,8 +4406,8 @@ add	ax, 0Fh
 call	sub_2D61
 pop	ax
 jb	short loc_2C32
-mov	word_256A6, ax
-mov	byte_2588E, 1
+mov	comic_x, ax
+mov	comic_state, 1
 sub	ax, word_256A2
 cmp	ax, 70h	; 'p'
 jle	short locret_2C38
@@ -4545,7 +4545,7 @@ sub_2D31 endp
 
 
 sub_2D61 proc near
-mov	bx, word_256A8
+mov	bx, comic_y
 add	bx, 0Dh
 push	ax
 call	sub_1CFE
@@ -4561,7 +4561,7 @@ mov	al, [bx]
 cmp	ax, word_25272
 jg	short loc_2DA1
 sub	bx, cx
-mov	cx, word_256A6
+mov	cx, comic_x
 shr	cx, 1
 shr	cx, 1
 shr	cx, 1
@@ -4579,7 +4579,7 @@ loc_2DA1:
 cmp	ax, word_25274
 jg	short loc_2DC4
 sub	bx, cx
-mov	cx, word_256A6
+mov	cx, comic_x
 shr	cx, 1
 shr	cx, 1
 shr	cx, 1
@@ -4602,48 +4602,48 @@ mov	ax, 1
 mov	bx, 965Eh
 mov	cx, 5
 int	3		; Trap to Debugger
-add	word_256A8, 10h
-sub	word_256A6, 8
+add	comic_y, 10h
+sub	comic_x, 8
 jnb	short loc_2DE2
-mov	word_256A6, 0
+mov	comic_x, 0
 
 loc_2DE2:
-mov	ax, word_256A8
+mov	ax, comic_y
 sub	ax, 14h
 mov	word_25881, ax
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 4
 jnb	short loc_2DF5
 xor	ax, ax
 
 loc_2DF5:
 mov	word_2587F, ax
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 call	sub_1CFE
 cmp	ax, word_25274
 jg	short loc_2E0D
-add	word_256A6, 8
+add	comic_x, 8
 
 loc_2E0D:
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 1Fh
-mov	bx, word_256A8
+mov	bx, comic_y
 call	sub_1CFE
 cmp	ax, word_25274
 jg	short loc_2E25
-sub	word_256A6, 8
+sub	comic_x, 8
 
 loc_2E25:
 mov	byte_2587E, 2
-mov	byte_25877, 0
+mov	comic_is_physics_active, 0
 mov	byte_25886, 0
 mov	byte_2587D, 1
 xor	bh, bh
 mov	bl, byte_25876
 mov	byte_25876, 0
 call	sub_3A17
-mov	byte_2588E, 3
+mov	comic_state, 3
 jmp	loc_2B88
 
 loc_2E4F:
@@ -4651,12 +4651,12 @@ mov	ax, 1
 mov	bx, 9676h
 mov	cx, 5
 int	3		; Trap to Debugger
-sub	word_256A8, 10h
-add	word_256A6, 8
-mov	ax, word_256A8
+sub	comic_y, 10h
+add	comic_x, 8
+mov	ax, comic_y
 sub	ax, 6
 mov	word_25881, ax
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 0Ch
 jnb	short loc_2E76
 xor	ax, ax
@@ -4665,10 +4665,10 @@ loc_2E76:
 mov	word_2587F, ax
 mov	byte_2587E, 2
 mov	al, byte_25879
-mov	byte_25878, al
+mov	comic_jump_counter, al
 mov	byte_2587D, 0
-mov	byte_25877, 1
-mov	byte_2588E, 2
+mov	comic_is_physics_active, 1
+mov	comic_state, 2
 jmp	loc_2B88
 
 loc_2E96:
@@ -4676,12 +4676,12 @@ mov	ax, 1
 mov	bx, 9676h
 mov	cx, 5
 int	3		; Trap to Debugger
-sub	word_256A8, 10h
-add	word_256A6, 8
-mov	ax, word_256A8
+sub	comic_y, 10h
+add	comic_x, 8
+mov	ax, comic_y
 sub	ax, 6
 mov	word_25881, ax
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 0Ch
 jnb	short loc_2EBD
 xor	ax, ax
@@ -4689,16 +4689,16 @@ xor	ax, ax
 loc_2EBD:
 mov	word_2587F, ax
 mov	byte_2587E, 2
-mov	byte_25878, 0
+mov	comic_jump_counter, 0
 mov	byte_2587D, 0
-mov	byte_25877, 1
-mov	byte_2588E, 2
+mov	comic_is_physics_active, 1
+mov	comic_state, 2
 jmp	loc_2B88
 
-loc_2EDC:
-mov	ax, word_25874
+handle_airborne_physics:
+mov	ax, comic_y_vel
 mov	cx, ax
-add	ax, word_256A8
+add	ax, comic_y
 cmp	cs:byte_25A, 1
 jnz	short loc_2EF0
 sub	ax, 2
@@ -4711,9 +4711,9 @@ xor	ax, ax
 loc_2EF6:
 push	ax
 mov	bx, ax
-mov	ax, word_256A6
+mov	ax, comic_x
 mov	di, word_25272
-cmp	word_25874, 0
+cmp	comic_y_vel, 0
 jz	short loc_2F2D
 jl	short loc_2F1B
 add	bx, 0Fh
@@ -4721,7 +4721,7 @@ call	sub_2FEE
 jnb	short loc_2F2D
 pop	ax
 and	ax, 0FFF0h
-mov	word_256A8, ax
+mov	comic_y, ax
 jmp	short loc_2F31
 ; END OF FUNCTION CHUNK	FOR sub_35DE
 db 90h
@@ -4733,7 +4733,7 @@ jnb	short loc_2F2D
 pop	ax
 and	ax, 0FFF0h
 add	ax, 10h
-mov	word_256A8, ax
+mov	comic_y, ax
 jmp	short loc_2F31
 ; END OF FUNCTION CHUNK	FOR sub_35DE
 db 90h
@@ -4741,21 +4741,21 @@ db 90h
 
 loc_2F2D:
 pop	ax
-mov	word_256A8, ax
+mov	comic_y, ax
 
 loc_2F31:
-mov	cx, word_25874
+mov	cx, comic_y_vel
 sub	cx, 5
 cmp	cx, 0FFFCh
 jge	short loc_2F40
 mov	cx, 0FFFCh
 
 loc_2F40:
-mov	word_25874, cx
-mov	cx, word_25872
+mov	comic_y_vel, cx
+mov	cx, comic_x_vel
 cmp	cs:byte_258, 1
 jnz	short loc_2F5E
-mov	byte_2588D, 2
+mov	comic_facing, 2
 dec	cx
 cmp	cx, 0FFFBh
 jge	short loc_2F5E
@@ -4764,53 +4764,53 @@ mov	cx, 0FFFBh
 loc_2F5E:
 cmp	cs:byte_259, 1
 jnz	short loc_2F74
-mov	byte_2588D, 1
+mov	comic_facing, 1
 inc	cx
 cmp	cx, 5
 jle	short loc_2F74
 mov	cx, 5
 
 loc_2F74:
-mov	word_25872, cx
+mov	comic_x_vel, cx
 or	cx, cx
 jz	short loc_2F8E
 jg	short loc_2F87
-inc	word_25872
+inc	comic_x_vel
 call	sub_3026
 jmp	short loc_2F8E
 
 loc_2F87:
-dec	word_25872
+dec	comic_x_vel
 call	sub_305E
 
 loc_2F8E:
 cmp	cs:byte_25B, 1
 jnz	short loc_2FA9
-mov	cx, word_25874
+mov	cx, comic_y_vel
 add	cx, 7
 cmp	cx, 4
 jle	short loc_2FA5
 mov	cx, 4
 
 loc_2FA5:
-mov	word_25874, cx
+mov	comic_y_vel, cx
 
 loc_2FA9:
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 10h
-mov	bx, word_256A8
+mov	bx, comic_y
 call	sub_1CFE
 cmp	ax, word_25276
 jle	short loc_2FD1
-and	word_256A8, 0FFF0h
-add	word_256A8, 0Ch
+and	comic_y, 0FFF0h
+add	comic_y, 0Ch
 cmp	cs:byte_25C, 1
 jnz	short loc_2FD1
 jmp	loc_2E4F
 
 loc_2FD1:
-mov	bx, word_256A8
-mov	ax, word_256A6
+mov	bx, comic_y
+mov	ax, comic_x
 add	ax, 10h
 add	bx, 8
 call	sub_3019
@@ -4818,7 +4818,7 @@ jb	short loc_2FE6
 jmp	loc_2E96
 
 loc_2FE6:
-mov	byte_2588E, 3
+mov	comic_state, 3
 jmp	loc_2B88
 ; END OF FUNCTION CHUNK	FOR sub_35DE
 
@@ -4871,7 +4871,7 @@ sub_3019 endp
 
 
 sub_3026 proc near
-mov	ax, word_256A6
+mov	ax, comic_x
 or	ax, ax
 jnz	short loc_3033
 call	sub_35DE
@@ -4883,7 +4883,7 @@ push	ax
 call	sub_309D
 pop	ax
 jb	short loc_3057
-mov	word_256A6, ax
+mov	comic_x, ax
 sub	ax, word_256A2
 cmp	ax, 50h	; 'P'
 jge	short locret_305D
@@ -4893,7 +4893,7 @@ sub	word_256A2, 8
 jmp	short locret_305D
 
 loc_3057:
-mov	word_25872, 0
+mov	comic_x_vel, 0
 
 locret_305D:
 retn
@@ -4903,7 +4903,7 @@ sub_3026 endp
 
 
 sub_305E proc near
-mov	ax, word_256A6
+mov	ax, comic_x
 mov	bx, ax
 add	bx, 20h	; ' '
 cmp	bx, word_2527C
@@ -4918,7 +4918,7 @@ add	ax, 1Fh
 call	sub_309D
 pop	ax
 jb	short loc_3057
-mov	word_256A6, ax
+mov	comic_x, ax
 sub	ax, word_256A2
 cmp	ax, 60h	; '`'
 jle	short locret_305D
@@ -4935,11 +4935,11 @@ sub_305E endp
 
 sub_309D proc near
 mov	di, word_25274
-mov	bx, word_256A8
+mov	bx, comic_y
 call	sub_1CFE
 cmp	ax, di
 jle	short loc_30C2
-mov	cx, word_256A8
+mov	cx, comic_y
 and	cx, 0Fh
 cmp	cx, 4
 jle	short loc_30C4
@@ -4961,9 +4961,9 @@ sub_309D endp
 
 
 sub_30C6 proc near
-cmp	byte_2588D, 1
+cmp	comic_facing, 1
 jz	short loc_30DB
-cmp	word_256A6, 8
+cmp	comic_x, 8
 jl	short locret_3106
 mov	byte_25885, 2
 jmp	short loc_30EC
@@ -4971,16 +4971,16 @@ jmp	short loc_30EC
 loc_30DB:
 mov	ax, word_2527C
 sub	ax, 18h
-cmp	word_256A6, ax
+cmp	comic_x, ax
 jg	short locret_3106
 mov	byte_25885, 1
 
 loc_30EC:
-mov	byte_25883, 1
+mov	comic_is_animation_active, 1
 mov	byte_25884, 3
 mov	byte_2588F, 1
-mov	byte_2588E, 4
-mov	word_25872, 0
+mov	comic_state, 4
+mov	comic_x_vel, 0
 
 locret_3106:
 retn
@@ -4994,18 +4994,18 @@ jnz	short loc_3123
 cmp	cs:byte_25D, 1
 jnz	short loc_3123
 mov	byte_2588F, 1
-mov	byte_2588E, 4
+mov	comic_state, 4
 jmp	loc_267F
 
 loc_3123:
 dec	byte_25884
 jnz	short loc_3135
-mov	byte_25883, 0
-mov	byte_2588E, 0
+mov	comic_is_animation_active, 0
+mov	comic_state, 0
 jmp	short loc_317E
 
 loc_3135:
-mov	ax, word_256A6
+mov	ax, comic_x
 test	ax, 8
 jnz	short loc_3179
 sub	ax, 10h
@@ -5014,7 +5014,7 @@ jnz	short loc_314A
 add	ax, 20h	; ' '
 
 loc_314A:
-mov	bx, word_256A8
+mov	bx, comic_y
 cmp	byte_25884, 2
 jz	short loc_3158
 add	bx, 10h
@@ -5036,7 +5036,7 @@ mov	al, [si]
 call	sub_3181
 
 loc_3179:
-mov	byte_2588E, 4
+mov	comic_state, 4
 
 loc_317E:
 jmp	loc_267F
@@ -5213,7 +5213,7 @@ cmp	byte_251FD, 1
 jnz	short loc_329A
 
 loc_32CB:
-mov	byte_25883, 0
+mov	comic_is_animation_active, 0
 mov	byte_25876, ah
 call	sub_3A17
 cmp	byte_25876, 2
@@ -5222,7 +5222,7 @@ cmp	word_25202, 0
 jz	short locret_330E
 cmp	word_256DA, 0Eh
 jz	short locret_330E
-mov	byte_25877, 0
+mov	comic_is_physics_active, 0
 mov	byte_25886, 1
 jmp	short locret_330E
 
@@ -5230,8 +5230,8 @@ loc_32F8:
 cmp	byte_25886, 1
 jnz	short locret_330E
 mov	byte_25886, 0
-mov	byte_25877, 1
-mov	byte_25878, 0
+mov	comic_is_physics_active, 1
+mov	comic_jump_counter, 0
 
 locret_330E:
 retn
@@ -5247,9 +5247,9 @@ jnz	short loc_332F
 
 loc_331D:
 mov	byte_25886, 0
-mov	byte_25877, 1
-mov	byte_25878, 0
-jmp	loc_2A10
+mov	comic_is_physics_active, 1
+mov	comic_jump_counter, 0
+jmp	handle_grounded_physics
 
 loc_332F:
 test	byte_2E60B, 3
@@ -5265,21 +5265,21 @@ cmp	cs:byte_25A, 1
 jnz	short loc_3363
 
 loc_3351:
-sub	word_25874, 2
-cmp	word_25874, 0FFF4h
+sub	comic_y_vel, 2
+cmp	comic_y_vel, 0FFF4h
 jge	short loc_3363
-mov	word_25874, 0FFF4h
+mov	comic_y_vel, 0FFF4h
 
 loc_3363:
-mov	ax, word_25874
+mov	ax, comic_y_vel
 mov	cx, ax
-add	ax, word_256A8
+add	ax, comic_y
 jge	short loc_3372
 xor	ax, ax
 xor	cx, cx
 
 loc_3372:
-mov	word_256A8, ax
+mov	comic_y, ax
 mov	word_2E600, cx
 add	cx, 1
 cmp	cx, 8
@@ -5287,11 +5287,11 @@ jle	short loc_3384
 mov	cx, 8
 
 loc_3384:
-mov	word_25874, cx
-mov	cx, word_25872
+mov	comic_y_vel, cx
+mov	cx, comic_x_vel
 cmp	cs:byte_258, 1
 jnz	short loc_33A2
-mov	byte_2588D, 2
+mov	comic_facing, 2
 dec	cx
 cmp	cx, 0FFFBh
 jge	short loc_33A2
@@ -5300,38 +5300,38 @@ mov	cx, 0FFFBh
 loc_33A2:
 cmp	cs:byte_259, 1
 jnz	short loc_33B8
-mov	byte_2588D, 1
+mov	comic_facing, 1
 inc	cx
 cmp	cx, 5
 jle	short loc_33B8
 mov	cx, 5
 
 loc_33B8:
-mov	word_25872, cx
+mov	comic_x_vel, cx
 or	cx, cx
 jz	short loc_33D2
 jg	short loc_33CB
-inc	word_25872
+inc	comic_x_vel
 call	sub_2BF7
 jmp	short loc_33D2
 
 loc_33CB:
-dec	word_25872
+dec	comic_x_vel
 call	sub_2C54
 
 loc_33D2:
-cmp	word_25874, 0
+cmp	comic_y_vel, 0
 jg	short loc_3405
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	di, word_25272
 mov	byte_25890, 2
 call	sub_2C9D
 mov	byte_25890, 0
 jnb	short loc_3405
-mov	word_25874, 0
-and	word_256A8, 0FFF0h
-add	word_256A8, 0Ah
+mov	comic_y_vel, 0
+and	comic_y, 0FFF0h
+add	comic_y, 0Ah
 jmp	short loc_3453
 
 loc_3405:
@@ -5343,8 +5343,8 @@ jz	short loc_341C
 mov	di, word_25272
 
 loc_341C:
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 add	bx, 20h	; ' '
 call	sub_2C9D
 jb	short loc_3455
@@ -5355,13 +5355,13 @@ jle	short loc_343A
 jmp	loc_2DC6
 
 loc_343A:
-mov	ax, word_256A8
+mov	ax, comic_y
 add	ax, 28h	; '('
 cmp	ax, word_2527E
 jl	short loc_3460
 cmp	ax, word_2527E
 sub	ax, 20h	; ' '
-mov	word_256A8, ax
+mov	comic_y, ax
 jmp	short loc_3455
 ; END OF FUNCTION CHUNK	FOR sub_35DE
 db 90h
@@ -5371,20 +5371,20 @@ loc_3453:
 jmp	short loc_3460
 
 loc_3455:
-and	word_256A8, 0FFF0h
-mov	word_25874, 0
+and	comic_y, 0FFF0h
+mov	comic_y_vel, 0
 
 loc_3460:
-mov	byte_2588E, 5
+mov	comic_state, 5
 jmp	loc_2B88
 ; END OF FUNCTION CHUNK	FOR sub_35DE
 
 
 
 sub_3468 proc near
-cmp	byte_2588D, 1
+cmp	comic_facing, 1
 jz	short loc_347D
-cmp	word_256A6, 8
+cmp	comic_x, 8
 jl	short locret_34A8
 mov	byte_25885, 2
 jmp	short loc_348E
@@ -5392,16 +5392,16 @@ jmp	short loc_348E
 loc_347D:
 mov	ax, word_2527C
 sub	ax, 18h
-cmp	word_256A6, ax
+cmp	comic_x, ax
 jg	short locret_34A8
 mov	byte_25885, 1
 
 loc_348E:
-mov	byte_25887, 1
+mov	comic_is_attack_active, 1
 mov	byte_25884, 3
 mov	byte_2588F, 1
-mov	byte_2588E, 6
-mov	word_25872, 0
+mov	comic_state, 6
+mov	comic_x_vel, 0
 
 locret_34A8:
 retn
@@ -5412,8 +5412,8 @@ sub_3468 endp
 loc_34A9:
 dec	byte_25884
 jnz	short loc_34BC
-mov	byte_25887, 0
-mov	byte_2588E, 0
+mov	comic_is_attack_active, 0
+mov	comic_state, 0
 jmp	loc_358E
 
 loc_34BC:
@@ -5428,14 +5428,14 @@ jnz	short loc_34D1
 jmp	loc_3589
 
 loc_34D1:
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 10h
 cmp	byte_25885, 1
 jnz	short loc_34E1
 add	ax, 20h	; ' '
 
 loc_34E1:
-mov	bx, word_256A8
+mov	bx, comic_y
 add	bx, 10h
 mov	si, 700h
 
@@ -5520,7 +5520,7 @@ mov	cx, 2
 int	3		; Trap to Debugger
 
 loc_3589:
-mov	byte_2588E, 6
+mov	comic_state, 6
 
 loc_358E:
 jmp	loc_267F
@@ -5541,8 +5541,8 @@ mov	bx, [si+2]
 mov	word ptr [si], 0FFFFh
 sub	bx, 10h
 call	sub_401B
-mov	byte_25887, 0
-mov	byte_2588E, 0
+mov	comic_is_attack_active, 0
+mov	comic_state, 0
 mov	byte_2591B, 14h
 inc	byte_25206
 cmp	byte_25206, 6
@@ -5586,10 +5586,10 @@ or	cx, cx
 jz	short locret_360F
 
 loc_35EA:
-mov	ax, word_256A6
+mov	ax, comic_x
 cmp	ax, cs:[si]
 jnz	short loc_3608
-mov	ax, word_256A8
+mov	ax, comic_y
 cmp	ax, cs:[si+2]
 jl	short loc_3608
 cmp	ax, cs:[si+4]
@@ -5627,13 +5627,13 @@ sub_3610 endp
 
 
 sub_362A proc near
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, word_25908
 jl	short loc_3655
 cmp	ax, 10h
 jg	short loc_3655
 mov	ax, word_2590A
-sub	ax, word_256A8
+sub	ax, comic_y
 jge	short loc_3643
 neg	ax
 
@@ -5663,22 +5663,22 @@ call	sub_3A17
 loc_366C:
 cmp	cs:byte_25C, 1
 jnz	short loc_368E
-cmp	byte_25878, 0
+cmp	comic_jump_counter, 0
 jz	short loc_368E
-mov	byte_25877, 1
-mov	word_25872, 5
+mov	comic_is_physics_active, 1
+mov	comic_x_vel, 5
 mov	byte_25904, 1
-jmp	loc_2A10
+jmp	handle_grounded_physics
 
 loc_368E:
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 10h
 cmp	ax, word_2527C
 jnz	short loc_369D
 call	sub_35DE
 
 loc_369D:
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, word_256A2
 cmp	ax, 70h	; 'p'
 jle	short loc_36BA
@@ -5764,21 +5764,21 @@ sub	word_2590A, ax
 loc_374A:
 cmp	byte_25904, 2
 jl	short locret_378D
-mov	byte_2588D, 1
+mov	comic_facing, 1
 mov	ax, word_25908
 add	ax, 8
-mov	word_256A6, ax
+mov	comic_x, ax
 mov	bx, word_2590A
-mov	word_256A8, bx
+mov	comic_y, bx
 add	ax, 8
 call	sub_1CFE
 cmp	ax, word_25272
 jg	short locret_378D
 mov	byte_25904, 1
-mov	byte_25877, 1
-mov	byte_25878, 0
-mov	word_25872, 0FFFBh
-mov	byte_2588E, 2
+mov	comic_is_physics_active, 1
+mov	comic_jump_counter, 0
+mov	comic_x_vel, 0FFFBh
+mov	comic_state, 2
 
 locret_378D:
 retn
@@ -5815,7 +5815,7 @@ retn
 
 loc_37CC:
 mov	ax, word_25908
-cmp	ax, word_256A6
+cmp	ax, comic_x
 jle	short locret_3810
 cmp	word_256DC, 1
 jnz	short loc_37F5
@@ -5837,7 +5837,7 @@ locret_3810:
 retn
 
 loc_3811:
-mov	ax, word_256A6
+mov	ax, comic_x
 cmp	ax, 0AC0h
 jge	short locret_3810
 sub	ax, 140h
@@ -5942,7 +5942,7 @@ loc_3900:
 mov	word_2590E, 0
 cmp	cs:byte_25C, 1
 jnz	short loc_3925
-cmp	byte_25878, 0
+cmp	comic_jump_counter, 0
 jz	short loc_3925
 
 loc_3915:
@@ -5964,31 +5964,31 @@ mov	word_25912, bx
 mov	ax, word_2590E
 mov	byte_2590D, al
 mov	al, byte_25879
-mov	byte_25878, al
+mov	comic_jump_counter, al
 cmp	cs:byte_25C, 1
 jnz	short loc_3959
-mov	byte_25878, 0
+mov	comic_jump_counter, 0
 
 loc_3959:
 mov	ax, word_25910
 add	ax, 8
-mov	word_256A6, ax
+mov	comic_x, ax
 mov	bx, word_25912
-mov	word_256A8, bx
+mov	comic_y, bx
 cmp	byte_258CC, 0Ah
 jnz	short loc_397B
-add	word_256A8, 10h
-sub	word_256A6, 8
+add	comic_y, 10h
+sub	comic_x, 8
 
 loc_397B:
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 10h
 cmp	ax, word_2527C
 jnz	short loc_398A
 call	sub_35DE
 
 loc_398A:
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, word_256A2
 cmp	ax, 70h	; 'p'
 jle	short loc_39A7
@@ -6304,11 +6304,11 @@ int	3		; Trap to Debugger
 call	sub_1D2C
 call	sub_437B
 lea	si, unk_298B6
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 0Ch
 sub	ax, word_256A2
 add	ax, 8
-mov	bx, word_256A8
+mov	bx, comic_y
 add	bx, 8
 sub	bx, word_256A4
 add	bx, 8
@@ -6592,13 +6592,13 @@ sub_3DD7 endp
 
 sub_3DFB proc near
 mov	si, 4882h
-cmp	byte_2588D, 1
+cmp	comic_facing, 1
 jz	short loc_3E08
 mov	si, 4860h
 
 loc_3E08:
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	si, [si]
@@ -6647,8 +6647,8 @@ mov	[bp+var_4], 976Eh
 loc_3E65:
 call	sub_1D2C
 call	sub_4B25
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	si, [bp+var_4]
 mov	ds, cs:seg_5E
 assume ds:seg003
@@ -6697,8 +6697,8 @@ mov	[bp+var_4], 8D3Eh
 loc_3ECE:
 call	sub_1D2C
 call	sub_4B25
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	si, [bp+var_4]
 mov	ds, cs:seg_5E
 assume ds:seg003
@@ -6932,10 +6932,10 @@ mov	[bp+var_6], 0
 loc_40CF:
 xor	[bp+var_A], 4
 mov	si, [bp+var_4]
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, [si]
 sub	ax, [bp+var_A]
-mov	bx, word_256A8
+mov	bx, comic_y
 add	bx, [si+2]
 add	bx, [bp+var_2]
 mov	si, cs:word_9535
@@ -6954,10 +6954,10 @@ mov	[bp+var_6], 0
 loc_4111:
 xor	[bp+var_A], 4
 mov	si, [bp+var_4]
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, [si]
 sub	ax, [bp+var_A]
-mov	bx, word_256A8
+mov	bx, comic_y
 add	bx, [si+2]
 add	bx, [bp+var_2]
 sub	bx, 60h	; '`'
@@ -6986,9 +6986,9 @@ loc_4169:
 mov	ax, [bp+var_8]
 call	sub_4073
 call	sub_3DFB
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 8
-mov	bx, word_256A8
+mov	bx, comic_y
 add	bx, [bp+var_2]
 mov	si, cs:word_9535
 mov	ds, cs:seg_5E
@@ -7006,9 +7006,9 @@ loc_41A1:
 mov	ax, [bp+var_8]
 call	sub_4073
 call	sub_3DFB
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 8
-mov	bx, word_256A8
+mov	bx, comic_y
 mov	si, cs:word_9535
 mov	ds, cs:seg_5E
 assume ds:seg003
@@ -7017,8 +7017,8 @@ mov	ds, cs:seg_5C
 assume ds:seg005
 call	sub_3DB6
 inc	[bp+var_8]
-sub	word_256A8, 8
-cmp	word_256A8, 0FFE0h
+sub	comic_y, 8
+cmp	comic_y, 0FFE0h
 jg	short loc_41A1
 mov	byte_25200, 6
 mov	ax, 0
@@ -7313,19 +7313,19 @@ xchg	cx, dx
 loc_43D3:
 mov	ax, [si]
 add	ax, 0Fh
-cmp	ax, word_256A6
+cmp	ax, comic_x
 jl	short loc_440A
 sub	ax, 0Fh
 sub	ax, cx
-cmp	ax, word_256A6
+cmp	ax, comic_x
 jg	short loc_440A
 mov	bx, [si+2]
 add	bx, 0Fh
-cmp	bx, word_256A8
+cmp	bx, comic_y
 jl	short loc_440A
 sub	bx, 0Fh
 sub	bx, dx
-cmp	bx, word_256A8
+cmp	bx, comic_y
 jg	short loc_440A
 cmp	byte_258CC, 0
 jnz	short loc_440A
@@ -7599,14 +7599,14 @@ loc_4613:
 clc
 retn
 mov	al, byte_258CB
-add	al, byte_258CD
+add	al, comic_hp
 cmp	al, 0Ch
 jl	short loc_4622
 stc
 retn
 
 loc_4622:
-mov	byte_258CD, 0Ch
+mov	comic_hp, 0Ch
 mov	ax, 1
 call	sub_6D95
 clc
@@ -7773,9 +7773,9 @@ cmp	word_256DA, 0Bh
 jnz	short loc_47DD
 cmp	word_256DC, 7
 jnz	short loc_47DD
-cmp	word_256A6, 250h
+cmp	comic_x, 250h
 jnz	short loc_47DD
-cmp	word_256A8, 50h	; 'P'
+cmp	comic_y, 50h	; 'P'
 jnz	short loc_47DD
 mov	byte_25201, 1
 mov	ax, 1
@@ -7794,9 +7794,9 @@ mov	ax, word_256DA
 mov	cs:[di], ax
 mov	ax, word_256DC
 mov	cs:[di+2], ax
-mov	ax, word_256A6
+mov	ax, comic_x
 mov	cs:[di+4], ax
-mov	ax, word_256A8
+mov	ax, comic_y
 add	ax, 10h
 mov	cs:[di+6], ax
 mov	si, 700h
@@ -8336,8 +8336,8 @@ jnz	short loc_4D65
 cmp	byte ptr cs:[si+5], 80h	; '�'
 jz	short loc_4D5F
 mov	al, byte_2587D
-or	al, byte_25887
-or	al, byte_25883
+or	al, comic_is_attack_active
+or	al, comic_is_animation_active
 jnz	short loc_4D62
 jmp	loc_4E29
 
@@ -8392,11 +8392,11 @@ mov	bx, 9A3Dh
 mov	cx, 8
 int	3		; Trap to Debugger
 mov	ax, cs:[si+4]
-sub	byte_258CD, al
-mov	al, byte_258CD
+sub	comic_hp, al
+mov	al, comic_hp
 cmp	al, 0
 jge	short loc_4E16
-mov	byte_258CD, 0
+mov	comic_hp, 0
 neg	al
 cbw
 mov	cx, ax
@@ -8450,49 +8450,49 @@ jmp	loc_5090
 
 loc_4E52:
 mov	al, byte_25886
-or	al, byte_25877
+or	al, comic_is_physics_active
 jnz	short loc_4E75
-mov	byte_25877, 1
-mov	byte_25878, 0
+mov	comic_is_physics_active, 1
+mov	comic_jump_counter, 0
 mov	ax, cs:[si+14h]
-mov	word_25872, ax
-mov	word_25874, 0FFF8h
+mov	comic_x_vel, ax
+mov	comic_y_vel, 0FFF8h
 jmp	loc_5090
 
 loc_4E75:
 mov	ax, cs:[si+14h]
-mov	word_25872, ax
-sub	word_25874, 8
+mov	comic_x_vel, ax
+sub	comic_y_vel, 8
 jmp	loc_5090
 
 loc_4E84:
 mov	al, byte_25886
 xor	al, 1
-mov	byte_25877, al
-mov	byte_25878, 0
-mov	word_25872, 0FFF8h
+mov	comic_is_physics_active, al
+mov	comic_jump_counter, 0
+mov	comic_x_vel, 0FFF8h
 cmp	word ptr cs:[si+18h], 2
 jz	short loc_4EA4
-mov	word_25872, 8
+mov	comic_x_vel, 8
 
 loc_4EA4:
-mov	word_25874, 0FFF4h
+mov	comic_y_vel, 0FFF4h
 jmp	loc_5090
 
 loc_4EAD:
 mov	ax, cs:[si+12h]
-sub	ax, word_256A8
+sub	ax, comic_y
 cmp	ax, 6
 jle	short loc_4EDB
 mov	al, byte_25886
 xor	al, 1
-mov	byte_25877, al
-mov	byte_25878, 0
+mov	comic_is_physics_active, al
+mov	comic_jump_counter, 0
 mov	ax, cs:[si+16h]
-mov	word_25874, ax
-mov	word_25872, 0
+mov	comic_y_vel, ax
+mov	comic_x_vel, 0
 mov	ax, cs:[si+10h]
-mov	word_256A6, ax
+mov	comic_x, ax
 
 loc_4EDB:
 jmp	loc_5090
@@ -8500,18 +8500,18 @@ jmp	loc_5090
 loc_4EDE:
 mov	al, byte_25886
 xor	al, 1
-mov	byte_25877, al
-mov	byte_25878, 0
-mov	word_25872, 0FFF8h
+mov	comic_is_physics_active, al
+mov	comic_jump_counter, 0
+mov	comic_x_vel, 0FFF8h
 mov	ax, cs:[si+18h]
 mov	word ptr cs:[si+18h], 1
 cmp	ax, 2
 jz	short loc_4F0C
 mov	word ptr cs:[si+18h], 2
-mov	word_25872, 8
+mov	comic_x_vel, 8
 
 loc_4F0C:
-mov	word_25874, 0FFFDh
+mov	comic_y_vel, 0FFFDh
 jmp	loc_5090
 
 loc_4F15:
@@ -8640,14 +8640,14 @@ loop	loc_4FDD
 loc_5031:
 cmp	byte_2587D, 1
 jz	short loc_5064
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 0Fh
 sub	ax, cs:[si+10h]
 jle	short loc_5090
 sub	ax, 0Eh
 cmp	ax, cs:[si]
 jge	short loc_5090
-mov	ax, word_256A8
+mov	ax, comic_y
 add	ax, 20h	; ' '
 sub	ax, cs:[si+12h]
 jle	short loc_5090
@@ -8657,14 +8657,14 @@ jge	short loc_5090
 jmp	loc_4D41
 
 loc_5064:
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 1Eh
 sub	ax, cs:[si+10h]
 jle	short loc_5090
 sub	ax, 1Ch
 cmp	ax, cs:[si]
 jge	short loc_5090
-mov	ax, word_256A8
+mov	ax, comic_y
 add	ax, 0Fh
 sub	ax, cs:[si+12h]
 jle	short loc_5090
@@ -8778,7 +8778,7 @@ retn
 
 loc_515D:
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 mov	bx, ax
 jnb	short loc_516B
 neg	ax
@@ -8854,11 +8854,11 @@ retn
 loc_5214:
 mov	bx, 4
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 jz	short loc_5230
 jl	short loc_5238
 mov	word ptr cs:[si+18h], 2
-cmp	byte_2588D, 2
+cmp	comic_facing, 2
 jz	short loc_5245
 
 loc_5230:
@@ -8867,7 +8867,7 @@ jmp	short locret_5258
 
 loc_5238:
 mov	word ptr cs:[si+18h], 1
-cmp	byte_2588D, 2
+cmp	comic_facing, 2
 jz	short loc_5230
 
 loc_5245:
@@ -8880,7 +8880,7 @@ mov	word ptr cs:[si+16h], 0FFF7h
 locret_5258:
 retn
 mov	bx, 4
-mov	ax, word_256A8
+mov	ax, comic_y
 sub	ax, cs:[si+12h]
 jnb	short loc_5267
 neg	ax
@@ -8894,7 +8894,7 @@ loc_526F:
 call	sub_5BAC
 retn
 mov	bx, 2
-mov	ax, word_256A8
+mov	ax, comic_y
 sub	ax, cs:[si+12h]
 jz	short loc_5286
 jge	short loc_5283
@@ -8906,7 +8906,7 @@ call	sub_5B7B
 loc_5286:
 mov	bx, 4
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 jz	short locret_52BE
 jl	short loc_52A4
 cmp	word ptr cs:[si+18h], 2
@@ -8938,7 +8938,7 @@ mov	cs:[si+1Ch], ax
 
 loc_52DE:
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 jge	short loc_52EA
 neg	ax
 
@@ -9004,7 +9004,7 @@ jle	short loc_53CD
 cmp	ax, 1
 jz	short loc_5389
 mov	ax, cs:[si+12h]
-cmp	ax, word_256A8
+cmp	ax, comic_y
 jg	short loc_5389
 jz	short loc_53AE
 mov	word ptr cs:[si+16h], 7
@@ -9026,7 +9026,7 @@ retn
 loc_53AE:
 mov	word ptr cs:[si+18h], 2
 mov	ax, cs:[si+10h]
-cmp	ax, word_256A6
+cmp	ax, comic_x
 jg	short loc_53C6
 jz	short locret_53CC
 mov	word ptr cs:[si+18h], 1
@@ -9054,7 +9054,7 @@ push	word_25272
 mov	word_25274, 0FFFFh
 mov	word_25272, 0FFFFh
 mov	ax, cs:[si+12h]
-sub	ax, word_256A8
+sub	ax, comic_y
 jz	short loc_5422
 jg	short loc_5414
 mov	word ptr cs:[si+16h], 1
@@ -9094,10 +9094,10 @@ jmp	loc_54E7
 
 loc_545D:
 mov	ax, cs:[si+12h]
-cmp	ax, word_256A8
+cmp	ax, comic_y
 jge	short loc_5486
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 jge	short loc_5473
 neg	ax
 
@@ -9218,7 +9218,7 @@ call	sub_5A4E
 retn
 mov	word ptr cs:[si+14h], 0
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 jge	short loc_5582
 neg	ax
 
@@ -9289,13 +9289,13 @@ locret_561A:
 retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_5648
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, cs:[si+10h]
 jnb	short loc_562D
 neg	ax
 
 loc_562D:
-mov	bx, word_256A8
+mov	bx, comic_y
 sub	bx, cs:[si+12h]
 jb	short loc_563B
 cmp	ax, bx
@@ -9377,7 +9377,7 @@ cmp	word ptr cs:[si+1Ch], 2
 jz	short loc_5739
 mov	ax, cs:[si+12h]
 add	ax, 18h
-sub	ax, word_256A8
+sub	ax, comic_y
 jz	short loc_5712
 jg	short loc_5704
 mov	word ptr cs:[si+16h], 3
@@ -9408,7 +9408,7 @@ retn
 
 loc_5739:
 mov	ax, cs:[si+12h]
-sub	ax, word_256A8
+sub	ax, comic_y
 jz	short loc_575E
 jg	short loc_5750
 mov	word ptr cs:[si+16h], 7
@@ -9447,7 +9447,7 @@ call	sub_5CCF
 or	ax, ax
 jz	short loc_57BC
 mov	ax, cs:[si+18h]
-cmp	al, byte_2588D
+cmp	al, comic_facing
 jnz	short loc_57A6
 cmp	ax, 20h	; ' '
 jle	short loc_57A0
@@ -9470,13 +9470,13 @@ retn
 mov	word ptr cs:[si+14h], 0
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_57F0
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, cs:[si+10h]
 jnb	short loc_57DB
 neg	ax
 
 loc_57DB:
-mov	bx, word_256A8
+mov	bx, comic_y
 sub	bx, cs:[si+12h]
 jb	short locret_57E9
 cmp	ax, bx
@@ -9620,13 +9620,13 @@ call	sub_4C06
 retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_599F
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, cs:[si+10h]
 jnb	short loc_597E
 neg	ax
 
 loc_597E:
-mov	bx, word_256A8
+mov	bx, comic_y
 sub	bx, cs:[si+12h]
 jb	short loc_5992
 sub	bx, cs:[si+2]
@@ -9661,7 +9661,7 @@ mov	word ptr cs:[si+18h], 2
 jmp	short loc_59EB
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_59E5
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, cs:[si+10h]
 jnb	short loc_59E0
 
@@ -9689,7 +9689,7 @@ pop	ax
 cmp	ax, cs:[si+18h]
 jnz	short loc_5A28
 mov	word ptr cs:[si+16h], 4
-mov	ax, word_256A8
+mov	ax, comic_y
 sub	ax, cs:[si+12h]
 jb	short loc_5A2E
 cmp	ax, 0Ch
@@ -10068,7 +10068,7 @@ sub_5CA1 endp
 
 sub_5CCF proc near
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 jl	short loc_5CE2
 mov	word ptr cs:[si+18h], 2
 jmp	short locret_5CEA
@@ -10093,11 +10093,11 @@ lea	si, unk_258CE
 loc_5CF5:
 cmp	word ptr [si], 0FFFFh
 jnz	short loc_5D58
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 4
 mov	[si], ax
 mov	ax, 0FFF0h
-cmp	byte_2588D, 2
+cmp	comic_facing, 2
 jz	short loc_5D18
 neg	ax
 cmp	byte_2587D, 1
@@ -10106,7 +10106,7 @@ add	word ptr [si], 10h
 
 loc_5D18:
 mov	[si+4],	ax
-mov	ax, word_256A8
+mov	ax, comic_y
 add	ax, 4
 cmp	byte_2587D, 1
 jz	short loc_5D2B
@@ -11514,7 +11514,7 @@ sub_677A endp
 
 
 sub_6806 proc near
-mov	al, byte_25877
+mov	al, comic_is_physics_active
 or	al, byte_25901
 or	al, byte_25886
 jz	short loc_6816
@@ -12871,9 +12871,9 @@ sti
 call	sub_238
 mov	dx, 0ABD1h
 call	sub_15D
-mov	word_256A6, 0
-mov	word_256A8, 81h	; '�'
-mov	byte_2588D, 1
+mov	comic_x, 0
+mov	comic_y, 81h	; '�'
+mov	comic_facing, 1
 mov	word_2FBD5, 10h
 
 loc_736A:
@@ -12884,12 +12884,12 @@ call	sub_7622
 call	sub_774E
 mov	ax, 1
 call	sub_7278
-add	word_256A6, 8
+add	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_736A
 xor	si, si
 call	sub_75AD
-mov	byte_2588D, 2
+mov	comic_facing, 2
 mov	word_2FBD5, 0Ah
 
 loc_739C:
@@ -12900,12 +12900,12 @@ call	sub_7622
 call	sub_774E
 mov	ax, 1
 call	sub_7278
-sub	word_256A6, 8
+sub	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_739C
 xor	si, si
 call	sub_75AD
-mov	byte_2588D, 1
+mov	comic_facing, 1
 mov	word_2FBD5, 2
 
 loc_73CE:
@@ -12916,7 +12916,7 @@ call	sub_7622
 call	sub_774E
 mov	ax, 1
 call	sub_7278
-add	word_256A6, 8
+add	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_73CE
 xor	si, si
@@ -12925,7 +12925,7 @@ mov	ax, 1
 lea	bx, unk_2FC1A
 mov	cx, 9
 int	3		; Trap to Debugger
-mov	byte_2588D, 1
+mov	comic_facing, 1
 mov	word_2FBD5, 12h
 
 loc_740B:
@@ -12945,7 +12945,7 @@ call	sub_7622
 call	sub_774E
 mov	ax, 1
 call	sub_7278
-add	word_256A6, 8
+add	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_740B
 mov	si, 28Ch
@@ -12974,7 +12974,7 @@ mov	ax, 1
 lea	bx, unk_2FC1A
 mov	cx, 9
 int	3		; Trap to Debugger
-mov	byte_2588D, 2
+mov	comic_facing, 2
 mov	word_2FBD5, 1Ah
 
 loc_749E:
@@ -12994,7 +12994,7 @@ call	sub_7622
 call	sub_774E
 mov	ax, 1
 call	sub_7278
-sub	word_256A6, 8
+sub	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_749E
 call	sub_22B
@@ -13108,8 +13108,8 @@ call	sub_7927
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	si, 0
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	ds, cs:seg_5E
 assume ds:seg003
 call	sub_77A3
@@ -13136,8 +13136,8 @@ jnz	short loc_75CD
 mov	si, 146h
 
 loc_75CD:
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	ds, cs:seg_5E
 assume ds:seg003
 call	sub_77A3
@@ -13187,7 +13187,7 @@ mov	ch, 1
 loc_762F:
 mov	byte_2588F, ch
 mov	si, 4882h
-cmp	byte_2588D, 1
+cmp	comic_facing, 1
 jz	short loc_7640
 mov	si, 4860h
 
@@ -13196,8 +13196,8 @@ mov	al, byte_2588F
 xor	ah, ah
 shl	ax, 1
 add	si, ax
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	si, [si]
@@ -111533,8 +111533,8 @@ db    0
 word_256A0 dw 0
 word_256A2 dw 0
 word_256A4 dw 0
-word_256A6 dw 0
-word_256A8 dw 0
+comic_x dw 0
+comic_y dw 0
 byte_256AA db 0
 byte_256AB db 0
 unk_256AC db	0
@@ -111981,11 +111981,11 @@ db    0
 db    0
 db    0
 word_25870 dw 0
-word_25872 dw 0
-word_25874 dw 0
+comic_x_vel dw 0
+comic_y_vel dw 0
 byte_25876 db 0
-byte_25877 db 0
-byte_25878 db 0
+comic_is_physics_active db 0
+comic_jump_counter db 0
 byte_25879 db 5
 byte_2587A db 0
 byte_2587B db 1
@@ -111994,16 +111994,16 @@ byte_2587D db 0
 byte_2587E db 0
 word_2587F dw 0
 word_25881 dw 0
-byte_25883 db 0
+comic_is_animation_active db 0
 byte_25884 db 0
 byte_25885 db 0
 byte_25886 db 0
-byte_25887 db 0
+comic_is_attack_active db 0
 byte_25888 db 0
 word_25889 dw 0
 word_2588B dw 0
-byte_2588D db 1
-byte_2588E db 0
+comic_facing db 1
+comic_state db 0
 byte_2588F db 0
 byte_25890 db 0
 byte_25891 db 0
@@ -112065,7 +112065,7 @@ word_258C8 dw 0
 byte_258CA db 0
 byte_258CB db 0
 byte_258CC db 0
-byte_258CD db 0
+comic_hp db 0
 unk_258CE db	0
 db    0
 db    0

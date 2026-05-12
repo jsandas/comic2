@@ -6,7 +6,7 @@ To map the fragmented main game loop (`sub_35DE`) and identify the core player s
 ## Status
 - **Phase 1: Game Loop Defragmentation** - [COMPLETED]
 - **Phase 2: Player State Identification** - [COMPLETED]
-- **Phase 3: Function Mapping** - [IN PROGRESS]
+- **Phase 3: Function Mapping** - [COMPLETED]
 
 ## Background & Motivation
 The main game loop (`sub_35DE`) was fragmented into 21 chunks in the disassembly. Understanding this loop is critical for identifying how input is processed, physics are applied, and entities are updated. Concurrently, locating the player state variables is necessary to trace how functions interact with the player.
@@ -30,7 +30,7 @@ The main game loop (`sub_35DE`) was fragmented into 21 chunks in the disassembly
 3.  **Locate Attributes**: Found `comic_hp` (`byte_258CD`).
 4.  **Correlate with C Decompilation**: Verified offsets using `unpacked.exe.test.c`.
 
-### Phase 3: Function Mapping [IN PROGRESS]
+### Phase 3: Function Mapping [COMPLETED]
 1.  **Identify Physics Functions**: Located `sub_2A10` (grounded) and `sub_2EDC` (airborne).
 2.  **Identify Movement Functions**: Located `sub_2BDC` (move_left) and `sub_2C39` (move_right).
 3.  **Annotate Assembly**: Add descriptive comments and rename labels for the identified functions and variables in `comic2.asm`.
