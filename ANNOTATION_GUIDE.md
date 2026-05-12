@@ -24,7 +24,7 @@ mov  al, <mask>        ; 1, 2, 4, or 8
 out  dx, al
 ```
 **→ Part of graphics blitting functions (sub_2B4, sub_451C)**
-
+f
 ### 3. EGA Plane Read Setup
 ```asm
 mov  dx, 3CEh          ; Graphics Controller Index  

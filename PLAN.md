@@ -40,6 +40,11 @@ The main game loop (`sub_35DE`) was fragmented into 21 chunks in the disassembly
 2.  **Update `CORE_ENGINE.md`**: Added dispatcher logic and state variables.
 
 ## Next Steps
-- Deep dive into `sub_5D5F` (Entity Update Loop) to understand enemy AI and collision.
+- [x] Deep dive into `sub_5D5F` (Projectile Update Loop)
+    - Confirmed as the master loop for active projectiles (bullets).
+    - Handles straight-line and table-based (9A8Ch) trajectory movement.
+    - Implements tile-based collision via `sub_1CFE`.
+    - Supports environmental interaction (switches/items) via `sub_2D06`.
+    - Manages camera-viewport despawning.
 - Identify `comic_num_lives` and `comic_firepower` by tracing HUD rendering logic.
 - Document the EGA blitting functions in `sub_2B4` and `sub_451C`.

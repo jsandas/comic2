@@ -59,10 +59,31 @@ Address: `loc_2341` (Line 3394 in `comic2.asm`)
 *   `sub_2C9D`: `check_floor_collision` - Checks tiles below player.
 *   `sub_2A10`: `update_player_physics` - Main gravity and grounded movement routine.
 *   `sub_2EDC`: `handle_airborne_movement` - Airborne physics (jump/fall arcs).
-*   `sub_5D5F`: `update_entities` - Master loop for enemy AI and object updates.
+*   `sub_5D5F`: `update_projectiles` - Master loop for active projectiles (bullets).
 *   `sub_7DBB`: `draw_sprite` - Renders a sprite to the back buffer.
 *   `sub_18E0`: `setup_render_viewport` - Recalculates screen window relative to world (X, Y).
 *   `sub_1B8D`: `load_resource` - Loads sprite or map data into memory.
+*   `sub_2D06`: `handle_projectile_impact` - Triggers switch/item interaction on collision.
+
+## Projectile System (sub_5D5F)
+
+The projectile system manages player-fired bullets using a fixed 7-slot table at `unk_258CE`.
+
+### Update Cycle:
+1.  **Iterate Table**: Loops 7 times (`byte_251FC` usually holds the count or limit).
+2.  **Activity Check**: Skips slots where `word ptr [si] == 0FFFFh`.
+3.  **Movement**: 
+    - `X = X + X_Vel` (X_Vel is at `[si+4]`).
+    - Trajectory logic at `loc_5D8F` (gated by `cs:word_1018`) can apply Y offsets from a lookup table at `9A8Ch`.
+4.  **Collision (`sub_1CFE`)**:
+    - Checks tile attribute at projectile center (`X+3, Y+3`).
+    - If `Tile_Attr > word_25272` (Blocking/Interactive):
+        - Calls `sub_2D06` to handle environmental triggers (switches, items).
+        - Deactivates projectile.
+5.  **Viewport Despawning**:
+    - If projectile X/Y is outside camera bounds (`word_256A2`, `word_256A4`), it is deactivated.
+6.  **Rendering**:
+    - If active and on-screen, draws "flying" sprite (`0A4A6h`) or "impact" sprite (`0A4D4h`) using `sub_77A3`.
 
 ## State Variables (DS Base: 24FE0h)
 *   `ds:6C6h`: `comic_x` (word) - Player X world coordinate.

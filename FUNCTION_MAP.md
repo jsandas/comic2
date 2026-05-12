@@ -83,7 +83,7 @@ Loop Structure:
 2. Clear BIOS keyboard buffer: loc_2341 (clears 0040:001A)
 3. Dispatch state handlers: loc_275C, loc_2EDC, loc_2A10, loc_3107, loc_34A9, etc.
 4. Input handling: loc_2341 block (if no state active)
-5. Update entities: sub_5D5F
+5. Update projectiles: sub_5D5F (Projectile Update Loop - movement, collision, and interaction)
 6. Update projectiles/viewport: sub_437B
 7. Draw sprites: sub_7DBB
 8. Repeat

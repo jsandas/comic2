@@ -28,7 +28,7 @@ This project aims to create a fully-annotated, functionally-equivalent assembly 
 
 ### Reference Material
 - **Captain Comic 1 disassembly**: https://github.com/jsandas/comic-c/blob/main/reference/disassembly/R5sw1991.asm
-  - Complete, annotated disassembly by jsandas
+  - Complete, annotated disassembly by Bam Software
   - Used as template for common engine patterns
 
 ## Documentation
