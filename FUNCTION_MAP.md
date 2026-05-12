@@ -27,6 +27,12 @@ sub_9AF (Line 1444)         → pit_count - get PIT counter for timing
 Key State Variables:
 byte_245 / game_tick_flag   → Set to 1 by INT 08h each tick
 byte_251-254                → Function key scancodes (F1-F4: 3Bh,3Ch,3Dh,3Eh)
+byte_258 key_state_left     → 1 if Left arrow pressed
+byte_259 key_state_right    → 1 if Right arrow pressed
+byte_25A key_state_up       → 1 if Up arrow pressed
+byte_25B key_state_down     → 1 if Down arrow pressed
+byte_25C key_state_jump     → 1 if Space/Jump pressed
+byte_25D key_state_fire     → 1 if R/Fire pressed
 byte_25E scancode_left      → Left arrow (4Bh)
 byte_25F scancode_right     → Right arrow (4Dh)
 byte_260 scancode_up        → Up arrow (48h)
@@ -64,43 +70,48 @@ INT 10h, AX=1000h           → Set palette register
 ### Main Game Loop
 ```
 sub_35DE (Line 5571)        → Main game loop (FRAGMENTED function)
-                              - 7 non-contiguous code chunks
-                              - Similar to Comic 1's game_loop
+                              - Fragment 1: 3167 - 4276 (Dispatcher, Physics, Trigger logic)
+                              - Fragment 2: 4598 - 4823 (Player Death, Airborne movement)
+                              - Fragment 3: 4989 - 5043 (Player Animation)
+                              - Fragment 4: 5240 - 5380 (Player State Check)
+                              - Fragment 5: 5410 - 5555 (Attack Animation)
+                              - Fragment 6: 5653 - 5694 (Special Logic 1)
+                              - Fragment 7: 5872 - 6004 (Special Logic 2, Distance-based logic)
 
-Loop Structure (Comic 1 pattern):
-1. Wait for game tick flag
-2. Handle input (keyboard/joystick)
-3. Update player physics (gravity, jumping, movement)
-4. Update enemies AI
-5. Handle fireballs/projectiles
-6. Check collisions
-7. Update items/pickups
-8. Render frame to offscreen buffer
-9. Swap video buffers
-10. Repeat
+Loop Structure:
+1. Wait for game tick: call sub_27A (wait_n_ticks)
+2. Clear BIOS keyboard buffer: loc_2341 (clears 0040:001A)
+3. Dispatch state handlers: loc_275C, loc_2EDC, loc_2A10, loc_3107, loc_34A9, etc.
+4. Input handling: loc_2341 block (if no state active)
+5. Update entities: sub_5D5F
+6. Update projectiles/viewport: sub_437B
+7. Draw sprites: sub_7DBB
+8. Repeat
 ```
 
 ### Player Character
 ```
-Expected Comic 1 patterns (need to locate exact addresses):
-
-comic_y                     → Y position (game units)
-comic_x                     → X position (game units)
-comic_facing                → Direction (0=right, 5=left)
-comic_animation             → Animation frame (0=stand, 1-3=run, 4=jump)
-comic_hp                    → Health points
-comic_num_lives             → Lives remaining
-comic_x_momentum            → Horizontal velocity (-5 to +5)
-comic_y_vel                 → Vertical velocity (fixed-point 1/8 units)
-comic_jump_counter          → Jump power countdown
-comic_firepower             → Blastola Colas collected (max 5)
-
-Movement Functions (to locate):
-- face_or_move_left
-- face_or_move_right
-- handle_fall_or_jump       → Physics: gravity, terminal velocity, ceiling collision
-- move_left                 → Left movement with collision
-- move_right                → Right movement with collision
+comic_x                     → ds:6C6h / word_256A6 (Line 111536) - X position
+comic_y                     → ds:6C8h / word_256A8 (Line 111537) - Y position
+comic_x_vel                 → ds:892h / word_25872 (Line 111984) - Horizontal velocity
+comic_y_vel                 → ds:894h / word_25874 (Line 111986) - Vertical velocity
+comic_state                 → ds:8AEh / byte_2588E (Line 112006) - 0=idle, 1=move, 2=jump/fall, 3=die, 6=attack
+comic_is_physics_active     → ds:897h / byte_25877 (Line 111989)
+comic_jump_counter          → ds:898h / byte_25878 (Line 111990) - Ticks remaining in jump
+comic_is_animation_active   → ds:8A3h / byte_25883 (Line 111999)
+comic_is_attack_active      → ds:8A7h / byte_25887 (Line 112003)
+comic_facing                → ds:8ADh / byte_2588D (Line 112005) - 1=right, 2=left
+comic_hp                    → ds:8EDh / byte_258CD (Line 112068) - Health points (max 12)
+comic_num_lives             → (to locate)
+comic_firepower             → (to locate)
+```
+Movement and Collision Functions:
+- sub_2BDC                 → move_player_left (Line 4335)
+- sub_2C39                 → move_player_right (Line 4363)
+- sub_2C9D                 → check_floor_collision (Line 4421)
+- sub_1CFE                 → get_tile_at_pixels (Line 2544) - AX=x, BX=y, returns tile type in AX
+- sub_18E0                 → setup_render_viewport (Line 2179)
+- sub_1B8D                 → load_resource (Line 2337)
 ```
 
 ### Entity Management

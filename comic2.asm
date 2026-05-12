@@ -389,25 +389,13 @@ sub_238	endp
 ; GAME STATE FLAGS AND KEY MAPPINGS
 ; Based on Captain Comic 1 patterns
 ; ============================================================================
-game_tick_flag	db 0		; byte_245: Set by INT 08h when a game tick occurs
-byte_246 db 0
-byte_247 db 0
-byte_248 db 1, 7 dup(0)
-byte_250 db 1
-
-; Function key scancodes (F1-F4)
-function_keys	db 3Bh, 3Ch, 3Dh, 3Eh	; byte_251: F1, F2, F3, F4
-
-; Game control key scancodes (default mappings)
-key_inventory	db 49h		; byte_255: 'I' key
-key_quit	db 51h		; byte_256: 'Q' key  
-key_game_menu	db 47h		; byte_257: 'G' key
-byte_258 db 0
-byte_259 db 0
-byte_25A db 0
-byte_25B db 0
-byte_25C db 0
-byte_25D db 0
+game_tick_flag db 0		; byte_245
+key_state_left db 0		; byte_258
+key_state_right db 0		; byte_259
+key_state_up db 0		; byte_25A
+key_state_down db 0		; byte_25B
+key_state_jump db 0		; byte_25C
+key_state_fire db 0		; byte_25D
 ; Arrow keys and action keys
 scancode_left	db 4Bh		; byte_25E: Left arrow
 scancode_right	db 4Dh		; byte_25F: Right arrow

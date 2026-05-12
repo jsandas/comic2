@@ -119,29 +119,46 @@ blit_16xH_plane_with_mask:
 | Comic 2 | Comic 1 | Purpose |
 |---------|---------|---------|
 | `start` | `main` | Entry point, initialization |
+| `sub_27A` | `wait_n_ticks` | Wait for game ticks (AX=num_ticks) |
+| `sub_599` | - | Secondary wait loop (clears input) |
 | `sub_9C9` | `install_interrupt_handlers` | Hook INT handlers |
 | `sub_A5E` | `restore_interrupt_handlers` | Restore original handlers |
 | `sub_9AF` | `pit_count` | Get timer counter |
 | `sub_96F` | `read_joystick_axis` | Read analog joystick |
 | `sub_2B4` | `blit_*_plane*` | Graphics blitting |
-| `sub_451C` | `render_map` | Level rendering |
-| `sub_35DE` | `game_loop` | Main game loop |
-| TBD | `handle_fall_or_jump` | Physics simulation |
-| TBD | `handle_enemies` | Enemy AI |
-| TBD | `handle_fireballs` | Projectile logic |
+| `sub_18E0` | `setup_viewport` | Setup render viewport |
+| `sub_1B8D` | `load_resource` | Load sprite/area data |
+| `sub_35DE` | `game_loop` | Main game loop (FRAGMENTED) |
+| `sub_1CFE` | `get_tile_attr` | Check tile collision at (AX, BX) |
+| `sub_2BDC` | `move_left` | Handle left movement input |
+| `sub_2C39` | `move_right` | Handle right movement input |
+| `sub_5D5F` | `update_entities` | Iterate and update entity table |
+| `sub_7DBB` | `draw_sprite` | Draw sprite at (AX, BX) |
 
 ### Key Code Locations in comic2.asm
 
-| Lines | Purpose |
-|-------|---------|
-| 1-100 | Header, copyright, entry point |
-| 71-265 | `start` procedure - initialization |
-| 417-613 | `sub_2B4` - Graphics operations |
-| 1350-1550 | Interrupt handler setup |
-| 5534+ | `sub_35DE` - Main game logic (fragmented) |
-| 7443+ | `sub_451C` - Level/sprite rendering |
-| 16449+ | String data (seg001) |
-| 97625+ | Graphics/palette data (seg004) |
+| Lines | Label / Address | Purpose |
+|-------|-----------------|---------|
+| 68 | `start` | Game entry point |
+| 435 | `sub_27A` | `wait_n_ticks` function |
+| 3167 | `sub_35DE` Chk 1 | Main loop dispatcher (`loc_2341`) |
+| 3815 | `loc_275C` | Level transition handler |
+| 4118 | `loc_2A10` | Player physics update (grounded) |
+| 4600 | `loc_2DC6` | Player death handler |
+| 4698 | `loc_2EDC` | Player physics update (airborne) |
+| 10145| `sub_5D5F` | Entity update loop |
+| 111536| `word_256A6` | `comic_x` (Player X) |
+| 111537| `word_256A8` | `comic_y` (Player Y) |
+| 112006| `byte_2588E` | `comic_state` (0:idle, 1:move, 2:jump, 3:die) |
+
+### Game Loop Structure (sub_35DE)
+The main loop is fragmented into 7 primary chunks that handle different states:
+1. **Dispatcher (`loc_2341`)**: Checks state flags (airborne, physics active, animation, etc.).
+2. **Physics Handler (`loc_2A10` / `loc_2EDC`)**: Applies gravity and updates (X, Y) based on velocity.
+3. **Collision Detection**: Uses `sub_1CFE` to check tile attributes and triggers death if needed.
+4. **Entity Update**: Calls `sub_5D5F` to update all active enemies/objects.
+5. **Rendering**: Updates viewport via `sub_18E0` and draws sprites via `sub_7DBB`.
+6. **Tick Sync**: Calls `sub_27A` (wait_n_ticks) to maintain constant frame rate.
 
 ## Annotation Strategy
 
@@ -151,17 +168,17 @@ blit_16xH_plane_with_mask:
 3. Video mode setup
 4. Joystick calibration
 
-### Phase 2: Graphics System (In Progress)
+### Phase 2: Game Loop & Player State ✓
+1. Identify fragmented loop chunks
+2. Map input variables to physics logic
+3. Locate player X/Y and velocity variables
+4. Identify core movement and collision functions
+
+### Phase 3: Graphics System (In Progress)
 1. EGA plane manipulation
 2. Blitting functions
 3. Double-buffer swapping
 4. Palette operations
-
-### Phase 3: Game Loop
-1. Main loop structure
-2. Input handling
-3. Physics simulation
-4. Entity update
 
 ### Phase 4: Specific Systems
 1. Enemy AI
