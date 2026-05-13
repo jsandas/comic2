@@ -102,8 +102,10 @@ comic_is_animation_active   → ds:8A3h / byte_25883 (Line 111999)
 comic_is_attack_active      → ds:8A7h / byte_25887 (Line 112003)
 comic_facing                → ds:8ADh / byte_2588D (Line 112005) - 1=right, 2=left
 comic_hp                    → ds:8EDh / byte_258CD (Line 112068) - Health points (max 12)
-comic_num_lives             → (to locate)
-comic_firepower             → (to locate)
+comic_num_lives             → ds:28Fh / word_2526F (Line 110468) - Remaining lives
+comic_firepower             → ds:1FCh / byte_251FC (Line 110355) - Firepower level (max 6, active shots)
+comic_gems                  → ds:204h / word_25204 (Line 110362) - Gem count (Extra life at 100)
+comic_score_low             → ds:202h / word_25202 (Line 110361) - Partial score/treasure
 ```
 Movement and Collision Functions:
 - sub_2BDC                 → move_player_left (Line 4335)

@@ -97,5 +97,9 @@ The projectile system manages player-fired bullets using a fixed 7-slot table at
 *   `ds:8ADh`: `comic_facing` (byte) - 1:Right, 2:Left.
 *   `ds:8AEh`: `comic_state` (byte) - 0:Idle, 1:Move, 2:Jump, 3:Die, 4:Climb, 6:Attack.
 *   `ds:8EDh`: `comic_hp` (byte) - Player health (max 12).
+*   `ds:28Fh`: `comic_num_lives` (word) - Remaining lives (decimal format digits).
+*   `ds:1FCh`: `comic_firepower` (byte) - Firepower level (max 6).
+*   `ds:204h`: `comic_gems` (word) - Gems collected (0-99 decimal).
+*   `ds:202h`: `comic_score_low` (word) - Score/Treasure component.
 *   `ds:222h`: `current_level` (word) - Level index.
 *   `ds:6FAh`: `current_map` (word) - Map index.
