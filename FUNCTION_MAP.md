@@ -46,9 +46,12 @@ byte_263 scancode_fire      → 'R' key (52h)
 ### EGA Video Operations
 ```
 sub_2B4 (Line 454)          → Main graphics/blitting function
-sub_451C (Line 7480)        → Level/sprite rendering system
+sub_1D2C (Line 2586)        → Viewport row setup + 4-plane dispatch
+sub_1DC0 (Line 2666)        → Per-plane viewport copy to A000h
+sub_451C (Line 7506)        → Object slot resolve + mapped sprite draw
 sub_79C7                    → EGA plane blit helper
 sub_7A13                    → EGA plane blit with mask
+sub_7A89 (Line 13949)       → CRTC start update synchronized to retrace
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)
@@ -84,7 +87,7 @@ Loop Structure:
 3. Dispatch state handlers: loc_275C, loc_2EDC, loc_2A10, loc_3107, loc_34A9, etc.
 4. Input handling: loc_2341 block (if no state active)
 5. Update projectiles: sub_5D5F (Projectile Update Loop - movement, collision, and interaction)
-6. Update projectiles/viewport: sub_437B
+6. Scan viewport entities/interactions: sub_437B
 7. Draw sprites: sub_7DBB
 8. Repeat
 ```

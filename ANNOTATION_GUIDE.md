@@ -250,6 +250,40 @@ When you think you've identified a function, verify:
 - [ ] Does it fit in the overall program flow?
 - [ ] Can you trace where it's called from?
 
+## Annotation Confidence Legend
+
+Use this confidence rating in function headers and mapping notes:
+
+- **High**
+    - Multiple independent signals agree (instruction pattern, call-site behavior,
+        register usage, and side effects).
+    - Comic 1 equivalent is structurally consistent, when claimed.
+    - No major contradictions in control flow.
+- **Medium**
+    - Core behavior is clear, but one or two signals are incomplete or indirect.
+    - Naming is likely correct but still needs broader call-site verification.
+    - Keep any uncertain sub-behavior marked with TODO/UNKNOWN.
+- **Low**
+    - Purpose is plausible but evidence is sparse, conflicting, or local-only.
+    - Keep provisional naming (`UNKNOWN_*` or subsystem-prefixed placeholder).
+    - Do not promote to canonical names in maps until additional proof is found.
+
+### Minimum Evidence by Rating
+
+- **High:** at least 3 evidence categories, including one dynamic-flow category
+    (call pattern or side effect) and one static-signature category
+    (ports/INT sequence/register discipline).
+- **Medium:** at least 2 evidence categories with no direct contradiction.
+- **Low:** fewer than 2 strong categories or unresolved contradictions.
+
+### Recommended Header Line
+
+Add this line to annotated function headers:
+
+```asm
+; Confidence: High|Medium|Low
+```
+
 ## Example: Annotating a Graphics Function
 
 **Before:**

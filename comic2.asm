@@ -2572,6 +2572,15 @@ sub_1CFE endp
 
 ; Attributes: bp-based frame
 
+; ============================================================================
+; sub_1D2C - Build viewport row pointers and dispatch 4-plane blit
+; Input:  word_256A2/word_256A4 camera pixel origin, word_256A0 height limit
+; Output: Draws viewport into backbuffer via sub_1DC0 for planes 0..3
+; Calls:  sub_1DC0 (4x, cl=0..3 with seg007/seg006/seg008/seg009)
+; Evidence: 16-pixel alignment shifts, row table use (unk_25480/unk_25680),
+;           viewport clip against 0A0h scanlines before per-plane copies
+; Confidence: High
+; ============================================================================
 sub_1D2C proc near
 
 var_6= word ptr	-6
@@ -2643,6 +2652,15 @@ sub_1D2C endp
 
 
 
+; ============================================================================
+; sub_1DC0 - Copy one EGA plane for viewport strip
+; Input:  cl=plane index, ax=source segment for plane data, bp frame from sub_1D2C
+; Output: Plane data copied to A000h using map mask/read-map set by sub_7A68
+; Calls:  sub_7A68
+; Evidence: Port setup helper sub_7A68 (3C4h/3CEh), rep movsw loops with
+;           source stride (word_25278) and destination stride (0Eh)
+; Confidence: High
+; ============================================================================
 sub_1DC0 proc near
 push	si
 push	di
@@ -7262,6 +7280,16 @@ db 0D6h, 45h, 15h, 46h
 
 
 
+; ============================================================================
+; sub_437B - Scan active entities in viewport and process sprite/contact events
+; Input:  word_256DE entity count, viewport (word_256A2/word_256A4), comic_x/y
+; Output: Draws in-range entities (sub_7DBB), may consume entity slots and
+;         trigger scripted/object interactions via sub_451C and other handlers
+; Calls:  sub_7DBB, sub_451C, sub_6D95, sub_48AA
+; Evidence: AABB-style bounds checks around viewport extents, iterates 8-byte
+;           records at unk_256E0, branches on flag bit 8000h and object ids
+; Confidence: Medium
+; ============================================================================
 sub_437B proc near
 mov	di, word_256DE
 or	di, di
@@ -7465,6 +7493,16 @@ sub_437B endp
 
 
 
+; ============================================================================
+; sub_451C - Resolve slot entry and render/initialize mapped object sprite
+; Input:  ax=slot index into unk_25219 object mapping table
+; Output: DI points at selected object record (unk_25AD0) or 0 on empty slot;
+;         invokes object draw path for valid records
+; Calls:  sub_7AAB, sub_78C6
+; Evidence: 0FFFFh sentinel handling in unk_25219, 12-byte index math into
+;           unk_25AD0, then render call with DS set to seg_5E asset segment
+; Confidence: Medium
+; ============================================================================
 sub_451C proc near
 mov	cx, ax
 shl	cx, 1
@@ -13897,6 +13935,15 @@ sub_7A68 endp
 
 
 
+; ============================================================================
+; sub_7A89 - Program CRTC start address around vertical retrace window
+; Input:  CH provides high byte of CRTC start address register 0Ch value
+; Output: CRTC regen start address high byte updated; waits for retrace phase
+; Calls:  none
+; Evidence: Polls 3DAh bit 3 (vertical sync), writes 3D4h/3D5h index 0Ch
+;           (CRT controller regen start high) before waiting for retrace start
+; Confidence: High
+; ============================================================================
 sub_7A89 proc near
 mov	dx, 3DAh
 
