@@ -1,29 +1,17 @@
-# Makefile for Captain Comic II: Fractured Reality Disassembly
-# Based on Captain Comic 1 build process
+# Makefile for Captain Comic II: Fractured Reality
+#
+# NOTE: comic2.asm is an IDA Pro MASM-style disassembly and cannot be
+# assembled with NASM. The goal of this project is a C++ reimplementation,
+# not a reassemblable binary. This Makefile is retained for the djlink/bindiff
+# tools only, which may be useful for future structural binary comparison.
 
-NASM = nasm
-DJLINK = tools/djlink/djlink
+# Build the djlink/bindiff tools from source
+tools: tools/djlink/djlink tools/djlink/bindiff
 
-ASFLAGS = -f obj
-LDFLAGS = 
+tools/djlink/djlink tools/djlink/bindiff:
+	$(MAKE) -C tools/djlink djlink bindiff
 
-TARGET = comic2.exe
-SRC = comic2.asm
-OBJ = comic2.obj
-
-all: $(TARGET)
-
-$(DJLINK):
-	$(MAKE) -C tools/djlink djlink
-
-$(OBJ): $(SRC)
-	$(NASM) $(ASFLAGS) $(SRC) -o $(OBJ)
-
-$(TARGET): $(OBJ) $(DJLINK)
-	$(DJLINK) $(OBJ) -o $(TARGET)
-
-clean:
-	rm -f $(OBJ) $(TARGET)
+clean-tools:
 	$(MAKE) -C tools/djlink clean
 
-.PHONY: all clean
+.PHONY: tools clean-tools

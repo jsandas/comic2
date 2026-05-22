@@ -1,7 +1,14 @@
-# Implementation Plan: Game Loop & Player State Analysis
+# Implementation Plan
 
-## Objective
-To map the fragmented main game loop (`sub_35DE`) and identify the core player state variables (`comic_x`, `comic_y`, etc.) in the Captain Comic 2 disassembly (`comic2.asm`). This will establish the foundational understanding required to map the rest of the game's logic.
+## Project Objective
+Reverse-engineer **Captain Comic II: Fractured Reality** into a clean C++ reimplementation, using the annotated `comic2.asm` disassembly as the primary reference. `unpacked.exe.test.c` (Ghidra pseudo-C) is a secondary cross-reference only — neither source file is intended to compile.
+
+---
+
+## Phase 1–4: Game Loop & Player State Analysis (COMPLETED)
+
+### Original Objective
+Map the fragmented main game loop (`sub_35DE`) and identify the core player state variables (`comic_x`, `comic_y`, etc.).
 
 ## Status
 - **Phase 1: Game Loop Defragmentation** - [COMPLETED]
@@ -39,9 +46,47 @@ The main game loop (`sub_35DE`) was fragmented into 21 chunks in the disassembly
 1.  **Update `FUNCTION_MAP.md`**: Added identified addresses.
 2.  **Update `CORE_ENGINE.md`**: Added dispatcher logic and state variables.
 
-## Next Steps
-- [x] Identify `comic_num_lives` and `comic_firepower` by tracing HUD rendering logic.
-    - `comic_num_lives` = `word_2526F` (`ds:28Fh`).
-    - `comic_firepower` = `byte_251FC` (`ds:1FCh`).
-    - `comic_gems` = `word_25204` (`ds:204h`).
-- Document the EGA blitting functions in `sub_2B4` and `sub_451C`.
+## Completed Findings
+- [x] `comic_num_lives` = `word_2526F` (`ds:28Fh`)
+- [x] `comic_firepower` = `byte_251FC` (`ds:1FCh`)
+- [x] `comic_gems` = `word_25204` (`ds:204h`)
+
+---
+
+## Phase 5: Complete Function Annotation (current)
+
+### Goals
+- Apply all confirmed `sub_XXXX` renames in `comic2.asm`
+- Annotate the EGA blit pipeline (`sub_2B4`, `sub_1D2C`, `sub_1DC0`, `sub_451C`, `sub_79C7`, `sub_7A13`, `sub_7A89`)
+- Locate and annotate entity management (`handle_enemies`, `handle_fireballs`, `handle_item`, `spawn_enemy`)
+- Locate and annotate file I/O / resource loading (`load_level`, `load_fullscreen_graphic`, `load_shp_files`, `rle_decode`)
+- Identify sound system: INT 3 handler, sound effect dispatch, effect addresses
+
+### Steps
+1. [ ] Batch-rename all confirmed `sub_XXXX` labels with known identities
+2. [ ] Annotate EGA blit pipeline with full function headers
+3. [ ] Trace `sub_437B` and `sub_5D5F` callers to locate entity management
+4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
+5. [ ] Trace INT 3 handler entry and sound effect table
+
+---
+
+## Phase 6: Data Structure & Resource Format Documentation
+
+### Goals
+- Confirm full enemy struct layout (12-byte format, all offsets)
+- Document FR*.* level file format
+- Document frpak.* archive format
+- Document .SHP and .EGA sprite/graphics layouts
+- Write C-equivalent `struct` definitions for all confirmed layouts
+
+---
+
+## Phase 7: C++ Reimplementation
+
+### Goals
+- Platform abstraction layer (EGA rendering → SDL2 or similar)
+- Port confirmed structs and globals to C++
+- Reimplement game loop / dispatcher
+- Reimplement physics, movement, entity system
+- Behavioral verification against original via DOSBox oracle

@@ -2,21 +2,21 @@
 
 ## Overview
 
-This project aims to create a fully-annotated, functionally-equivalent assembly disassembly of **Captain Comic II: Fractured Reality** (1990) by Michael A. Denio.
+This project reverse-engineers **Captain Comic II: Fractured Reality** (1990) by Michael A. Denio with the goal of producing a clean C++ reimplementation. The annotated `comic2.asm` disassembly is the primary reference artifact; `unpacked.exe.test.c` (Ghidra pseudo-C output) serves as a secondary cross-reference. Neither file is intended to compile — they are documentation tools.
 
 ### Project Status: **Active Development - Phase 2**
 
 ✅ Phase 1: Analysis & Mapping Complete  
 🔄 Phase 2: Function Annotation In Progress  
-⏸️ Phase 3: Data Structure Documentation  
-⏸️ Phase 4: Verification & Testing  
+⏸️ Phase 3: Data Structure & Resource Format Documentation  
+⏸️ Phase 4: C++ Reimplementation  
+⏸️ Phase 5: Behavioral Verification (DOSBox oracle testing)  
 
 ## Source Files
 
 ### Working Files
-- **comic2.asm** (186,369 lines) - IDA Pro 5.0 disassembly  
-- **unpacked.exe.test.c** (9,357 lines) - Ghidra decompilation
-- **unpacked.exe.test copy.c** - Backup copy
+- **comic2.asm** (186,369 lines) - IDA Pro 5.0 disassembly (primary annotation target; MASM syntax, not buildable with NASM)
+- **unpacked.exe.test.c** (9,357 lines) - Ghidra pseudo-C decompilation (cross-reference only; not compilable)
 
 ### Original Game Files (in `original/` directory)
 - FR*.* - Level data files (FR000.0 through FR014.2)
@@ -158,34 +158,38 @@ word_26A-278 - Unknown purpose (interrupt handler state?)
 
 ## Next Steps
 
-### Immediate Tasks
-1. **Deep-dive into sub_35DE** - Map the fragmented main game loop
-2. **Locate player state block** - Find comic_x, comic_y, comic_hp, etc.
-3. **Identify collision code** - Platform and enemy collision detection
-4. **Map enemy AI** - Locate and document behavior patterns
-5. **Document level format** - Parse FR*.* file structures
+### Phase 2: Remaining Annotation Targets (current)
+1. **Rename confirmed functions** - Apply known identities to `sub_XXXX` labels in `comic2.asm`
+2. **EGA blit pipeline** - Annotate `sub_2B4`, `sub_1D2C`, `sub_1DC0`, `sub_451C`, `sub_79C7`, `sub_7A13`, `sub_7A89`
+3. **Entity management** - Locate and annotate `handle_enemies`, `handle_fireballs`, `handle_item`, `spawn_enemy`
+4. **File I/O / resource loading** - Locate `load_level`, `load_fullscreen_graphic`, `load_shp_files`, `rle_decode`
+5. **Sound system** - Identify INT 3 handler, sound effect dispatch table, and effect addresses
 
-### Medium-term Goals
-1. **Complete function annotations** - Name all sub_XXXX procedures
-2. **Data structure definitions** - C struct definitions for all entities
-3. **Build call graph** - Visual map of function relationships
-4. **Extract resource formats** - Document .EGA, .PT, .SHP, frpak formats
-5. **Create memory dump tool** - Extract runtime state for analysis
+### Phase 3: Data Structure & Resource Format Documentation
+1. **Entity table** - Confirm full 12-byte enemy struct layout and all offsets
+2. **Level format** - Parse and document FR*.* file structures
+3. **Resource archives** - Document frpak.* format and extraction
+4. **Sprite/graphics format** - Document .SHP and .EGA layouts
+5. **C struct definitions** - Write equivalent `struct` definitions for all confirmed layouts
 
-### Long-term Vision
-1. **Functionally equivalent assembly** - Assembles to working game
-2. **Complete documentation** - Every function and variable documented
-3. **C port foundation** - Clean enough for C translation
-4. **Modern build system** - NASM/JWASM compatibility
-5. **Preservation** - Ensure game can run on modern systems
+### Phase 4: C++ Reimplementation
+1. **Platform abstraction layer** - EGA rendering → SDL2 or similar
+2. **Game state structures** - Port confirmed structs and globals to C++
+3. **Core loop** - Reimplement `game_loop` / dispatcher logic
+4. **Physics & movement** - Port grounded and airborne physics
+5. **Entity system** - Port enemy AI, projectile, and item logic
+
+### Phase 5: Behavioral Verification
+- Use DOSBox as an oracle: run both original and reimplementation, compare behavior
+- Focus on physics edge cases, collision response, and enemy AI parity
 
 ## Tools & Resources
 
 ### Development Tools
-- **IDA Pro 5** - Generated initial disassembly
-- **Ghidra** - Generated C decompilation
-- **Text Editor** - For annotation work
-- **DOSBox** - For testing the original game
+- **IDA Pro 5** - Generated initial disassembly (`comic2.asm`)
+- **Ghidra** - Generated pseudo-C cross-reference (`unpacked.exe.test.c`)
+- **DOSBox** - Behavioral oracle for verifying reimplementation parity
+- **bindiff** - Binary diff tool (in `tools/djlink/`) for future structural comparison
 
 ### Reference Materials
 - [Captain Comic 1 Source](https://github.com/jsandas/comic-c)
