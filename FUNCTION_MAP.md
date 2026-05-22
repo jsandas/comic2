@@ -119,6 +119,8 @@ Movement and Collision Functions:
 - move_left_step_airborne (was sub_3026)      → Apply airborne left drift with collision and viewport scroll
 - move_right_step_airborne (was sub_305E)     → Apply airborne right drift with collision and viewport scroll
 - check_airborne_side_clear (was sub_309D)    → Test lateral tile clearance for airborne horizontal movement
+- tile_check_horizontal_step_clear (was sub_2D61)         → Check horizontal step clearance against tile/blocking thresholds
+- tile_handle_collision_mode2_trigger (was sub_2D31)      → Handle collision-trigger table for mode-2 floor-check context
 - sub_1CFE                 → get_tile_at_pixels (Line 2544) - AX=x, BX=y, returns tile type in AX
 - sub_18E0                 → setup_render_viewport (Line 2179)
 - sub_1B8D                 → load_resource (Line 2337)

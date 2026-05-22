@@ -4423,7 +4423,7 @@ db 90h
 loc_2C09:
 sub	ax, 8
 push	ax
-call	sub_2D61
+call	tile_check_horizontal_step_clear
 pop	ax
 jb	short loc_2C32
 mov	comic_x, ax
@@ -4476,7 +4476,7 @@ loc_2C6C:
 add	ax, 8
 push	ax
 add	ax, 0Fh
-call	sub_2D61
+call	tile_check_horizontal_step_clear
 pop	ax
 jb	short loc_2C32
 mov	comic_x, ax
@@ -4521,7 +4521,7 @@ call	handle_projectile_impact
 loc_2CC7:
 cmp	byte_25890, 2
 jl	short loc_2CD1
-call	sub_2D31
+call	tile_handle_collision_mode2_trigger
 
 loc_2CD1:
 test	cx, 0Ch
@@ -4539,7 +4539,7 @@ call	handle_projectile_impact
 loc_2CF0:
 cmp	byte_25890, 2
 jl	short loc_2CFA
-call	sub_2D31
+call	tile_handle_collision_mode2_trigger
 
 loc_2CFA:
 clc
@@ -4586,7 +4586,7 @@ handle_projectile_impact endp
 
 
 
-sub_2D31 proc near
+tile_handle_collision_mode2_trigger proc near
 push	ax
 cmp	al, byte_256C2
 jl	short loc_2D5F
@@ -4612,12 +4612,12 @@ pop	bx
 loc_2D5F:
 pop	ax
 retn
-sub_2D31 endp
+tile_handle_collision_mode2_trigger endp
 
 
 
 
-sub_2D61 proc near
+tile_check_horizontal_step_clear proc near
 mov	bx, comic_y
 add	bx, 0Dh
 push	ax
@@ -4666,7 +4666,7 @@ mov	byte_2587B, 0
 loc_2DC4:
 clc
 retn
-sub_2D61 endp
+tile_check_horizontal_step_clear endp
 
 ; START	OF FUNCTION CHUNK FOR game_loop
 
