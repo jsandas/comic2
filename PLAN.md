@@ -38,7 +38,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 4.  **Correlate with C Decompilation**: Verified offsets using `unpacked.exe.test.c`.
 
 ### Phase 3: Function Mapping [COMPLETED]
-1.  **Identify Physics Functions**: Located `sub_2A10` (grounded) and `sub_2EDC` (airborne).
+1.  **Identify Physics Functions**: Located `update_player_physics` (`sub_2A10`, grounded) and `handle_airborne_movement` (`sub_2EDC`, airborne).
 2.  **Identify Movement Functions**: Located `sub_2BDC` (move_left) and `sub_2C39` (move_right).
 3.  **Annotate Assembly**: Add descriptive comments and rename labels for the identified functions and variables in `comic2.asm`.
 

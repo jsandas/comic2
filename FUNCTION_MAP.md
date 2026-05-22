@@ -84,7 +84,7 @@ game_loop (was sub_35DE)    → Main game loop (FRAGMENTED function)
 Loop Structure:
 1. Wait for game tick: call sub_27A (wait_n_ticks)
 2. Clear BIOS keyboard buffer: loc_2341 (clears 0040:001A)
-3. Dispatch state handlers: loc_275C, loc_2EDC, loc_2A10, loc_3107, loc_34A9, etc.
+3. Dispatch state handlers: loc_275C, handle_airborne_movement, update_player_physics, handle_player_animation, handle_attack_animation, etc.
 4. Input handling: loc_2341 block (if no state active)
 5. Update projectiles: update_projectiles (Projectile Update Loop - movement, collision, and interaction)
 6. Scan viewport entities/interactions: ent_update_entities_in_viewport

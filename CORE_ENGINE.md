@@ -18,19 +18,19 @@ Address: `loc_2341` (Line 3394 in `comic2.asm`)
     *   Target: `loc_386F`
 4.  **Airborne Physics Check**
     *   Variables: `ds:89Dh` != 0 (`comic_is_airborne`)
-    *   Target: `loc_2EDC` (`handle_airborne_movement`)
+    *   Target: `handle_airborne_movement` (was `loc_2EDC`)
 5.  **Sub-state 3610 Check**
     *   Variables: `ds:896h` == 2, and others
     *   Calls: `sub_3610`
 6.  **Grounded Physics Check**
     *   Variables: `ds:897h` != 0 (`comic_is_physics_active`)
-    *   Target: `loc_2A10` (`update_player_physics`)
+    *   Target: `update_player_physics` (was `loc_2A10`)
 7.  **Animation Check**
     *   Variables: `ds:8A3h` != 0 (`comic_is_animation_active`)
-    *   Target: `loc_3107` (`handle_player_animation`)
+    *   Target: `handle_player_animation` (was `loc_3107`)
 8.  **Attack Check**
     *   Variables: `ds:8A7h` != 0 (`comic_is_attack_active`)
-    *   Target: `loc_34A9` (`handle_attack_animation`)
+    *   Target: `handle_attack_animation` (was `loc_34A9`)
 9.  **Distance-based Interaction Check**
     *   Variables: `ds:92Ch` == 1 and `|ds:6C6h - ds:930h|` < 18h
     *   Target: `loc_385F`
@@ -57,13 +57,13 @@ Address: `loc_2341` (Line 3394 in `comic2.asm`)
 *   `sub_2BDC`: `move_player_left` - Updates X and checks left collision.
 *   `sub_2C39`: `move_player_right` - Updates X and checks right collision.
 *   `sub_2C9D`: `check_floor_collision` - Checks tiles below player.
-*   `sub_2A10`: `update_player_physics` - Main gravity and grounded movement routine.
-*   `sub_2EDC`: `handle_airborne_movement` - Airborne physics (jump/fall arcs).
+*   `update_player_physics` (`sub_2A10`) - Main gravity and grounded movement routine.
+*   `handle_airborne_movement` (`sub_2EDC`) - Airborne physics (jump/fall arcs).
 *   `sub_5D5F`: `update_projectiles` - Master loop for active projectiles (bullets).
 *   `sub_7DBB`: `draw_sprite` - Renders a sprite to the back buffer.
 *   `sub_18E0`: `setup_render_viewport` - Recalculates screen window relative to world (X, Y).
 *   `sub_1B8D`: `load_resource` - Loads sprite or map data into memory.
-*   `sub_2D06`: `handle_projectile_impact` - Triggers switch/item interaction on collision.
+*   `handle_projectile_impact` (was `sub_2D06`) - Triggers switch/item interaction on collision.
 
 ## Projectile System (sub_5D5F)
 
@@ -78,7 +78,7 @@ The projectile system manages player-fired bullets using a fixed 7-slot table at
 4.  **Collision (`sub_1CFE`)**:
     - Checks tile attribute at projectile center (`X+3, Y+3`).
     - If `Tile_Attr > word_25272` (Blocking/Interactive):
-        - Calls `sub_2D06` to handle environmental triggers (switches, items).
+        - Calls `handle_projectile_impact` (`sub_2D06`) to handle environmental triggers (switches, items).
         - Deactivates projectile.
 5.  **Viewport Despawning**:
     - If projectile X/Y is outside camera bounds (`word_256A2`, `word_256A4`), it is deactivated.

@@ -3511,7 +3511,7 @@ jmp	loc_386F
 loc_23A2:
 cmp	byte ptr ds:89Dh, 0
 jz	short loc_23AC
-jmp	handle_airborne_physics
+jmp	handle_airborne_movement
 
 loc_23AC:
 cmp	byte ptr ds:896h, 2
@@ -3536,17 +3536,17 @@ mov	cs:byte_25A, 0
 loc_23E0:
 cmp	byte ptr ds:897h, 0
 jz	short loc_23EA
-jmp	handle_grounded_physics
+jmp	update_player_physics
 
 loc_23EA:
 cmp	byte ptr ds:8A3h, 0
 jz	short loc_23F4
-jmp	loc_3107
+jmp	handle_player_animation
 
 loc_23F4:
 cmp	byte ptr ds:8A7h, 0
 jz	short loc_23FE
-jmp	loc_34A9
+jmp	handle_attack_animation
 
 loc_23FE:
 cmp	byte ptr ds:92Ch, 1
@@ -3595,7 +3595,7 @@ mov	ax, 1
 lea	bx, ds:96DEh
 mov	cx, 0
 int	3		; Trap to Debugger
-jmp	handle_grounded_physics
+jmp	update_player_physics
 
 loc_247A:
 mov	byte ptr ds:897h, 1
@@ -3607,7 +3607,7 @@ mov	ax, 1
 lea	bx, ds:96F6h
 mov	cx, 0
 int	3		; Trap to Debugger
-jmp	handle_grounded_physics
+jmp	update_player_physics
 
 loc_24A3:
 cmp	byte ptr ds:962Ah, 0
@@ -4188,7 +4188,7 @@ mov	ax, 1
 call	sub_27A
 jmp	loc_2341
 
-handle_grounded_physics:
+update_player_physics:
 cmp	comic_jump_counter, 0
 jz	short loc_2A31
 dec	comic_jump_counter
@@ -4516,7 +4516,7 @@ jg	short loc_2CC7
 mov	[bp+var_2], 1
 cmp	byte_25890, 1
 jl	short loc_2CD1
-call	sub_2D06
+call	handle_projectile_impact
 
 loc_2CC7:
 cmp	byte_25890, 2
@@ -4534,7 +4534,7 @@ jg	short loc_2CF0
 mov	[bp+var_2], 1
 cmp	byte_25890, 1
 jl	short loc_2CFA
-call	sub_2D06
+call	handle_projectile_impact
 
 loc_2CF0:
 cmp	byte_25890, 2
@@ -4556,7 +4556,7 @@ check_floor_collision endp
 
 
 
-sub_2D06 proc near
+handle_projectile_impact proc near
 push	ax
 cmp	al, byte_256B6
 jl	short loc_2D2F
@@ -4581,7 +4581,7 @@ pop	bx
 loc_2D2F:
 pop	ax
 retn
-sub_2D06 endp
+handle_projectile_impact endp
 
 
 
@@ -4768,7 +4768,7 @@ mov	comic_is_physics_active, 1
 mov	comic_state, 2
 jmp	loc_2B88
 
-handle_airborne_physics:
+handle_airborne_movement:
 mov	ax, comic_y_vel
 mov	cx, ax
 add	ax, comic_y
@@ -5061,7 +5061,7 @@ sub_30C6 endp
 
 ; START	OF FUNCTION CHUNK FOR game_loop
 
-loc_3107:
+handle_player_animation:
 cmp	byte_25884, 3
 jnz	short loc_3123
 cmp	cs:byte_25D, 1
@@ -5322,7 +5322,7 @@ loc_331D:
 mov	byte_25886, 0
 mov	comic_is_physics_active, 1
 mov	comic_jump_counter, 0
-jmp	handle_grounded_physics
+jmp	update_player_physics
 
 loc_332F:
 test	byte_2E60B, 3
@@ -5482,7 +5482,7 @@ sub_3468 endp
 
 ; START	OF FUNCTION CHUNK FOR game_loop
 
-loc_34A9:
+handle_attack_animation:
 dec	byte_25884
 jnz	short loc_34BC
 mov	comic_is_attack_active, 0
@@ -5741,7 +5741,7 @@ jz	short loc_368E
 mov	comic_is_physics_active, 1
 mov	comic_x_vel, 5
 mov	byte_25904, 1
-jmp	handle_grounded_physics
+jmp	update_player_physics
 
 loc_368E:
 mov	ax, comic_x
@@ -10338,7 +10338,7 @@ mov	cx, [si]
 mov	dx, [si+2]
 add	cx, 3
 add	dx, 3
-call	sub_2D06
+call	handle_projectile_impact
 pop	si
 pop	bx
 pop	ax
