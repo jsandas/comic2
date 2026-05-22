@@ -164,15 +164,27 @@ Functions (to locate):
 
 ### PC Speaker Sound
 ```
-Expected Comic 1 pattern:
+Confirmed in comic2.asm:
 
-INT 3 Handler               → Sound control (priority queue)
-  Operation codes:
-  AL=0 → SOUND_UNMUTE
-  AL=1 → SOUND_PLAY (DX:BX=sound data, CL=priority)
-  AL=2 → SOUND_MUTE
-  AL=3 → SOUND_STOP
-  AL=4 → SOUND_QUERY (returns AL=1 if playing)
+INT 3 vector install:
+- sub_9C9 writes vector 03h to loc_8C7
+- sub_A5E restores original vector on shutdown
+
+INT 3 command handler (loc_8C7):
+- AL=0 → speaker gate ON mode (byte_248=1), then speaker output forced OFF until playback enables it
+- AL=1 → queue/play request if CL priority >= byte_248+1
+         stores sound stream pointer in byte_248+2 and source segment in byte_248+6
+- AL=2 → speaker gate OFF mode (byte_248=0), output forced OFF
+- AL=3 → hard stop (byte_247=0, byte_248+1=0), output forced OFF
+- AL=4 → query playback active flag (returns AL=byte_247)
+
+Timer-driven playback (INT 08h hook loc_683):
+- When byte_247=1, consumes word stream from ES:[byte_248+2]
+- Stream format appears to be repeating pairs:
+  word pitch_divisor, word tick_duration
+- pitch_divisor=0 terminates playback (byte_247=0)
+- Non-zero divisor programs PIT channel 2 via ports 43h/42h
+- Speaker enable/disable uses port 61h bits 0-1
 
 PIT Programming:
 - Port 0x43 → Command register
@@ -180,15 +192,16 @@ PIT Programming:
 - Port 0x61 → PC speaker enable/disable
 - Frequency = 1,193,182 / divisor
 
-Sound Effects (to locate):
-- SOUND_JUMP
-- SOUND_FIRE  
-- SOUND_HIT_ENEMY
-- SOUND_COLLECT_ITEM
-- SOUND_DAMAGE
-- SOUND_DEATH
-- SOUND_EXTRA_LIFE
-- SOUND_GAME_OVER
+Known effect stream pointers at call sites (AX=1, CX=priority, INT 3):
+- BX=00DBh (used during intro/startup)
+- BX=965Eh (damage/hazard path at loc_2DC6)
+- BX=9676h (jump/airborne transitions at loc_2E4F and loc_2E96)
+- BX=96B6h (intro/startup)
+
+Confidence:
+- INT 3 command semantics: High
+- Stream pair format (divisor,duration): High
+- Effect-to-event names beyond listed call sites: Medium/Low
 ```
 
 ## Data Segments

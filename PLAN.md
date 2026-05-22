@@ -67,7 +67,11 @@ The main game loop (`sub_35DE`) was fragmented into 21 chunks in the disassembly
 2. [ ] Annotate EGA blit pipeline with full function headers
 3. [ ] Trace `sub_437B` and `sub_5D5F` callers to locate entity management
 4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
-5. [ ] Trace INT 3 handler entry and sound effect table
+5. [x] Trace INT 3 handler entry and initial sound effect table anchors
+	- Handler entry confirmed: `loc_8C7` (installed by `sub_9C9`, restored by `sub_A5E`)
+	- Timer playback loop confirmed: `loc_683` (PIT ch2 + speaker gate control)
+	- Verified stream pointers in use: `0x00DB`, `0x965E`, `0x9676`, `0x96B6`
+	- Remaining: assign canonical effect names to all stream offsets
 
 ---
 

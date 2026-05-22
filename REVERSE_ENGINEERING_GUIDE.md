@@ -40,7 +40,7 @@ Both games use identical EGA port sequences:
 - **INT 08h** - Timer (18.2 Hz) for game tick management
 - **INT 09h** - Keyboard for real-time input
 - **INT 1Ch** - User timer callback
-- **INT 3** - Sound system control (Comic 1 pattern)
+- **INT 3** - Sound command dispatcher (confirmed at `loc_8C7`, installed by `sub_9C9`)
 
 #### 4. **File I/O**
 - DOS INT 21h for file operations:
@@ -51,7 +51,22 @@ Both games use identical EGA port sequences:
 #### 5. **Sound System**
 - PC speaker control via PIT (Programmable Interval Timer)
 - Frequency = 1,193,182 / divisor
-- Priority-based sound queueing
+- Priority-gated playback request (INT 3 AL=1, priority in CL)
+- Command API confirmed in handler (`loc_8C7`):
+  - AL=0: set speaker gate mode ON
+  - AL=1: play request with BX=stream offset, DS=stream segment, CL=priority
+  - AL=2: set speaker gate mode OFF
+  - AL=3: stop playback
+  - AL=4: query playback active flag
+- Playback is advanced from INT 08h hook (`loc_683`) using stream word pairs:
+  - word pitch_divisor, word tick_duration
+  - pitch_divisor 0 ends the stream
+  - non-zero divisor is written to PIT channel 2 (ports 43h/42h)
+
+Verified effect stream pointers used by call sites:
+- 0x965E (hazard/death path)
+- 0x9676 (jump/airborne transition path)
+- 0x00DB and 0x96B6 (startup/intro paths)
 
 ### Entity Management
 
