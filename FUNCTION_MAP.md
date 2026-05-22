@@ -45,13 +45,13 @@ byte_263 scancode_fire      → 'R' key (52h)
 
 ### EGA Video Operations
 ```
-sub_2B4 (Line 454)          → Main graphics/blitting function
-sub_1D2C (Line 2586)        → Viewport row setup + 4-plane dispatch
-sub_1DC0 (Line 2666)        → Per-plane viewport copy to A000h
-sub_451C (Line 7506)        → Object slot resolve + mapped sprite draw
-sub_79C7                    → EGA plane blit helper
-sub_7A13                    → EGA plane blit with mask
-sub_7A89 (Line 13949)       → CRTC start update synchronized to retrace
+gfx_startup_graphics_and_menu_probe (was sub_2B4)   → Startup/title-screen graphics prep + resource probe
+gfx_render_viewport_4plane (was sub_1D2C)           → Viewport row setup + 4-plane dispatch
+gfx_copy_viewport_plane (was sub_1DC0)              → Per-plane viewport copy to A000h
+ent_draw_mapped_slot_or_placeholder (was sub_451C)  → Object slot resolve + mapped sprite/placeholder draw
+gfx_rle_blit_opaque_4plane (was sub_79C7)           → 4-plane opaque RLE blit helper
+gfx_rle_blit_masked_or_4plane (was sub_7A13)        → 4-plane masked RLE OR-blit helper
+gfx_set_crtc_start_on_retrace (was sub_7A89)        → CRTC start update synchronized to retrace
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)
@@ -72,7 +72,7 @@ INT 10h, AX=1000h           → Set palette register
 
 ### Main Game Loop
 ```
-sub_35DE (Line 5571)        → Main game loop (FRAGMENTED function)
+game_loop (was sub_35DE)    → Main game loop (FRAGMENTED function)
                               - Fragment 1: 3167 - 4276 (Dispatcher, Physics, Trigger logic)
                               - Fragment 2: 4598 - 4823 (Player Death, Airborne movement)
                               - Fragment 3: 4989 - 5043 (Player Animation)
@@ -86,9 +86,9 @@ Loop Structure:
 2. Clear BIOS keyboard buffer: loc_2341 (clears 0040:001A)
 3. Dispatch state handlers: loc_275C, loc_2EDC, loc_2A10, loc_3107, loc_34A9, etc.
 4. Input handling: loc_2341 block (if no state active)
-5. Update projectiles: sub_5D5F (Projectile Update Loop - movement, collision, and interaction)
-6. Scan viewport entities/interactions: sub_437B
-7. Draw sprites: sub_7DBB
+5. Update projectiles: update_projectiles (Projectile Update Loop - movement, collision, and interaction)
+6. Scan viewport entities/interactions: ent_update_entities_in_viewport
+7. Draw sprites: draw_sprite
 8. Repeat
 ```
 
@@ -121,21 +121,34 @@ Movement and Collision Functions:
 
 ### Entity Management
 ```
-Enemy Structure (12-byte format from analysis):
+Enemy Runtime Structure (8-byte active list at unk_256E0):
 Offset  Size    Description
-+0x00   word    X position (screen-relative)
-+0x02   word    Y position (screen-relative)  
-+0x04   word    Sprite/resource index
-+0x06   word    State flags (animated, alive, etc.)
-+0x08   word    Absolute X coordinate (world space)
-+0x0A   word    Absolute Y coordinate (world space)
-+0x0C   ...     Collision box data
++0x00   word    X position (screen/world-relative in current room context)
++0x02   word    Y position
++0x04   word    Runtime flags / mapped object index (bit 8000h used as state)
++0x06   word    Sprite/object pointer/id used by draw path
 
-Functions (to locate):
-- handle_enemies            → Update all enemy AI per tick
-- handle_fireballs          → Update projectile physics
-- handle_item               → Item animation and collision
-- spawn_enemy               → Enemy respawn logic
+Mapped Object Structure (12-byte source table at unk_25AD0):
+Offset  Size    Description
++0x00   word    Room X index
++0x02   word    Room Y index
++0x04   word    Object X
++0x06   word    Object Y
++0x08   word    Sprite/object pointer
++0x0A   word    Flags (bit 8000h propagated into runtime flags)
+
+Identified Functions:
+- ent_build_room_entity_list (was sub_1A63)         → Build active room entity list from mapped object table
+- ent_update_entities_in_viewport (was sub_437B)    → Scan active entities, draw visible ones, handle proximity interactions
+- ent_update_object_behaviors (was sub_4B25)        → Tick/update mapped world object behaviors and activation states
+- update_projectiles (was sub_5D5F)                 → Update projectile movement/collision and impact effects
+- ent_deactivate_at_coords (was sub_4579)           → Clear active entity flag by exact (x,y) match
+- ent_activate_slot_into_runtime (was sub_46E6)     → Move mapped object slot into active runtime list near player interaction
+
+Still to promote with higher confidence:
+- handle_enemies            → Confirm split between mapped-object behavior tick and active-runtime interaction tick
+- handle_item               → Item-specific animation/collision dispatcher
+- spawn_enemy               → Respawn/path-dependent enemy creation routine(s)
 ```
 
 ## File I/O
