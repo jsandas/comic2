@@ -74,6 +74,16 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_46E6` -> `ent_activate_slot_into_runtime`
 	  - `sub_4B25` -> `ent_update_object_behaviors`
 	- Confirmed active runtime entity list at `unk_256E0` (8-byte records)
+	- Promoted room-transition presentation helpers:
+	  - `sub_3BC6` -> `room_transition_draw_header`
+	  - `sub_3C13` -> `room_transition_reveal_sequence_a`
+	  - `sub_3CB1` -> `room_transition_reveal_sequence_b`
+	  - `sub_3F0A` -> `room_transition_palette_wave`
+	  - `sub_3D3A` -> `room_transition_draw_reveal_quad`
+	  - `sub_3D7B` -> `room_transition_blit_reveal_quad_4plane`
+	  - `sub_3D90` -> `room_transition_blit_reveal_column_plane`
+	  - `sub_3DA1` -> `room_transition_clear_reveal_box`
+	  - `sub_3DB6` -> `room_transition_present_frame`
 	- Remaining: isolate item-specific handler(s) and explicit spawn/respawn routine(s)
 4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
 5. [x] Trace INT 3 handler entry and initial sound effect table anchors

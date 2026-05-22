@@ -3251,13 +3251,13 @@ cmp	byte ptr cs:[si+6], 0
 jz	short loc_214C
 cmp	byte ptr cs:[si+6], 0FFh
 jz	short loc_213F
-call	sub_3CB1
+call	room_transition_reveal_sequence_b
 cmp	si, 0B8A4h
 jnz	short loc_214F
 cmp	byte ptr ds:221h, 1
 jnz	short loc_213A
 mov	ax, cs:word_B97A
-call	sub_3F0A
+call	room_transition_palette_wave
 jmp	short loc_214F
 
 loc_213A:
@@ -3272,7 +3272,7 @@ int	3		; Trap to Debugger
 jmp	short loc_214F
 
 loc_214C:
-call	sub_3BC6
+call	room_transition_draw_header
 
 loc_214F:
 pop	ax
@@ -3312,14 +3312,14 @@ pop	si
 cmp	si, 0B8A4h
 jnz	short loc_2198
 mov	ax, cs:word_B97A
-call	sub_3F0A
+call	room_transition_palette_wave
 
 loc_2198:
 cmp	byte ptr cs:[si+6], 0
 jz	short loc_21A9
 cmp	byte ptr cs:[si+6], 0FFh
 jz	short loc_21A9
-call	sub_3C13
+call	room_transition_reveal_sequence_a
 
 loc_21A9:
 mov	cs:byte_25A, 0
@@ -3347,7 +3347,7 @@ jmp	loc_2341
 
 loc_21F2:
 mov	ax, cs:word_9300
-call	sub_3F0A
+call	room_transition_palette_wave
 mov	ax, 5
 call	sub_27A
 call	sub_65EF
@@ -6369,7 +6369,7 @@ hud_c_meter_step_down endp
 
 
 
-sub_3BC6 proc near
+room_transition_draw_header proc near
 mov	ax, 1
 lea	bx, unk_2E63E
 mov	cx, 9
@@ -6394,15 +6394,15 @@ call	sub_774E
 mov	ax, 1
 call	sub_27A
 call	gfx_render_viewport_4plane
-call	sub_3DB6
+call	room_transition_present_frame
 retn
-sub_3BC6 endp
+room_transition_draw_header endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_3C13 proc near
+room_transition_reveal_sequence_a proc near
 
 var_C= word ptr	-0Ch
 var_A= word ptr	-0Ah
@@ -6434,7 +6434,7 @@ mov	al, cs:[si+9]
 mov	[bp+var_C], ax
 call	gfx_render_viewport_4plane
 call	ent_update_object_behaviors
-call	sub_3DB6
+call	room_transition_present_frame
 mov	ax, 1
 call	sub_27A
 lea	bx, unk_2E71C
@@ -6442,37 +6442,37 @@ mov	ax, 1
 mov	cx, 9
 int	3		; Trap to Debugger
 call	gfx_render_viewport_4plane
-call	sub_3DA1
+call	room_transition_clear_reveal_box
 call	draw_player_sprite
-call	sub_3D3A
+call	room_transition_draw_reveal_quad
 call	ent_update_object_behaviors
-call	sub_3DB6
+call	room_transition_present_frame
 call	gfx_render_viewport_4plane
-call	sub_3DA1
+call	room_transition_clear_reveal_box
 call	draw_player_sprite
 call	ent_update_object_behaviors
-call	sub_3DB6
+call	room_transition_present_frame
 call	gfx_render_viewport_4plane
-call	sub_3DA1
-call	sub_3D3A
+call	room_transition_clear_reveal_box
+call	room_transition_draw_reveal_quad
 call	draw_player_sprite
 call	ent_update_object_behaviors
-call	sub_3DB6
+call	room_transition_present_frame
 call	gfx_render_viewport_4plane
 call	draw_player_sprite
 call	ent_update_object_behaviors
-call	sub_3DB6
+call	room_transition_present_frame
 pop	si
 mov	sp, bp
 pop	bp
 retn
-sub_3C13 endp
+room_transition_reveal_sequence_a endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_3CB1 proc near
+room_transition_reveal_sequence_b proc near
 
 var_C= word ptr	-0Ch
 var_A= word ptr	-0Ah
@@ -6508,33 +6508,33 @@ mov	cx, 9
 int	3		; Trap to Debugger
 call	gfx_render_viewport_4plane
 call	draw_player_sprite
-call	sub_3DB6
+call	room_transition_present_frame
 call	gfx_render_viewport_4plane
-call	sub_3DA1
-call	sub_3D3A
+call	room_transition_clear_reveal_box
+call	room_transition_draw_reveal_quad
 call	draw_player_sprite
-call	sub_3DB6
+call	room_transition_present_frame
 call	gfx_render_viewport_4plane
-call	sub_3DA1
+call	room_transition_clear_reveal_box
 call	draw_player_sprite
-call	sub_3DB6
+call	room_transition_present_frame
 call	gfx_render_viewport_4plane
-call	sub_3DA1
+call	room_transition_clear_reveal_box
 call	draw_player_sprite
-call	sub_3D3A
-call	sub_3DB6
+call	room_transition_draw_reveal_quad
+call	room_transition_present_frame
 call	gfx_render_viewport_4plane
-call	sub_3DB6
+call	room_transition_present_frame
 pop	si
 mov	sp, bp
 pop	bp
 retn
-sub_3CB1 endp
+room_transition_reveal_sequence_b endp
 
 
 
 
-sub_3D3A proc near
+room_transition_draw_reveal_quad proc near
 mov	ax, [bp-6]
 call	sprite_frame_table_offset
 inc	si
@@ -6542,47 +6542,47 @@ mov	ax, [bp-2]
 mov	bx, [bp-4]
 call	viewport_xy_to_di
 push	di
-call	sub_3D7B
+call	room_transition_blit_reveal_quad_4plane
 mov	ax, [bp-0Ah]
 call	sprite_frame_table_offset
 pop	di
 push	di
 add	di, 3
-call	sub_3D7B
+call	room_transition_blit_reveal_quad_4plane
 mov	ax, [bp-8]
 call	sprite_frame_table_offset
 inc	si
 pop	di
 push	di
 add	di, 280h
-call	sub_3D7B
+call	room_transition_blit_reveal_quad_4plane
 mov	ax, [bp-0Ch]
 call	sprite_frame_table_offset
 pop	di
 add	di, 283h
-call	sub_3D7B
+call	room_transition_blit_reveal_quad_4plane
 retn
-sub_3D3A endp
+room_transition_draw_reveal_quad endp
 
 
 
 
-sub_3D7B proc near
+room_transition_blit_reveal_quad_4plane proc near
 mov	cl, 0
-call	sub_3D90
+call	room_transition_blit_reveal_column_plane
 mov	cl, 1
-call	sub_3D90
+call	room_transition_blit_reveal_column_plane
 mov	cl, 2
-call	sub_3D90
+call	room_transition_blit_reveal_column_plane
 mov	cl, 3
-call	sub_3D90
+call	room_transition_blit_reveal_column_plane
 retn
-sub_3D7B endp
+room_transition_blit_reveal_quad_4plane endp
 
 
 
 
-sub_3D90 proc near
+room_transition_blit_reveal_column_plane proc near
 call	sub_7A68
 mov	bx, 10h
 push	di
@@ -6595,12 +6595,12 @@ dec	bx
 jnz	short loc_3D97
 pop	di
 retn
-sub_3D90 endp
+room_transition_blit_reveal_column_plane endp
 
 
 
 
-sub_3DA1 proc near
+room_transition_clear_reveal_box proc near
 mov	ax, [bp-2]
 mov	bx, [bp-4]
 mov	cx, 20h	; ' '
@@ -6608,18 +6608,18 @@ mov	dx, 20h	; ' '
 mov	di, cs:word_773F
 call	sub_7AC8
 retn
-sub_3DA1 endp
+room_transition_clear_reveal_box endp
 
 
 
 
-sub_3DB6 proc near
+room_transition_present_frame proc near
 call	ent_update_entities_in_viewport
 call	sub_774E
 mov	ax, 1
 call	sub_27A
 retn
-sub_3DB6 endp
+room_transition_present_frame endp
 
 
 
@@ -6699,7 +6699,7 @@ mov	[bp+var_2], 0Ah
 loc_3E2F:
 call	gfx_render_viewport_4plane
 call	ent_update_object_behaviors
-call	sub_3DB6
+call	room_transition_present_frame
 dec	[bp+var_2]
 jnz	short loc_3E2F
 mov	ax, 1
@@ -6711,7 +6711,7 @@ mov	[bp+var_2], 5
 loc_3E4D:
 call	gfx_render_viewport_4plane
 call	ent_update_object_behaviors
-call	sub_3DB6
+call	room_transition_present_frame
 dec	[bp+var_2]
 jnz	short loc_3E4D
 mov	[bp+var_2], 9
@@ -6728,7 +6728,7 @@ assume ds:seg003
 call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 sub	[bp+var_4], 146h
 dec	[bp+var_2]
 jnz	short loc_3E65
@@ -6757,7 +6757,7 @@ loc_3EA8:
 call	gfx_render_viewport_4plane
 call	ent_update_object_behaviors
 call	draw_player_sprite
-call	sub_3DB6
+call	room_transition_present_frame
 dec	[bp+var_2]
 jnz	short loc_3EA8
 mov	ax, 1
@@ -6778,13 +6778,13 @@ assume ds:seg003
 call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 add	[bp+var_4], 146h
 dec	[bp+var_2]
 jnz	short loc_3ECE
 call	gfx_render_viewport_4plane
 call	ent_update_object_behaviors
-call	sub_3DB6
+call	room_transition_present_frame
 mov	byte_258CC, 0
 mov	sp, bp
 pop	bp
@@ -6795,7 +6795,7 @@ sub_3E98 endp
 
 ; Attributes: bp-based frame
 
-sub_3F0A proc near
+room_transition_palette_wave proc near
 
 var_8= word ptr	-8
 var_6= word ptr	-6
@@ -6832,7 +6832,7 @@ mov	di, cs:word_773F
 call	sub_7927
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 add	[bp+var_6], 204h
 inc	[bp+var_8]
 cmp	[bp+var_8], 4
@@ -6852,7 +6852,7 @@ mov	di, cs:word_773F
 call	sub_7927
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 dec	[bp+var_8]
 jnz	short loc_3F77
 mov	[bp+var_8], 1
@@ -6869,7 +6869,7 @@ mov	di, cs:word_773F
 call	sub_7927
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 add	[bp+var_6], 204h
 inc	[bp+var_8]
 cmp	[bp+var_8], 4
@@ -6889,16 +6889,16 @@ mov	di, cs:word_773F
 call	sub_7927
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 dec	[bp+var_8]
 jnz	short loc_3FE5
 call	gfx_render_viewport_4plane
-call	sub_3DB6
+call	room_transition_present_frame
 pop	si
 mov	sp, bp
 pop	bp
 retn
-sub_3F0A endp
+room_transition_palette_wave endp
 
 
 
@@ -6937,7 +6937,7 @@ assume ds:seg003
 call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 add	[bp+var_6], 146h
 inc	[bp+var_8]
 cmp	[bp+var_8], 7
@@ -7044,7 +7044,7 @@ add	[bp+var_4], 4
 inc	[bp+var_6]
 cmp	[bp+var_6], 9
 jl	short loc_4111
-call	sub_3DB6
+call	room_transition_present_frame
 sub	[bp+var_2], 8
 inc	[bp+var_8]
 cmp	[bp+var_8], 32h	; '2'
@@ -7069,7 +7069,7 @@ assume ds:seg003
 call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 sub	[bp+var_2], 8
 inc	[bp+var_8]
 cmp	[bp+var_2], 0FFF8h
@@ -7088,7 +7088,7 @@ assume ds:seg003
 call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 inc	[bp+var_8]
 sub	comic_y, 8
 cmp	comic_y, 0FFE0h
@@ -15150,8 +15150,8 @@ db 92h,	2 dup(0), 0A6h,	0, 0ECh, 1
 ; Purpose: Entry offset into the large descriptor blob for scripted scene/effect
 ;          setup (used as SI input to renderer staging paths).
 ; Callers:
-;   - main-loop chunk loc_21F2 (mov ax, cs:word_9300; call sub_3F0A)
-; Evidence: Consumed by sub_3F0A path that performs repeated viewport redraw and
+;   - main-loop chunk loc_21F2 (mov ax, cs:word_9300; call room_transition_palette_wave)
+; Evidence: Consumed by room_transition_palette_wave path that performs repeated viewport redraw and
 ;           staged animation updates.
 ; Confidence: Medium
 ; ============================================================================

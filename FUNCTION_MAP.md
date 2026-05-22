@@ -55,6 +55,15 @@ gfx_set_crtc_start_on_retrace (was sub_7A89)        → CRTC start update synchr
 sprite_frame_table_offset (was sub_3DC3)            → Frame index to 128-byte sprite table offset
 viewport_xy_to_di (was sub_3DD7)                    → Viewport-relative X/Y to screen DI offset
 draw_player_sprite (was sub_3DFB)                   → Draw facing-specific player sprite at comic_x/comic_y
+room_transition_draw_header (was sub_3BC6)          → Render transition header overlay and settle one frame
+room_transition_reveal_sequence_a (was sub_3C13)    → Multi-step room reveal sequence (variant A)
+room_transition_reveal_sequence_b (was sub_3CB1)    → Multi-step room reveal sequence (variant B)
+room_transition_palette_wave (was sub_3F0A)         → Palette/sprite wave sweep during room transition intro
+room_transition_draw_reveal_quad (was sub_3D3A)     → Draw a 2x2 reveal quad from transition frame indices
+room_transition_blit_reveal_quad_4plane (was sub_3D7B) → Blit one reveal quad tile across all four EGA planes
+room_transition_blit_reveal_column_plane (was sub_3D90) → Per-plane reveal column blit (16 rows)
+room_transition_clear_reveal_box (was sub_3DA1)     → Clear 0x20x0x20 reveal box at transition-relative coordinates
+room_transition_present_frame (was sub_3DB6)        → Update visible entities, flush transition frame, and tick-wait
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)
