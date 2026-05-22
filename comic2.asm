@@ -5621,7 +5621,7 @@ inc	byte_25206
 cmp	byte_25206, 6
 jnz	short loc_35DB
 mov	sp, word_258C8
-jmp	sub_409C
+jmp	event_finale_transition_sequence
 
 loc_35DB:
 jmp	loc_267F
@@ -6951,7 +6951,7 @@ event_draw_stacked_sprite_rise endp
 
 
 
-sub_4073 proc near
+event_transition_camera_bob_step proc near
 test	ax, 1
 jnz	short loc_4089
 add	word_256A4, 2
@@ -6969,13 +6969,13 @@ loc_4095:
 call	gfx_render_viewport_4plane
 call	ent_update_object_behaviors
 retn
-sub_4073 endp
+event_transition_camera_bob_step endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_409C proc near
+event_finale_transition_sequence proc near
 
 var_A= word ptr	-0Ah
 var_8= word ptr	-8
@@ -6992,7 +6992,7 @@ mov	[bp+var_A], 0
 
 loc_40B1:
 mov	ax, [bp+var_8]
-call	sub_4073
+call	event_transition_camera_bob_step
 call	draw_player_sprite
 test	[bp+var_8], 1
 jnz	short loc_40C5
@@ -7057,7 +7057,7 @@ mov	[bp+var_8], 0
 
 loc_4169:
 mov	ax, [bp+var_8]
-call	sub_4073
+call	event_transition_camera_bob_step
 call	draw_player_sprite
 mov	ax, comic_x
 sub	ax, 8
@@ -7077,7 +7077,7 @@ jg	short loc_4169
 
 loc_41A1:
 mov	ax, [bp+var_8]
-call	sub_4073
+call	event_transition_camera_bob_step
 call	draw_player_sprite
 mov	ax, comic_x
 sub	ax, 8
@@ -7103,7 +7103,7 @@ mov	word_256DC, bx
 mov	bx, 0FFFFh
 call	load_resource
 jmp	loc_227B
-sub_409C endp
+event_finale_transition_sequence endp
 
 mov	sp, bp
 pop	bp
@@ -15223,7 +15223,7 @@ db 7
 ; Purpose: Frame descriptor offset used by repeated draw_sprite calls in scripted
 ;          camera/scene animation loops.
 ; Callers:
-;   - sub_409C loop draws (mov si, cs:word_9535; call draw_sprite)
+;   - event_finale_transition_sequence loop draws (mov si, cs:word_9535; call draw_sprite)
 ;   - additional draw sites around lines ~6971/~6994/~7023/~7042
 ; Confidence: High
 ; ============================================================================

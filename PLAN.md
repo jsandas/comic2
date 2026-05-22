@@ -87,6 +87,8 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_3E1F` -> `room_transition_player_entry_sequence`
 	  - `sub_3E98` -> `room_transition_player_exit_sequence`
 	  - `sub_401B` -> `event_draw_stacked_sprite_rise`
+	  - `sub_4073` -> `event_transition_camera_bob_step`
+	  - `sub_409C` -> `event_finale_transition_sequence`
 	- Remaining: isolate item-specific handler(s) and explicit spawn/respawn routine(s)
 4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
 5. [x] Trace INT 3 handler entry and initial sound effect table anchors

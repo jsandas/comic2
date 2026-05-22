@@ -67,6 +67,8 @@ room_transition_present_frame (was sub_3DB6)        → Update visible entities,
 room_transition_player_entry_sequence (was sub_3E1F) → Transition intro with staged player-entry sprite sweep
 room_transition_player_exit_sequence (was sub_3E98)  → Transition outro with staged player-exit sprite sweep
 event_draw_stacked_sprite_rise (was sub_401B)        → Draw rising stacked sprites during event/object resolution
+event_transition_camera_bob_step (was sub_4073)      → Single camera bob step with viewport redraw/update during transition
+event_finale_transition_sequence (was sub_409C)      → Finale transition sequence with repeated sprite-rise passes and room load handoff
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)
