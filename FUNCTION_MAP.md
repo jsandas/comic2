@@ -52,6 +52,9 @@ ent_draw_mapped_slot_or_placeholder (was sub_451C)  → Object slot resolve + ma
 gfx_rle_blit_opaque_4plane (was sub_79C7)           → 4-plane opaque RLE blit helper
 gfx_rle_blit_masked_or_4plane (was sub_7A13)        → 4-plane masked RLE OR-blit helper
 gfx_set_crtc_start_on_retrace (was sub_7A89)        → CRTC start update synchronized to retrace
+sprite_frame_table_offset (was sub_3DC3)            → Frame index to 128-byte sprite table offset
+viewport_xy_to_di (was sub_3DD7)                    → Viewport-relative X/Y to screen DI offset
+draw_player_sprite (was sub_3DFB)                   → Draw facing-specific player sprite at comic_x/comic_y
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)
@@ -110,6 +113,20 @@ comic_firepower             → ds:1FCh / byte_251FC (Line 110355) - Firepower l
 comic_gems                  → ds:204h / word_25204 (Line 110362) - Gem count (Extra life at 100)
 comic_score_low             → ds:202h / word_25202 (Line 110361) - Partial score/treasure
 ```
+
+### HUD Meter Helpers
+```
+byte_258CA / byte_258CB     → Paired HUD animation counters for glyph-based meter effects
+byte_258CC                  → HUD animation lockout / flash timer gate
+
+hud_c_meter_reset (was sub_3A92)         → Reset C-glyph meter state and redraw baseline
+hud_star_meter_reset (was sub_3AA0)      → Reset *-glyph meter state and redraw baseline
+hud_star_meter_step_up (was sub_3ACE)    → Increment *-glyph meter animation one step
+hud_star_meter_step_down (was sub_3B12)  → Decrement *-glyph meter animation one step
+hud_c_meter_step_up (was sub_3B51)       → Increment C-glyph meter animation one step
+hud_c_meter_step_down (was sub_3B8C)     → Decrement C-glyph meter animation one step
+```
+
 Movement and Collision Functions:
 - sub_2BDC                 → move_player_left (Line 4335)
 - sub_2C39                 → move_player_right (Line 4363)

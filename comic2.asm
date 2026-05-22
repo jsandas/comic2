@@ -3400,8 +3400,8 @@ mov	cx, 0
 jmp	loc_2164
 
 loc_227B:
-call	sub_3AA0
-call	sub_3A92
+call	hud_star_meter_reset
+call	hud_c_meter_reset
 mov	byte ptr ds:8EDh, 0Ch
 cmp	word ptr ds:222h, 205h
 jge	short loc_2294
@@ -3815,13 +3815,13 @@ mov	ds:898h, al
 loc_26B1:
 cmp	cs:byte_25D, 1
 jz	short loc_26BE
-call	sub_3ACE
+call	hud_star_meter_step_up
 jmp	short loc_2714
 
 loc_26BE:
 cmp	byte ptr ds:896h, 0
 jz	short loc_26D8
-call	sub_3ACE
+call	hud_star_meter_step_up
 cmp	byte ptr ds:896h, 3
 jz	short loc_2708
 cmp	byte ptr ds:896h, 1
@@ -3841,7 +3841,7 @@ loc_26EE:
 call	sub_5CEB
 
 loc_26F1:
-call	sub_3B12
+call	hud_star_meter_step_down
 jmp	short loc_2714
 
 loc_26F6:
@@ -4159,7 +4159,7 @@ loc_29C9:
 cmp	comic_hp, 0
 jz	short loc_29D7
 dec	comic_hp
-call	sub_3B51
+call	hud_c_meter_step_up
 
 loc_29D7:
 call	sub_774E
@@ -6190,18 +6190,18 @@ sub_3A5F endp
 
 
 
-sub_3A92 proc near
+hud_c_meter_reset proc near
 mov	byte_258CB, 0
 mov	ax, 100h
 mov	bx, 43h	; 'C'
 jmp	short loc_3AAB
-sub_3A92 endp
+hud_c_meter_reset endp
 
 align 2
 
 
 
-sub_3AA0 proc near
+hud_star_meter_reset proc near
 mov	byte_258CA, 0
 mov	ax, 100h
 mov	bx, 2Ah	; '*'
@@ -6228,12 +6228,12 @@ loop	loc_3AB8
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
-sub_3AA0 endp
+hud_star_meter_reset endp
 
 
 
 
-sub_3ACE proc near
+hud_star_meter_step_up proc near
 mov	al, byte_258CA
 xor	ah, ah
 cmp	ax, 17h
@@ -6266,12 +6266,12 @@ assume ds:seg005
 
 locret_3B11:
 retn
-sub_3ACE endp
+hud_star_meter_step_up endp
 
 
 
 
-sub_3B12 proc near
+hud_star_meter_step_down proc near
 mov	al, byte_258CA
 or	al, al
 jz	short locret_3B50
@@ -6301,12 +6301,12 @@ assume ds:seg005
 
 locret_3B50:
 retn
-sub_3B12 endp
+hud_star_meter_step_down endp
 
 
 
 
-sub_3B51 proc near
+hud_c_meter_step_up proc near
 cmp	byte_258CB, 0Ch
 jz	short locret_3B8B
 mov	al, byte_258CB
@@ -6333,12 +6333,12 @@ assume ds:seg005
 
 locret_3B8B:
 retn
-sub_3B51 endp
+hud_c_meter_step_up endp
 
 
 
 
-sub_3B8C proc near
+hud_c_meter_step_down proc near
 cmp	byte_258CB, 0
 jz	short locret_3BC5
 dec	byte_258CB
@@ -6364,7 +6364,7 @@ assume ds:seg005
 
 locret_3BC5:
 retn
-sub_3B8C endp
+hud_c_meter_step_down endp
 
 
 
@@ -6443,23 +6443,23 @@ mov	cx, 9
 int	3		; Trap to Debugger
 call	gfx_render_viewport_4plane
 call	sub_3DA1
-call	sub_3DFB
+call	draw_player_sprite
 call	sub_3D3A
 call	ent_update_object_behaviors
 call	sub_3DB6
 call	gfx_render_viewport_4plane
 call	sub_3DA1
-call	sub_3DFB
+call	draw_player_sprite
 call	ent_update_object_behaviors
 call	sub_3DB6
 call	gfx_render_viewport_4plane
 call	sub_3DA1
 call	sub_3D3A
-call	sub_3DFB
+call	draw_player_sprite
 call	ent_update_object_behaviors
 call	sub_3DB6
 call	gfx_render_viewport_4plane
-call	sub_3DFB
+call	draw_player_sprite
 call	ent_update_object_behaviors
 call	sub_3DB6
 pop	si
@@ -6507,20 +6507,20 @@ mov	ax, 1
 mov	cx, 9
 int	3		; Trap to Debugger
 call	gfx_render_viewport_4plane
-call	sub_3DFB
+call	draw_player_sprite
 call	sub_3DB6
 call	gfx_render_viewport_4plane
 call	sub_3DA1
 call	sub_3D3A
-call	sub_3DFB
+call	draw_player_sprite
 call	sub_3DB6
 call	gfx_render_viewport_4plane
 call	sub_3DA1
-call	sub_3DFB
+call	draw_player_sprite
 call	sub_3DB6
 call	gfx_render_viewport_4plane
 call	sub_3DA1
-call	sub_3DFB
+call	draw_player_sprite
 call	sub_3D3A
 call	sub_3DB6
 call	gfx_render_viewport_4plane
@@ -6536,28 +6536,28 @@ sub_3CB1 endp
 
 sub_3D3A proc near
 mov	ax, [bp-6]
-call	sub_3DC3
+call	sprite_frame_table_offset
 inc	si
 mov	ax, [bp-2]
 mov	bx, [bp-4]
-call	sub_3DD7
+call	viewport_xy_to_di
 push	di
 call	sub_3D7B
 mov	ax, [bp-0Ah]
-call	sub_3DC3
+call	sprite_frame_table_offset
 pop	di
 push	di
 add	di, 3
 call	sub_3D7B
 mov	ax, [bp-8]
-call	sub_3DC3
+call	sprite_frame_table_offset
 inc	si
 pop	di
 push	di
 add	di, 280h
 call	sub_3D7B
 mov	ax, [bp-0Ch]
-call	sub_3DC3
+call	sprite_frame_table_offset
 pop	di
 add	di, 283h
 call	sub_3D7B
@@ -6624,7 +6624,7 @@ sub_3DB6 endp
 
 
 
-sub_3DC3 proc near
+sprite_frame_table_offset proc near
 shl	ax, 1
 shl	ax, 1
 shl	ax, 1
@@ -6635,12 +6635,12 @@ shl	ax, 1
 mov	si, 13A8h
 add	si, ax
 retn
-sub_3DC3 endp
+sprite_frame_table_offset endp
 
 
 
 
-sub_3DD7 proc near
+viewport_xy_to_di proc near
 shr	ax, 1
 shr	ax, 1
 shr	ax, 1
@@ -6658,12 +6658,12 @@ add	bx, ax
 mov	di, cs:word_773F
 add	di, bx
 retn
-sub_3DD7 endp
+viewport_xy_to_di endp
 
 
 
 
-sub_3DFB proc near
+draw_player_sprite proc near
 mov	si, 4882h
 cmp	comic_facing, 1
 jz	short loc_3E08
@@ -6679,7 +6679,7 @@ call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
-sub_3DFB endp
+draw_player_sprite endp
 
 
 
@@ -6756,7 +6756,7 @@ mov	[bp+var_2], 0Ah
 loc_3EA8:
 call	gfx_render_viewport_4plane
 call	ent_update_object_behaviors
-call	sub_3DFB
+call	draw_player_sprite
 call	sub_3DB6
 dec	[bp+var_2]
 jnz	short loc_3EA8
@@ -6928,7 +6928,7 @@ mov	[bp+var_6], ax
 loc_403E:
 call	gfx_render_viewport_4plane
 call	ent_update_object_behaviors
-call	sub_3DFB
+call	draw_player_sprite
 mov	ax, [bp+var_2]
 mov	bx, [bp+var_4]
 mov	si, [bp+var_6]
@@ -6993,7 +6993,7 @@ mov	[bp+var_A], 0
 loc_40B1:
 mov	ax, [bp+var_8]
 call	sub_4073
-call	sub_3DFB
+call	draw_player_sprite
 test	[bp+var_8], 1
 jnz	short loc_40C5
 xor	[bp+var_A], 4
@@ -7058,7 +7058,7 @@ mov	[bp+var_8], 0
 loc_4169:
 mov	ax, [bp+var_8]
 call	sub_4073
-call	sub_3DFB
+call	draw_player_sprite
 mov	ax, comic_x
 sub	ax, 8
 mov	bx, comic_y
@@ -7078,7 +7078,7 @@ jg	short loc_4169
 loc_41A1:
 mov	ax, [bp+var_8]
 call	sub_4073
-call	sub_3DFB
+call	draw_player_sprite
 mov	ax, comic_x
 sub	ax, 8
 mov	bx, comic_y
@@ -8507,7 +8507,7 @@ jmp	short loc_4E15
 
 loc_4E0E:
 push	cx
-call	sub_3B8C
+call	hud_c_meter_step_down
 pop	cx
 loop	loc_4DF6
 
