@@ -64,6 +64,9 @@ room_transition_blit_reveal_quad_4plane (was sub_3D7B) → Blit one reveal quad 
 room_transition_blit_reveal_column_plane (was sub_3D90) → Per-plane reveal column blit (16 rows)
 room_transition_clear_reveal_box (was sub_3DA1)     → Clear 0x20x0x20 reveal box at transition-relative coordinates
 room_transition_present_frame (was sub_3DB6)        → Update visible entities, flush transition frame, and tick-wait
+room_transition_player_entry_sequence (was sub_3E1F) → Transition intro with staged player-entry sprite sweep
+room_transition_player_exit_sequence (was sub_3E98)  → Transition outro with staged player-exit sprite sweep
+event_draw_stacked_sprite_rise (was sub_401B)        → Draw rising stacked sprites during event/object resolution
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

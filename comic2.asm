@@ -3329,7 +3329,7 @@ jmp	loc_2341
 
 loc_21B8:
 mov	byte ptr ds:8ADh, 1
-call	sub_3E98
+call	room_transition_player_exit_sequence
 
 loc_21C0:
 mov	ax, 5
@@ -3339,7 +3339,7 @@ mov	word ptr ds:6C6h, 28h ;	'('
 mov	word ptr ds:6C8h, 60h ;	'`'
 mov	byte ptr ds:8ADh, 1
 call	setup_render_viewport
-call	sub_3E1F
+call	room_transition_player_entry_sequence
 mov	byte ptr ds:897h, 0
 mov	byte ptr ds:291h, 1
 mov	byte ptr ds:89Ch, 0
@@ -3388,7 +3388,7 @@ jmp	loc_2341
 loc_2253:
 mov	byte ptr ds:8ADh, 1
 mov	word ptr ds:6C6h, 28h ;	'('
-call	sub_3E98
+call	room_transition_player_exit_sequence
 mov	bx, ds:21Ah
 shl	bx, 1
 shl	bx, 1
@@ -3450,7 +3450,7 @@ call	sub_3A17
 cmp	byte ptr ds:220h, 0FFh
 jnz	short loc_2320
 mov	byte ptr ds:220h, 0
-call	sub_3E1F
+call	room_transition_player_entry_sequence
 
 loc_2320:
 jmp	loc_2341
@@ -5613,7 +5613,7 @@ mov	ax, [si]
 mov	bx, [si+2]
 mov	word ptr [si], 0FFFFh
 sub	bx, 10h
-call	sub_401B
+call	event_draw_stacked_sprite_rise
 mov	comic_is_attack_active, 0
 mov	comic_state, 0
 mov	byte_2591B, 14h
@@ -6685,7 +6685,7 @@ draw_player_sprite endp
 
 ; Attributes: bp-based frame
 
-sub_3E1F proc near
+room_transition_player_entry_sequence proc near
 
 var_4= word ptr	-4
 var_2= word ptr	-2
@@ -6736,13 +6736,13 @@ mov	byte_258CC, 0
 mov	sp, bp
 pop	bp
 retn
-sub_3E1F endp
+room_transition_player_entry_sequence endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_3E98 proc near
+room_transition_player_exit_sequence proc near
 
 var_4= word ptr	-4
 var_2= word ptr	-2
@@ -6789,7 +6789,7 @@ mov	byte_258CC, 0
 mov	sp, bp
 pop	bp
 retn
-sub_3E98 endp
+room_transition_player_exit_sequence endp
 
 
 
@@ -6904,7 +6904,7 @@ room_transition_palette_wave endp
 
 ; Attributes: bp-based frame
 
-sub_401B proc near
+event_draw_stacked_sprite_rise proc near
 
 var_8= word ptr	-8
 var_6= word ptr	-6
@@ -6946,7 +6946,7 @@ pop	si
 mov	sp, bp
 pop	bp
 retn
-sub_401B endp
+event_draw_stacked_sprite_rise endp
 
 
 
@@ -15231,9 +15231,9 @@ word_9535 dw 8F6h
 ; ============================================================================
 ; SCRIPTED EFFECT BASE OFFSET (paired with word_9535)
 ; Purpose: Base descriptor/asset offset used by setup loops before per-frame
-;          increments (sub_401B adds 146h each iteration).
+;          increments (event_draw_stacked_sprite_rise adds 146h each iteration).
 ; Callers:
-;   - sub_401B initialization (mov ax, cs:word_9537)
+;   - event_draw_stacked_sprite_rise initialization (mov ax, cs:word_9537)
 ;   - draw/effect sequence around line ~6882
 ; Confidence: High
 ; ============================================================================
