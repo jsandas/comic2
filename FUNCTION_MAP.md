@@ -121,6 +121,8 @@ Movement and Collision Functions:
 - check_airborne_side_clear (was sub_309D)    → Test lateral tile clearance for airborne horizontal movement
 - tile_check_horizontal_step_clear (was sub_2D61)         → Check horizontal step clearance against tile/blocking thresholds
 - tile_handle_collision_mode2_trigger (was sub_2D31)      → Handle collision-trigger table for mode-2 floor-check context
+- check_airborne_path_clear (was sub_2FEE)     → Check airborne path against tile/ceiling boundaries
+- check_airborne_tile_threshold (was sub_3019) → Compare airborne tile against blocking threshold
 - sub_1CFE                 → get_tile_at_pixels (Line 2544) - AX=x, BX=y, returns tile type in AX
 - sub_18E0                 → setup_render_viewport (Line 2179)
 - sub_1B8D                 → load_resource (Line 2337)
@@ -148,6 +150,8 @@ Identified Functions:
 - ent_build_room_entity_list (was sub_1A63)         → Build active room entity list from mapped object table
 - ent_update_entities_in_viewport (was sub_437B)    → Scan active entities, draw visible ones, handle proximity interactions
 - ent_update_object_behaviors (was sub_4B25)        → Tick/update mapped world object behaviors and activation states
+- ent_spawn_transient_slot (was sub_3181)           → Spawn a transient runtime slot and register it in the active list
+- ent_update_transient_slots (was sub_31EB)         → Update/transient-slot animation, draw, and cleanup loop
 - update_projectiles (was sub_5D5F)                 → Update projectile movement/collision and impact effects
 - ent_deactivate_at_coords (was sub_4579)           → Clear active entity flag by exact (x,y) match
 - ent_activate_slot_into_runtime (was sub_46E6)     → Move mapped object slot into active runtime list near player interaction

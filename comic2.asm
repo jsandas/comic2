@@ -4091,7 +4091,7 @@ call	draw_sprite
 loc_291A:
 cmp	byte_25891, 0
 jz	short loc_2924
-call	sub_31EB
+call	ent_update_transient_slots
 
 loc_2924:
 cmp	byte_25888, 0
@@ -4572,7 +4572,7 @@ push	dx
 push	di
 and	cx, 0FFF0h
 and	dx, 0FFF0h
-call	sub_3181
+call	ent_spawn_transient_slot
 pop	di
 pop	dx
 pop	cx
@@ -4603,7 +4603,7 @@ push	dx
 push	di
 and	cx, 0FFF0h
 and	dx, 0FFF0h
-call	sub_3181
+call	ent_spawn_transient_slot
 pop	di
 pop	dx
 pop	cx
@@ -4790,7 +4790,7 @@ cmp	comic_y_vel, 0
 jz	short loc_2F2D
 jl	short loc_2F1B
 add	bx, 0Fh
-call	sub_2FEE
+call	check_airborne_path_clear
 jnb	short loc_2F2D
 pop	ax
 and	ax, 0FFF0h
@@ -4801,7 +4801,7 @@ db 90h
 ; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_2F1B:
-call	sub_2FEE
+call	check_airborne_path_clear
 jnb	short loc_2F2D
 pop	ax
 and	ax, 0FFF0h
@@ -4886,7 +4886,7 @@ mov	bx, comic_y
 mov	ax, comic_x
 add	ax, 10h
 add	bx, 8
-call	sub_3019
+call	check_airborne_tile_threshold
 jb	short loc_2FE6
 jmp	loc_2E96
 
@@ -4897,7 +4897,7 @@ jmp	loc_2B88
 
 
 
-sub_2FEE proc near
+check_airborne_path_clear proc near
 cmp	bx, word_2527E
 jge	short loc_3011
 push	ax
@@ -4923,12 +4923,12 @@ loc_3015:
 xor	ax, ax
 clc
 retn
-sub_2FEE endp
+check_airborne_path_clear endp
 
 
 
 
-sub_3019 proc near
+check_airborne_tile_threshold proc near
 call	get_tile_at_pixels
 cmp	ax, word_25276
 jg	short loc_3024
@@ -4938,7 +4938,7 @@ retn
 loc_3024:
 clc
 retn
-sub_3019 endp
+check_airborne_tile_threshold endp
 
 
 
@@ -5106,7 +5106,7 @@ sub	al, byte_256AA
 mov	si, 6CCh
 add	si, ax
 mov	al, [si]
-call	sub_3181
+call	ent_spawn_transient_slot
 
 loc_3179:
 mov	comic_state, 4
@@ -5117,7 +5117,7 @@ jmp	loc_267F
 
 
 
-sub_3181 proc near
+ent_spawn_transient_slot proc near
 cmp	byte_25891, 6
 jz	short locret_31EA
 mov	si, 8B2h
@@ -5174,12 +5174,12 @@ int	3		; Trap to Debugger
 
 locret_31EA:
 retn
-sub_3181 endp
+ent_spawn_transient_slot endp
 
 
 
 
-sub_31EB proc near
+ent_update_transient_slots proc near
 mov	di, 8B2h
 mov	word_2E600, 0
 
@@ -5243,7 +5243,7 @@ jmp	loc_31F4
 
 locret_327C:
 retn
-sub_31EB endp
+ent_update_transient_slots endp
 
 
 
