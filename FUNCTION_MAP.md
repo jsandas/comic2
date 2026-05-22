@@ -114,6 +114,11 @@ Movement and Collision Functions:
 - sub_2BDC                 → move_player_left (Line 4335)
 - sub_2C39                 → move_player_right (Line 4363)
 - sub_2C9D                 → check_floor_collision (Line 4421)
+- move_left_step_grounded (was sub_2BF7)      → Apply grounded left movement with collision and viewport scroll
+- move_right_step_grounded (was sub_2C54)     → Apply grounded right movement with collision and viewport scroll
+- move_left_step_airborne (was sub_3026)      → Apply airborne left drift with collision and viewport scroll
+- move_right_step_airborne (was sub_305E)     → Apply airborne right drift with collision and viewport scroll
+- check_airborne_side_clear (was sub_309D)    → Test lateral tile clearance for airborne horizontal movement
 - sub_1CFE                 → get_tile_at_pixels (Line 2544) - AX=x, BX=y, returns tile type in AX
 - sub_18E0                 → setup_render_viewport (Line 2179)
 - sub_1B8D                 → load_resource (Line 2337)

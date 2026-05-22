@@ -3751,13 +3751,13 @@ mov	al, ds:8AEh
 push	ax
 cmp	byte ptr ds:9629h, 0
 jl	short loc_261A
-call	sub_2C54
+call	move_right_step_grounded
 pop	ax
 mov	ds:8AEh, al
 jmp	short loc_2621
 
 loc_261A:
-call	sub_2BF7
+call	move_left_step_grounded
 pop	ax
 mov	ds:8AEh, al
 
@@ -4242,12 +4242,12 @@ or	cx, cx
 jz	short loc_2A9E
 jg	short loc_2A97
 inc	comic_x_vel
-call	sub_2BF7
+call	move_left_step_grounded
 jmp	short loc_2A9E
 
 loc_2A97:
 dec	comic_x_vel
-call	sub_2C54
+call	move_right_step_grounded
 
 loc_2A9E:
 cmp	comic_y_vel, 0
@@ -4403,7 +4403,7 @@ jmp	short locret_2C38
 
 loc_2BEA:
 cmp	byte_2E608, 1
-jnz	short sub_2BF7
+jnz	short move_left_step_grounded
 mov	comic_state, 1
 retn
 move_player_left endp
@@ -4411,7 +4411,7 @@ move_player_left endp
 
 
 
-sub_2BF7 proc near
+move_left_step_grounded proc near
 mov	byte_2E609, 0FFh
 mov	ax, comic_x
 or	ax, ax
@@ -4441,7 +4441,7 @@ mov	comic_x_vel, 0
 
 locret_2C38:
 retn
-sub_2BF7 endp
+move_left_step_grounded endp
 
 
 
@@ -4454,7 +4454,7 @@ jmp	short locret_2C38
 
 loc_2C47:
 cmp	byte_2E608, 1
-jnz	short sub_2C54
+jnz	short move_right_step_grounded
 mov	comic_state, 1
 retn
 move_player_right endp
@@ -4462,7 +4462,7 @@ move_player_right endp
 
 
 
-sub_2C54 proc near
+move_right_step_grounded proc near
 mov	byte_2E609, 1
 mov	ax, comic_x
 mov	bx, ax
@@ -4490,7 +4490,7 @@ cmp	ax, word_2527C
 jz	short locret_2C38
 add	word_256A2, 8
 jmp	short locret_2C38
-sub_2C54 endp
+move_right_step_grounded endp
 
 
 
@@ -4849,12 +4849,12 @@ or	cx, cx
 jz	short loc_2F8E
 jg	short loc_2F87
 inc	comic_x_vel
-call	sub_3026
+call	move_left_step_airborne
 jmp	short loc_2F8E
 
 loc_2F87:
 dec	comic_x_vel
-call	sub_305E
+call	move_right_step_airborne
 
 loc_2F8E:
 cmp	cs:byte_25B, 1
@@ -4943,7 +4943,7 @@ sub_3019 endp
 
 
 
-sub_3026 proc near
+move_left_step_airborne proc near
 mov	ax, comic_x
 or	ax, ax
 jnz	short loc_3033
@@ -4953,7 +4953,7 @@ jmp	loc_2C32
 loc_3033:
 sub	ax, 8
 push	ax
-call	sub_309D
+call	check_airborne_side_clear
 pop	ax
 jb	short loc_3057
 mov	comic_x, ax
@@ -4970,12 +4970,12 @@ mov	comic_x_vel, 0
 
 locret_305D:
 retn
-sub_3026 endp
+move_left_step_airborne endp
 
 
 
 
-sub_305E proc near
+move_right_step_airborne proc near
 mov	ax, comic_x
 mov	bx, ax
 add	bx, 20h	; ' '
@@ -4988,7 +4988,7 @@ loc_3071:
 add	ax, 8
 push	ax
 add	ax, 1Fh
-call	sub_309D
+call	check_airborne_side_clear
 pop	ax
 jb	short loc_3057
 mov	comic_x, ax
@@ -5001,12 +5001,12 @@ cmp	ax, word_2527C
 jz	short locret_305D
 add	word_256A2, 8
 jmp	short locret_305D
-sub_305E endp
+move_right_step_airborne endp
 
 
 
 
-sub_309D proc near
+check_airborne_side_clear proc near
 mov	di, word_25274
 mov	bx, comic_y
 call	get_tile_at_pixels
@@ -5028,7 +5028,7 @@ retn
 loc_30C4:
 clc
 retn
-sub_309D endp
+check_airborne_side_clear endp
 
 
 
@@ -5385,12 +5385,12 @@ or	cx, cx
 jz	short loc_33D2
 jg	short loc_33CB
 inc	comic_x_vel
-call	sub_2BF7
+call	move_left_step_grounded
 jmp	short loc_33D2
 
 loc_33CB:
 dec	comic_x_vel
-call	sub_2C54
+call	move_right_step_grounded
 
 loc_33D2:
 cmp	comic_y_vel, 0
