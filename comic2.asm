@@ -4149,7 +4149,7 @@ loc_29A8:
 cmp	byte_25901, 0
 jz	short loc_29C9
 mov	si, word_25902
-call	sub_4206
+call	ui_draw_framed_message_from_stream
 cmp	cs:byte_61, 1Ch
 jnz	short loc_29C9
 mov	cs:byte_61, 0
@@ -6084,7 +6084,7 @@ lea	bx, unk_2FAA0
 mov	cx, 4
 int	3		; Trap to Debugger
 mov	si, 962Ch
-call	sub_4206
+call	ui_draw_framed_message_from_stream
 call	sub_774E
 
 loc_39C1:
@@ -6118,7 +6118,7 @@ mov	cx, 0Ah
 int	3		; Trap to Debugger
 call	gfx_render_viewport_4plane
 mov	si, 9650h
-call	sub_4206
+call	ui_draw_framed_message_from_stream
 call	sub_774E
 call	sub_599
 jmp	loc_63AB
@@ -7112,7 +7112,7 @@ retn
 
 ; Attributes: bp-based frame
 
-sub_4206 proc near
+ui_draw_framed_message_from_stream proc near
 
 var_8= word ptr	-8
 var_6= word ptr	-6
@@ -7165,67 +7165,67 @@ mov	[bp+var_8], bx
 mov	di, cs:word_773F
 call	sub_7AC8
 mov	ax, 9
-call	sub_4339
+call	ega_set_map_mask
 sub	[bp+var_4], 2
 mov	cx, [bp+var_8]
 mov	bx, [bp+var_6]
 mov	al, 22h	; '"'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, [bp+var_2]
 sub	dx, 2
 mov	al, 23h	; '#'
 
 loc_4279:
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_4279
 mov	al, 24h	; '$'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 
 loc_4284:
 add	cx, 8
 mov	bx, [bp+var_6]
 mov	al, 25h	; '%'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	dx, [bp+var_2]
 sub	dx, 2
 
 loc_429B:
 lodsb
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_429B
 mov	ax, 9
-call	sub_4339
+call	ega_set_map_mask
 mov	al, 26h	; '&'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	[bp+var_4]
 jnz	short loc_4284
 add	cx, 8
 mov	bx, [bp+var_6]
 mov	al, 3Ah	; ':'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, [bp+var_2]
 sub	dx, 2
 mov	al, 3Bh	; ';'
 
 loc_42C5:
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_42C5
 mov	al, 3Ch	; '<'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	sp, bp
 pop	bp
 retn
-sub_4206 endp
+ui_draw_framed_message_from_stream endp
 
 
 
 
-sub_42D4 proc near
+ui_draw_string_8x8 proc near
 push	bx
 mov	cx, bx
 mov	bx, ax
@@ -7235,19 +7235,19 @@ loc_42DA:
 lodsb
 or	al, al
 jz	short loc_42E4
-call	sub_42E8
+call	ui_draw_glyph_8x8
 jmp	short loc_42DA
 
 loc_42E4:
 mov	ax, bx
 pop	bx
 retn
-sub_42D4 endp
+ui_draw_string_8x8 endp
 
 
 
 
-sub_42E8 proc near
+ui_draw_glyph_8x8 proc near
 push	ax
 push	bx
 push	cx
@@ -7291,12 +7291,12 @@ pop	bx
 pop	ax
 add	bx, 8
 retn
-sub_42E8 endp
+ui_draw_glyph_8x8 endp
 
 
 
 
-sub_4339 proc near
+ega_set_map_mask proc near
 push	dx
 mov	ah, al
 mov	al, 2
@@ -7310,7 +7310,7 @@ dec	dx
 xchg	ah, al
 pop	dx
 retn
-sub_4339 endp
+ega_set_map_mask endp
 
 push	ax
 push	bx
@@ -7877,7 +7877,7 @@ mov	cx, 9
 int	3		; Trap to Debugger
 mov	si, 991Ch
 push	di
-call	sub_4206
+call	ui_draw_framed_message_from_stream
 call	sub_774E
 pop	di
 call	sub_599
@@ -10394,13 +10394,13 @@ call	sub_5F86
 mov	ax, 50h	; 'P'
 mov	bx, 28h	; '('
 mov	si, 9AE4h
-call	sub_42D4
+call	ui_draw_string_8x8
 call	sub_774E
 call	sub_5F86
 mov	ax, 50h	; 'P'
 mov	bx, 28h	; '('
 mov	si, 9AE4h
-call	sub_42D4
+call	ui_draw_string_8x8
 
 loc_5EAB:
 mov	ax, 9CFAh
@@ -10505,56 +10505,56 @@ mov	dx, 0C8h ; '�'
 mov	di, cs:word_773F
 call	sub_7AC8
 mov	ax, 9
-call	sub_4339
+call	ega_set_map_mask
 mov	cx, 18h
 mov	bx, 0
 mov	al, 22h	; '"'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, 26h	; '&'
 mov	al, 23h	; '#'
 
 loc_5FB0:
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_5FB0
 mov	al, 24h	; '$'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	cx, 0C0h ; '�'
 mov	bx, 0
 mov	al, 3Ah	; ':'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, 26h	; '&'
 mov	al, 3Bh	; ';'
 
 loc_5FCB:
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_5FCB
 mov	al, 3Ch	; '<'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, 14h
 mov	cx, 20h	; ' '
 
 loc_5FDC:
 mov	bx, 0
 mov	al, 25h	; '%'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	bx, 138h
 mov	al, 26h	; '&'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 add	cx, 8
 dec	dx
 jnz	short loc_5FDC
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, 10h
 mov	bx, 0
 mov	si, 9AA0h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 28h	; '('
 mov	bx, 10h
 mov	si, 9AC5h
-call	sub_42D4
+call	ui_draw_string_8x8
 retn
 sub_5F86 endp
 
@@ -10664,18 +10664,18 @@ push	ax
 cmp	ax, cx
 jnz	short loc_60B3
 mov	ax, 0Ah
-call	sub_4339
+call	ega_set_map_mask
 jmp	short loc_60B9
 
 loc_60B3:
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 
 loc_60B9:
 mov	si, [si]
 push	si
 mov	ax, 48h	; 'H'
-call	sub_42D4
+call	ui_draw_string_8x8
 pop	si
 cmp	si, 9C96h
 jl	short loc_611D
@@ -10861,15 +10861,15 @@ mov	dx, 8
 mov	di, cs:word_773F
 call	sub_7AC8
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, [bp+var_2]
 mov	bx, [bp+var_4]
 mov	si, [bp+var_6]
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	cx, bx
 mov	bx, ax
 mov	al, 2Bh	; '+'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 call	sub_774E
 xor	ax, ax
 int	16h		; KEYBOARD - READ CHAR FROM BUFFER, WAIT IF EMPTY
@@ -11197,20 +11197,20 @@ add	bx, 9CEEh
 mov	ds:9C92h, bx
 call	sub_64F5
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, 28h	; '('
 mov	bx, 38h	; '8'
 mov	si, 9B65h
-call	sub_42D4
+call	ui_draw_string_8x8
 call	sub_774E
 call	sub_5F86
 call	sub_64F5
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, 28h	; '('
 mov	bx, 38h	; '8'
 mov	si, 9B65h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 9D2Ah
 mov	ds:9D3Bh, ax
 mov	byte ptr ds:9D3Ah, 2
@@ -11247,18 +11247,18 @@ sub	ax, [bx]
 jle	short locret_6544
 push	ax
 mov	ax, 0Eh
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, 40h	; '@'
 mov	bx, 28h	; '('
 mov	si, 9BA9h
-call	sub_42D4
+call	ui_draw_string_8x8
 pop	ax
 cmp	ax, 1
 jg	short loc_6527
 mov	ax, 0C0h ; '�'
 mov	bx, 28h	; '('
 mov	si, 9BBAh
-call	sub_42D4
+call	ui_draw_string_8x8
 jmp	short locret_6544
 
 loc_6527:
@@ -11270,11 +11270,11 @@ loc_652F:
 add	ax, 30h	; '0'
 mov	cx, bx
 mov	bx, 0C0h ; '�'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	ax, bx
 mov	bx, cx
 mov	si, 9BC7h
-call	sub_42D4
+call	ui_draw_string_8x8
 
 locret_6544:
 retn
@@ -11413,7 +11413,7 @@ retn
 loc_661C:
 push	si
 push	di
-call	sub_4206
+call	ui_draw_framed_message_from_stream
 call	sub_774E
 pop	di
 pop	si
@@ -11579,14 +11579,14 @@ mov	bx, [si+2]
 mov	si, 9A8h
 call	sub_77A3
 mov	ax, 9
-call	sub_4339
+call	ega_set_map_mask
 mov	bx, ds:21Ah
 shl	bx, 1
 add	bx, 9E84h
 mov	si, [bx]
 mov	ax, 88h	; '�'
 mov	bx, 5Ah	; 'Z'
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	bx, ds:21Ah
 shl	bx, 1
 add	bx, 98DEh
@@ -12506,83 +12506,83 @@ mov	dx, 0C8h ; '�'
 mov	di, cs:word_773F
 call	sub_7AC8
 mov	ax, 9
-call	sub_4339
+call	ega_set_map_mask
 mov	cx, 18h
 mov	bx, 0
 mov	al, 22h	; '"'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, 26h	; '&'
 mov	al, 23h	; '#'
 
 loc_6F71:
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_6F71
 mov	al, 24h	; '$'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	cx, 0C0h ; '�'
 mov	bx, 0
 mov	al, 3Ah	; ':'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, 26h	; '&'
 mov	al, 3Bh	; ';'
 
 loc_6F8C:
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_6F8C
 mov	al, 3Ch	; '<'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, 14h
 mov	cx, 20h	; ' '
 
 loc_6F9D:
 mov	bx, 0
 mov	al, 25h	; '%'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	bx, 138h
 mov	al, 26h	; '&'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 add	cx, 8
 dec	dx
 jnz	short loc_6F9D
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, 10h
 mov	bx, 0
 mov	si, 0AAE0h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 50h	; 'P'
 mov	bx, 10h
 mov	si, 0AB05h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 10h
 mov	bx, 28h	; '('
 mov	si, 0AB1Bh
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 10h
 mov	bx, 30h	; '0'
 mov	si, 0AB40h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 10h
 mov	bx, 38h	; '8'
 mov	si, 0AB65h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 10h
 mov	bx, 40h	; '@'
 mov	si, 0AB8Ah
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 10h
 mov	bx, 58h	; 'X'
 mov	si, 0AB97h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, word_2FB91
 add	al, 41h	; 'A'
 mov	bx, 0A0h ; '�'
 mov	cx, 58h	; 'X'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	al, 2Ch	; ','
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, word_2FB93
 xor	ax, ax
 
@@ -12595,7 +12595,7 @@ jmp	short loc_7026
 
 loc_7032:
 add	al, 30h	; '0'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 xor	ax, ax
 
 loc_7039:
@@ -12607,12 +12607,12 @@ jmp	short loc_7039
 
 loc_7045:
 add	al, 30h	; '0'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	ax, dx
 add	al, 30h	; '0'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	al, 2Dh	; '-'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 retn
 sub_6F47 endp
 
@@ -12647,15 +12647,15 @@ mov	dx, 8
 mov	di, cs:word_773F
 call	sub_7AC8
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, [bp+var_2]
 mov	bx, [bp+var_4]
 mov	si, [bp+var_6]
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	cx, bx
 mov	bx, ax
 mov	al, 2Bh	; '+'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 call	sub_774E
 
 loc_70AD:

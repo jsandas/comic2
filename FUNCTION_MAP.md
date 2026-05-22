@@ -69,6 +69,10 @@ room_transition_player_exit_sequence (was sub_3E98)  → Transition outro with s
 event_draw_stacked_sprite_rise (was sub_401B)        → Draw rising stacked sprites during event/object resolution
 event_transition_camera_bob_step (was sub_4073)      → Single camera bob step with viewport redraw/update during transition
 event_finale_transition_sequence (was sub_409C)      → Finale transition sequence with repeated sprite-rise passes and room load handoff
+ui_draw_framed_message_from_stream (was sub_4206)    → Draw framed message/panel from encoded width/height + content stream
+ui_draw_string_8x8 (was sub_42D4)                    → Draw NUL-terminated 8x8 UI string using current cell cursor
+ui_draw_glyph_8x8 (was sub_42E8)                     → Draw one 8x8 UI glyph and advance cursor by one cell
+ega_set_map_mask (was sub_4339)                      → Set EGA Sequencer Map Mask (port 3C4h index 2)
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)
