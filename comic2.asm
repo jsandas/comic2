@@ -32,6 +32,24 @@ endm
 seg000 segment byte public 'CODE' use16
 assume cs:seg000
 assume es:nothing, ss:nothing, ds:nothing, fs:nothing, gs:nothing
+
+; ============================================================================
+; COPYRIGHT BANNER STRING - plain ASCII, not encrypted
+; Decodes to:
+;   "\r\n\r\nCaptain Comic II - Fractured Reality, Version 1.5\r\n
+;    Copyright 1990 by Michael A. Deno\r\n\x1A"
+; The \x1A (1Ah) is a DOS EOF marker (Ctrl+Z) ending the embedded string.
+; Equivalent: STARTUP_NOTICE_TEXT in Comic 1 (R5sw1991.asm), which uses
+;   XOR_ENCRYPTION_KEY xor-encoding; Comic 2's banner is stored in plaintext.
+;
+; NOTE: word_C, word_E, word_20, word_22, word_24, word_26, word_54, word_56
+;   are IDA artifacts. sub_9C9 (install_interrupt_handlers) runs with ds=0
+;   (IVT segment) and accesses those numeric offsets in the IVT -- it does NOT
+;   reference these bytes in seg000. IDA incorrectly applied the seg000 labels
+;   because of its "assume ds:seg000" annotation. These bytes are string data
+;   only and are never used as vector storage slots.
+; Confidence: High
+; ============================================================================
 db 0Ah,	0Dh, 0Ah, 0Dh, 43h, 61h, 70h, 74h
 db 61h,	69h, 6Eh, 20h
 word_C dw 6F43h
@@ -51,11 +69,16 @@ db 20h,	41h, 2Eh, 20h
 word_54	dw 6544h
 word_56	dw 696Eh
 db 6Fh,	0Ah, 0Dh, 1Ah
-seg_5C dw seg seg005
-seg_5E dw seg seg003
-byte_60	db 0
-byte_61	db 0
-word_62	dw 0
+; ----------------------------------------------------------------------------
+; Segment relocations and early runtime state variables
+; ----------------------------------------------------------------------------
+seg_5C dw seg seg005		; segment of seg005 (graphics/data)
+seg_5E dw seg seg003		; segment of seg003
+byte_60	db 0			; reserved / unused flag
+byte_61	db 0			; last keyboard scancode (written by INT 09h ISR,
+				;   read throughout for menu and input polling)
+word_62	dw 0			; joystick/timer calibration value
+				;   (set at startup in the tick-counting loop)
 assume ss:seg002, ds:nothing
 
 
@@ -430,6 +453,15 @@ wait_n_ticks	proc near	; sub_27A
 	retn
 wait_n_ticks	endp		; sub_27A
 
+; ============================================================================
+; POSSIBLE INLINE CODE BYTES (DISASSEMBLER UNCERTAINTY)
+; Purpose: Likely small helper/inlined stub bytes misclassified as db by IDA.
+; Evidence: Contains valid opcode runs (e.g., B4 0E CD 10 ... C3) matching
+;           teletype INT 10h print/return style instruction sequences.
+; Guidance: Treat as code-boundary candidate; avoid semantic renames until
+;           control-flow recovery confirms entry points.
+; Confidence: Medium
+; ============================================================================
 aKCTS db '�',7,'C',0Ah
 db '�t',0Bh,'S�',7,0
 db 0B4h, 0Eh, 0CDh, 10h, 5Bh, 0EBh, 0EEh
@@ -843,6 +875,18 @@ assume es:nothing
 retn
 sub_599	endp
 
+; ============================================================================
+; INTERRUPT VECTOR SAVE SLOTS (db far pointers)
+; Purpose: Preserve original ISR vectors before hook and restore on exit.
+; Layout: Each slot is 4 bytes (offset:word, segment:word).
+; Callers:
+;   - sub_9C9 install_interrupt_handlers (writes old vectors)
+;   - sub_A5E restore_interrupt_handlers (restores vectors)
+; Runtime use:
+;   - call dword ptr cs:byte_5BE (chains original handler)
+;   - jmp  dword ptr cs:byte_67F (chains timer handler)
+; Confidence: High
+; ============================================================================
 byte_5BE db 4 dup(0)
 aPsqrfP_a db 'PSQR�`P.�>`',0
 add	[di+8],	si
@@ -14577,6 +14621,20 @@ pop	bp
 retn
 sub_7DBB endp
 
+; ============================================================================
+; SPRITE/DESCRIPTOR TABLE + CODE-BOUNDARY MIXED BLOB
+; Purpose: Structured sprite frame metadata and small dispatch/landing-table
+;          data used by the renderer and entity copy/setup logic.
+; Callers:
+;   - sub_7DBB (draw path consumes frame descriptor records)
+;   - sub_378E (selects frame offset words word_8DB8..word_8DC2)
+;   - sub_4A70 (copies a descriptor record into runtime entity storage)
+;   - jmp near ptr byte_834B (direct transfer into a likely landing pad)
+; Evidence: Repeated little-endian address pairs, flag bytes, and small
+;           fixed-size records; mixed with a direct jump target label, so this
+;           region may straddle data and code.
+; Confidence: Medium
+; ============================================================================
 db 58h,	7Eh, 8Ah, 7Eh, 8Fh, 7Eh, 92h, 7Eh
 db 95h,	7Eh, 0D5h, 7Fh,	57h, 81h, 3, 5 dup(0)
 db 72h,	7Eh, 3,	5 dup(0), 7Ah, 7Eh, 5, 5 dup(0)
@@ -14688,6 +14746,19 @@ db 0, 0A1h, 80h, 6 dup(0), 90h,	0, 80h,	0
 db 0A1h, 80h, 6	dup(0),	0C0h, 5, 80h, 0
 db 0A1h, 80h, 6	dup(0),	0F0h, 5, 50h, 0
 db 0A1h, 80h, 4	dup(0)
+; ============================================================================
+; SPRITE/OBJECT DESCRIPTOR BLOB WITH POSSIBLE LANDING PAD
+; Purpose: Dense structured object/frame records used by sprite or entity setup
+;          logic; may also serve as a jump landing pad because code branches
+;          directly into this label.
+; Callers:
+;   - sub_4B25 / nearby state flow (jmp near ptr byte_834B)
+;   - sub_7DBB-style descriptor consumers in the graphics pipeline (indirect)
+;   - sub_4A70 entity-copy routine likely uses the same record shape nearby
+; Evidence: Repeated fixed-size records with coordinate-like words, flag bytes,
+;           and 80h/0A1h/0B1h/0D1h marker bytes; direct jump target at line 8131.
+; Confidence: Medium
+; ============================================================================
 byte_834B db 2 dup(0), 10h, 6, 50h, 0, 0A1h, 80h, 7 dup(0)
 db 7, 50h, 0, 0A1h, 80h, 6 dup(0), 10h,	7
 db 50h,	0, 0A1h, 80h, 6	dup(0),	20h, 7,	50h
@@ -14913,6 +14984,15 @@ db 0, 70h, 1, 2, 0, 1, 0, 1, 3 dup(0), 10h
 db 0, 10h, 0, 1, 0, 8, 0, 2, 0,	2, 0, 0CEh
 db 8Dh,	0D6h, 8Dh, 10h,	0, 10h,	0, 2, 0
 db 9, 0, 1, 0, 4, 0, 0C4h, 8Dh,	0C4h, 8Dh
+; ============================================================================
+; ANIMATION FRAME OFFSET TABLE (indexes into sprite metadata blob above)
+; Purpose: Selects frame descriptor offsets used by animation draw logic.
+; Callers:
+;   - sub_378E (loads word_8DB8/word_8DBA/word_8DBC into SI)
+;   - loc_27F7 path in main loop chunk (loads word_8DBE/word_8DC0/word_8DC2)
+; Use: SI is passed to sub_7DBB for sprite render descriptor decode.
+; Confidence: High
+; ============================================================================
 word_8DB8 dw 0
 word_8DBA dw 286h
 word_8DBC dw 50Ch
@@ -15033,6 +15113,16 @@ db 10h,	0, 10h,	2 dup(0), 80h, 7, 0, 1,	3 dup(0)
 db 0FAh, 92h, 0FAh, 92h, 10h, 0, 20h, 2	dup(0)
 db 80h,	7, 0, 1, 3 dup(0), 0FEh, 92h, 0FCh
 db 92h,	2 dup(0), 0A6h,	0, 0ECh, 1
+; ============================================================================
+; EFFECT/SCENE DESCRIPTOR OFFSET (cluster anchor)
+; Purpose: Entry offset into the large descriptor blob for scripted scene/effect
+;          setup (used as SI input to renderer staging paths).
+; Callers:
+;   - main-loop chunk loc_21F2 (mov ax, cs:word_9300; call sub_3F0A)
+; Evidence: Consumed by sub_3F0A path that performs repeated viewport redraw and
+;           staged animation updates.
+; Confidence: Medium
+; ============================================================================
 word_9300 dw 332h
 db 8, 93h, 16h,	93h, 18h, 93h, 1, 2 dup(0)
 db 1, 80h, 0, 0DAh, 92h, 8 dup(0), 3, 0
@@ -15055,6 +15145,14 @@ db 12h,	5, 0, 1, 6 dup(0), 1, 70h, 0, 10h
 db 0, 0Fh, 10h,	11h, 12h, 5, 3 dup(0), 2
 db 3 dup(0), 90h, 7, 40h, 0, 10h, 0, 0Fh
 db 10h,	11h, 12h
+; ============================================================================
+; DESCRIPTOR CLUSTER STATE FLAG/GATE
+; Purpose: Mode gate toggled during progression setup; influences which records
+;          in this blob become active during scripted transitions.
+; Writers:
+;   - init/progression paths at lines ~2013, ~2017, ~2472
+; Confidence: Medium
+; ============================================================================
 word_93DD dw 0
 db 1, 0, 2, 0, 5Bh, 2, 0C0h, 7,	40h, 0,	10h
 db 0, 48h, 2 dup(49h), 48h, 5, 0, 3, 5 dup(0)
@@ -15088,7 +15186,25 @@ db 7, 3	dup(0),	1, 0, 33h, 95h,	31h, 95h
 db 2 dup(0), 0A6h, 0, 4Ch, 1, 0F2h, 1, 98h
 db 2, 0DEh, 3, 24h, 5, 0DEh, 3,	6Ah, 6,	0B0h
 db 7
+; ============================================================================
+; SPRITE FRAME POINTER FOR SCRIPTED EFFECT DRAWS
+; Purpose: Frame descriptor offset used by repeated sub_7DBB calls in scripted
+;          camera/scene animation loops.
+; Callers:
+;   - sub_409C loop draws (mov si, cs:word_9535; call sub_7DBB)
+;   - additional draw sites around lines ~6971/~6994/~7023/~7042
+; Confidence: High
+; ============================================================================
 word_9535 dw 8F6h
+; ============================================================================
+; SCRIPTED EFFECT BASE OFFSET (paired with word_9535)
+; Purpose: Base descriptor/asset offset used by setup loops before per-frame
+;          increments (sub_401B adds 146h each iteration).
+; Callers:
+;   - sub_401B initialization (mov ax, cs:word_9537)
+;   - draw/effect sequence around line ~6882
+; Confidence: High
+; ============================================================================
 word_9537 dw 0A3Ch
 db 41h,	95h, 63h, 96h, 49h, 97h, 0Bh, 98h
 db 18h,	0, 0E0h, 6, 20h, 0, 0F1h, 94h, 6 dup(0)
@@ -16521,6 +16637,16 @@ seg000 ends
 seg001 segment byte public 'UNK' use16
 assume cs:seg001
 assume es:nothing, ss:nothing, ds:nothing, fs:nothing, gs:nothing
+; ============================================================================
+; CALIBRATION/KEYMAP UI STRING BANK
+; Purpose: DOS AH=9 $-terminated prompts for joystick calibration and
+;          key binding setup screens.
+; Callers:
+;   - sub_2B4 (multiple lea dx, aCalibrateJoyst+offset prompts)
+;   - sub_424 / sub_54B interaction flow that waits for input and captures keys
+; Evidence: Repeated INT 21h AH=9 prints from offsets +0A8h..+327h.
+; Confidence: High
+; ============================================================================
 aCalibrateJoyst	db 0Ah
 db 0Ah
 db 0Ah
