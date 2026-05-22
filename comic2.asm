@@ -3446,7 +3446,7 @@ call	setup_render_viewport
 mov	bl, ds:896h
 xor	bh, bh
 mov	byte ptr ds:896h, 0
-call	sub_3A17
+call	hud_update_mode_icons
 cmp	byte ptr ds:220h, 0FFh
 jnz	short loc_2320
 mov	byte ptr ds:220h, 0
@@ -3863,7 +3863,7 @@ mov	al, cs:byte_61
 cmp	cs:byte_250, al
 jnz	short loc_2728
 mov	cs:byte_61, 0
-call	sub_39AD
+call	ui_show_modal_prompt_wait_key
 
 loc_2728:
 mov	al, cs:byte_61
@@ -4715,7 +4715,7 @@ mov	byte_2587D, 1
 xor	bh, bh
 mov	bl, byte_25876
 mov	byte_25876, 0
-call	sub_3A17
+call	hud_update_mode_icons
 mov	comic_state, 3
 jmp	loc_2B88
 
@@ -5288,7 +5288,7 @@ jnz	short loc_329A
 loc_32CB:
 mov	comic_is_animation_active, 0
 mov	byte_25876, ah
-call	sub_3A17
+call	hud_update_mode_icons
 cmp	byte_25876, 2
 jnz	short loc_32F8
 cmp	word_25202, 0
@@ -5731,7 +5731,7 @@ jz	short loc_366C
 xor	bh, bh
 mov	bl, byte_25876
 mov	byte_25876, 0
-call	sub_3A17
+call	hud_update_mode_icons
 
 loc_366C:
 cmp	cs:byte_25C, 1
@@ -5955,7 +5955,7 @@ jz	short loc_3884
 xor	bh, bh
 mov	bl, byte_25876
 mov	byte_25876, 0
-call	sub_3A17
+call	hud_update_mode_icons
 
 loc_3884:
 add	word_2590E, 2
@@ -6078,7 +6078,7 @@ jmp	loc_267F
 
 
 
-sub_39AD proc near
+ui_show_modal_prompt_wait_key proc near
 mov	ax, 1
 lea	bx, unk_2FAA0
 mov	cx, 4
@@ -6103,7 +6103,7 @@ mov	ax, word_256DC
 mov	word_251F6, ax
 mov	sp, word_258C8
 jmp	loc_63AB
-sub_39AD endp
+ui_show_modal_prompt_wait_key endp
 
 ; START	OF FUNCTION CHUNK FOR game_loop
 
@@ -6126,7 +6126,7 @@ jmp	loc_63AB
 
 
 
-sub_3A17 proc near
+hud_update_mode_icons proc near
 lea	ax, aWri	; "^w��	"
 shl	bx, 1
 add	bx, ax
@@ -6154,7 +6154,7 @@ call	sub_790C
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
-sub_3A17 endp
+hud_update_mode_icons endp
 
 
 
@@ -11373,7 +11373,7 @@ push	si
 push	di
 mov	si, 9BDFh
 mov	di, 9BD3h
-call	sub_660B
+call	io_open_file_or_prompt_retry
 pop	di
 pop	si
 retn
@@ -11387,7 +11387,7 @@ push	si
 push	di
 mov	si, 9C29h
 mov	di, 9BD9h
-call	sub_660B
+call	io_open_file_or_prompt_retry
 pop	di
 pop	si
 retn
@@ -11396,7 +11396,7 @@ sub_65FD endp
 
 
 
-sub_660B proc near
+io_open_file_or_prompt_retry proc near
 mov	dx, di
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
@@ -11419,9 +11419,9 @@ pop	di
 pop	si
 call	sub_599
 cmp	cs:byte_61, 1
-jnz	short sub_660B
+jnz	short io_open_file_or_prompt_retry
 jmp	loc_215
-sub_660B endp
+io_open_file_or_prompt_retry endp
 
 db 3, 5	dup(0),	4Eh, 66h, 3, 5 dup(0), 56h
 db 66h,	5, 5 dup(0), 60h, 66h, 0Dh, 2 dup(0)

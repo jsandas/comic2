@@ -73,6 +73,9 @@ ui_draw_framed_message_from_stream (was sub_4206)    → Draw framed message/pan
 ui_draw_string_8x8 (was sub_42D4)                    → Draw NUL-terminated 8x8 UI string using current cell cursor
 ui_draw_glyph_8x8 (was sub_42E8)                     → Draw one 8x8 UI glyph and advance cursor by one cell
 ega_set_map_mask (was sub_4339)                      → Set EGA Sequencer Map Mask (port 3C4h index 2)
+ui_show_modal_prompt_wait_key (was sub_39AD)         → Show framed modal prompt and wait for acknowledgement/confirm key
+hud_update_mode_icons (was sub_3A17)                 → Update paired HUD mode/status icons from current mode index
+io_open_file_or_prompt_retry (was sub_660B)          → Attempt file open; on failure show prompt and retry loop
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

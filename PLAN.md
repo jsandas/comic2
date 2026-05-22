@@ -93,6 +93,9 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_42D4` -> `ui_draw_string_8x8`
 	  - `sub_42E8` -> `ui_draw_glyph_8x8`
 	  - `sub_4339` -> `ega_set_map_mask`
+	  - `sub_39AD` -> `ui_show_modal_prompt_wait_key`
+	  - `sub_3A17` -> `hud_update_mode_icons`
+	  - `sub_660B` -> `io_open_file_or_prompt_retry`
 	- Remaining: isolate item-specific handler(s) and explicit spawn/respawn routine(s)
 4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
 5. [x] Trace INT 3 handler entry and initial sound effect table anchors
