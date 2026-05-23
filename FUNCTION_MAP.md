@@ -152,6 +152,7 @@ ent_probe_x_collision_range (was sub_5C3E)                      → X collision 
 ent_probe_tile_above_threshold (was sub_5C91)                   → Probe tile at pixel position and pass only when tile id exceeds threshold DI
 ent_probe_tile_range_in_viewport (was sub_5CA1)                 → Probe tile in viewport Y-range and pass when tile id falls within allowed range
 ent_set_horizontal_chase_direction_to_comic (was sub_5CCF)      → Set horizontal travel direction flag toward Comic X coordinate
+spawn_player_projectile (was sub_5CEB)                          → Allocate and initialize next projectile slot from Comic position/facing
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

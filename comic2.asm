@@ -3838,7 +3838,7 @@ call	sub_3610
 jmp	short loc_26F1
 
 loc_26EE:
-call	sub_5CEB
+call	spawn_player_projectile
 
 loc_26F1:
 call	hud_star_meter_step_down
@@ -10178,7 +10178,7 @@ ent_set_horizontal_chase_direction_to_comic endp
 
 
 
-sub_5CEB proc near
+spawn_player_projectile proc near
 mov	cl, byte_251FC
 xor	ch, ch
 lea	si, unk_258CE
@@ -10230,7 +10230,7 @@ clc
 
 locret_5D5E:
 retn
-sub_5CEB endp
+spawn_player_projectile endp
 
 
 
