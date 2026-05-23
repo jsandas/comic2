@@ -182,6 +182,10 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_2022` -> `io_read_file_to_seg5e_base`
 	  - `sub_2049` -> `io_read_xor25_block_9ec0`
 	  - `sub_2072` -> `load_room_tilemap_from_resource_buffer`
+	  - `sub_1E09` -> `gfx_draw_tile_id_at_pixel_xy`
+	  - `sub_1E86` -> `gfx_render_room_tilemap_to_active_buffers`
+	  - `sub_1F72` -> `gfx_copy_16x16_tile_plane_to_active_page`
+	  - `sub_1F89` -> `gfx_copy_16x16_tile_plane_to_segment`
 	  - `sub_71FE` -> `intro_repeat_draw_with_offset_4_3`
 	  - `sub_721B` -> `intro_repeat_draw_with_offset_8_6`
 	  - `sub_7238` -> `intro_repeat_draw_with_offset_12_8`

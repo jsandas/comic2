@@ -2443,7 +2443,7 @@ cmp	bx, 0FFFFh
 jz	short locret_1BFA
 mov	word_256DC, bx
 call	load_room_tilemap_from_resource_buffer
-call	sub_1E86
+call	gfx_render_room_tilemap_to_active_buffers
 call	ent_build_room_entity_list
 
 locret_1BFA:
@@ -2769,7 +2769,7 @@ gfx_copy_viewport_plane endp
 
 
 
-sub_1E09 proc near
+gfx_draw_tile_id_at_pixel_xy proc near
 shr	bx, 1
 shr	bx, 1
 shr	bx, 1
@@ -2801,37 +2801,37 @@ cmp	ax, ds:6C0h
 jl	short loc_1E6D
 mov	cx, 0
 mov	ax, seg	seg007
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 mov	cx, 1
 mov	ax, seg	seg006
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 mov	cx, 2
 mov	ax, seg	seg008
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 mov	cx, 3
 mov	ax, seg	seg009
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 jmp	short locret_1E85
 
 loc_1E6D:
 mov	cx, 0
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 mov	cx, 1
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 mov	cx, 2
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 mov	cx, 3
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 
 locret_1E85:
 retn
-sub_1E09 endp
+gfx_draw_tile_id_at_pixel_xy endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_1E86 proc near
+gfx_render_room_tilemap_to_active_buffers proc near
 
 var_2= word ptr	-2
 
@@ -2905,16 +2905,16 @@ jl	short loc_1F3F
 push	cx
 mov	cx, 0
 mov	ax, seg	seg007
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 mov	cx, 1
 mov	ax, seg	seg006
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 mov	cx, 2
 mov	ax, seg	seg008
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 mov	cx, 3
 mov	ax, seg	seg009
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 pop	cx
 jmp	short loc_1F59
 db 90h
@@ -2922,13 +2922,13 @@ db 90h
 loc_1F3F:
 push	cx
 mov	cx, 0
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 mov	cx, 1
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 mov	cx, 2
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 mov	cx, 3
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 pop	cx
 
 loc_1F59:
@@ -2945,12 +2945,12 @@ loc_1F6E:
 mov	sp, bp
 pop	bp
 retn
-sub_1E86 endp
+gfx_render_room_tilemap_to_active_buffers endp
 
 
 
 
-sub_1F72 proc near
+gfx_copy_16x16_tile_plane_to_active_page proc near
 call	ega_select_plane_read_write
 mov	cx, 10h
 mov	dx, ds:298h
@@ -2964,12 +2964,12 @@ add	di, dx
 loop	loc_1F82
 pop	di
 retn
-sub_1F72 endp
+gfx_copy_16x16_tile_plane_to_active_page endp
 
 
 
 
-sub_1F89 proc near
+gfx_copy_16x16_tile_plane_to_segment proc near
 push	es
 mov	es, ax
 call	ega_select_plane_read_write
@@ -2986,7 +2986,7 @@ loop	loc_1F9C
 pop	di
 pop	es
 retn
-sub_1F89 endp
+gfx_copy_16x16_tile_plane_to_segment endp
 
 
 
@@ -5158,7 +5158,7 @@ xor	ch, ch
 push	ax
 push	bx
 push	cx
-call	sub_1E09
+call	gfx_draw_tile_id_at_pixel_xy
 pop	cx
 pop	bx
 pop	ax

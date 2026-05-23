@@ -162,6 +162,10 @@ io_read_file_to_seg001_0600_resource (was sub_1FFE)             → Read full fi
 io_read_file_to_seg5e_base (was sub_2022)                       → Read full file into seg_5E base buffer (offset 0000h)
 io_read_xor25_block_9ec0 (was sub_2049)                         → Read 0x0C00 bytes at 9EC0h and decode with XOR 0x25
 load_room_tilemap_from_resource_buffer (was sub_2072)           → Validate resource id and unpack selected room tilemap into active buffers
+gfx_draw_tile_id_at_pixel_xy (was sub_1E09)                     → Draw one 16x16 tile id at pixel-aligned room coordinates across EGA planes
+gfx_render_room_tilemap_to_active_buffers (was sub_1E86)        → Render full room tilemap from 9A8h indices into active room graphics buffers
+gfx_copy_16x16_tile_plane_to_active_page (was sub_1F72)         → Copy one 16x16 tile plane row-strided from DS:SI to current ES:DI target
+gfx_copy_16x16_tile_plane_to_segment (was sub_1F89)             → Copy one 16x16 tile plane to caller-selected destination segment
 intro_repeat_draw_with_offset_4_3 (was sub_71FE)               → Repeat intro sprite draw/present loop with (-4,+3) positional offset
 intro_repeat_draw_with_offset_8_6 (was sub_721B)               → Repeat intro sprite draw/present loop with (-8,+6) positional offset
 intro_repeat_draw_with_offset_12_8 (was sub_7238)              → Repeat intro sprite draw/present loop with (-12,+8) positional offset
