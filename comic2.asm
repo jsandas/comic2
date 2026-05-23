@@ -305,7 +305,7 @@ sub_15D	endp
 ; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_185:
-call	sub_22B
+call	gfx_disable_retrace_palette_script
 mov	ax, 0Dh
 int	10h		; - VIDEO - SET	VIDEO MODE
 			; AL = mode
@@ -390,11 +390,11 @@ byte_22A db 0
 ; ============================================================================
 ; Game state flag setter (possibly unmute sound or enable input)
 ; ============================================================================
-sub_22B	proc near		; UNMUTE or ENABLE function
+gfx_disable_retrace_palette_script	proc near		; UNMUTE or ENABLE function
 mov	cs:byte_22A, 0
 mov	cs:byte_229, 0
 retn
-sub_22B	endp
+gfx_disable_retrace_palette_script	endp
 
 
 
@@ -402,11 +402,11 @@ sub_22B	endp
 ; ============================================================================
 ; Game state flag setter (possibly mute sound or disable something)
 ; ============================================================================
-sub_238	proc near		; MUTE or DISABLE function
+gfx_enable_retrace_palette_script	proc near		; MUTE or DISABLE function
 mov	cs:byte_22A, 0
 mov	cs:byte_229, 1
 retn
-sub_238	endp
+gfx_enable_retrace_palette_script	endp
 
 ; ============================================================================
 ; GAME STATE FLAGS AND KEY MAPPINGS
@@ -2397,7 +2397,7 @@ load_resource proc near
 cmp	word_256DA, ax
 jz	short loc_1BE2
 call	update_level5_memory_signature
-call	sub_22B
+call	gfx_disable_retrace_palette_script
 cmp	bx, 0FFFFh
 jz	short loc_1BA4
 mov	word_256DC, 0FFFFh
@@ -2432,7 +2432,7 @@ call	io_read_xor25_block_9ec0
 
 loc_1BDA:
 call	load_room_effect_script_and_trigger_ranges
-call	sub_238
+call	gfx_enable_retrace_palette_script
 pop	bx
 pop	ax
 
@@ -12898,7 +12898,7 @@ jnz	short wait_ticks_or_abort
 retn
 
 loc_728C:
-call	sub_22B
+call	gfx_disable_retrace_palette_script
 mov	ax, 3
 int	3		; Trap to Debugger
 mov	sp, word_2FBD3
@@ -12922,7 +12922,7 @@ mov	word ptr cs:[bx+0Ch], 0
 mov	word ptr cs:[bx+12h], 0
 mov	word ptr cs:[bx+14h], 0
 sti
-call	sub_238
+call	gfx_enable_retrace_palette_script
 mov	dx, 0ABD1h
 call	sub_15D
 mov	di, 4000h
@@ -12961,7 +12961,7 @@ mov	word ptr cs:[bx+0Ch], 0
 mov	word ptr cs:[bx+12h], 0
 mov	word ptr cs:[bx+14h], 0
 sti
-call	sub_238
+call	gfx_enable_retrace_palette_script
 mov	dx, 0ABD1h
 call	sub_15D
 mov	comic_x, 0
@@ -13090,7 +13090,7 @@ call	wait_ticks_or_abort
 sub	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_749E
-call	sub_22B
+call	gfx_disable_retrace_palette_script
 jmp	loc_7660
 ; END OF FUNCTION CHUNK	FOR play_intro_cinematic
 
