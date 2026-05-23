@@ -2396,7 +2396,7 @@ ent_build_room_entity_list endp
 load_resource proc near
 cmp	word_256DA, ax
 jz	short loc_1BE2
-call	sub_1C0B
+call	update_level5_memory_signature
 call	sub_22B
 cmp	bx, 0FFFFh
 jz	short loc_1BA4
@@ -2472,7 +2472,7 @@ check_word_is_ffff_or_0005 endp
 
 ; Attributes: bp-based frame
 
-sub_1C0B proc near
+update_level5_memory_signature proc near
 
 var_2= word ptr	-2
 
@@ -2591,7 +2591,7 @@ mov	cx, ax
 loc_1CF7:
 mov	word_2E388, cx
 jmp	loc_1C18
-sub_1C0B endp
+update_level5_memory_signature endp
 
 
 

@@ -176,6 +176,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_5F86` -> `ui_draw_menu_frame`
 	  - `sub_198E` -> `load_room_effect_script_and_trigger_ranges`
 	  - `sub_1BFB` -> `check_word_is_ffff_or_0005`
+	  - `sub_1C0B` -> `update_level5_memory_signature`
 	  - `sub_71FE` -> `intro_repeat_draw_with_offset_4_3`
 	  - `sub_721B` -> `intro_repeat_draw_with_offset_8_6`
 	  - `sub_7238` -> `intro_repeat_draw_with_offset_12_8`
