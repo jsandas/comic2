@@ -161,6 +161,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_48D4` -> `ent_normalize_runtime_y_magnitudes`
 	  - `sub_4A70` -> `ent_copy_descriptor_to_runtime_slot`
 	  - `sub_4C06` -> `ent_deactivate_runtime_slot`
+	  - `sub_49AD` -> `ent_build_runtime_slots_for_viewport`
 	- Remaining: isolate item-specific handler(s) and explicit spawn/respawn routine(s)
 4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
 5. [x] Trace INT 3 handler entry and initial sound effect table anchors

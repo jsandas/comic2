@@ -2196,7 +2196,7 @@ mov	byte_2590D, 0
 mov	word_2590E, 0
 
 loc_198A:
-call	sub_49AD
+call	ent_build_runtime_slots_for_viewport
 retn
 setup_render_viewport endp
 
@@ -8027,7 +8027,7 @@ db 0C0h	dup(0)
 
 ; Attributes: bp-based frame
 
-sub_49AD proc near
+ent_build_runtime_slots_for_viewport proc near
 
 var_4= word ptr	-4
 var_2= word ptr	-2
@@ -8109,7 +8109,7 @@ loc_4A6C:
 mov	sp, bp
 pop	bp
 retn
-sub_49AD endp
+ent_build_runtime_slots_for_viewport endp
 
 
 
