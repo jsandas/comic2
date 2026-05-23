@@ -145,6 +145,7 @@ ent_build_runtime_slots_for_viewport (was sub_49AD)             → Build up to 
 ent_move_x_and_bounce (was sub_5A4E)                            → Attempt horizontal move, flipping travel direction when tile collision blocks step
 ent_apply_gravity_and_move_y (was sub_5A99)                     → Integrate vertical velocity with gravity clamp and resolve tile collisions
 ent_move_y_and_bounce (was sub_5B01)                            → Advance vertical motion and invert vertical velocity when collision limits are hit
+ent_move_y_with_probe_and_bounce (was sub_5B7B)                 → Advance vertical motion using probe collision check, bouncing on contact
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

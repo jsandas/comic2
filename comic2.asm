@@ -8919,7 +8919,7 @@ jle	short loc_51DC
 mov	bx, 4
 
 loc_51DC:
-call	sub_5B7B
+call	ent_move_y_with_probe_and_bounce
 jnb	short loc_51EE
 xor	word ptr cs:[si+1Ch], 1
 mov	word ptr cs:[si+16h], 0
@@ -8994,7 +8994,7 @@ jge	short loc_5283
 neg	bx
 
 loc_5283:
-call	sub_5B7B
+call	ent_move_y_with_probe_and_bounce
 
 loc_5286:
 mov	bx, 4
@@ -9964,7 +9964,7 @@ ent_move_y_and_bounce endp
 
 
 
-sub_5B7B proc near
+ent_move_y_with_probe_and_bounce proc near
 mov	cs:[si+16h], bx
 mov	ax, cs:[si+10h]
 add	bx, cs:[si+12h]
@@ -9988,7 +9988,7 @@ loc_5BA6:
 mov	cs:[si+12h], bx
 clc
 retn
-sub_5B7B endp
+ent_move_y_with_probe_and_bounce endp
 
 
 

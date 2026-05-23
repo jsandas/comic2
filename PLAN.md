@@ -165,6 +165,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_5A4E` -> `ent_move_x_and_bounce`
 	  - `sub_5A99` -> `ent_apply_gravity_and_move_y`
 	  - `sub_5B01` -> `ent_move_y_and_bounce`
+	  - `sub_5B7B` -> `ent_move_y_with_probe_and_bounce`
 	- Remaining: isolate item-specific handler(s) and explicit spawn/respawn routine(s)
 4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
 5. [x] Trace INT 3 handler entry and initial sound effect table anchors
