@@ -12761,29 +12761,29 @@ mov	ax, 100h
 mov	bx, 0
 mov	si, 13D4h
 mov	cx, 6
-call	sub_71FE
+call	intro_repeat_draw_with_offset_4_3
 mov	si, 1086h
 mov	cx, 6
-call	sub_71FE
+call	intro_repeat_draw_with_offset_4_3
 mov	si, 0D38h
 mov	cx, 5
-call	sub_721B
+call	intro_repeat_draw_with_offset_8_6
 mov	si, 9EAh
 mov	cx, 5
-call	sub_721B
+call	intro_repeat_draw_with_offset_8_6
 mov	si, 69Ch
 mov	cx, 5
-call	sub_7238
+call	intro_repeat_draw_with_offset_12_8
 mov	si, 34Eh
 mov	cx, 5
-call	sub_7238
+call	intro_repeat_draw_with_offset_12_8
 jmp	loc_7298
 play_intro_cinematic endp
 
 
 
 
-sub_71FE proc near
+intro_repeat_draw_with_offset_4_3 proc near
 push	cx
 push	si
 push	ax
@@ -12802,14 +12802,14 @@ pop	bx
 pop	ax
 pop	si
 pop	cx
-loop	sub_71FE
+loop	intro_repeat_draw_with_offset_4_3
 retn
-sub_71FE endp
+intro_repeat_draw_with_offset_4_3 endp
 
 
 
 
-sub_721B proc near
+intro_repeat_draw_with_offset_8_6 proc near
 push	cx
 push	si
 push	ax
@@ -12828,14 +12828,14 @@ pop	bx
 pop	ax
 pop	si
 pop	cx
-loop	sub_721B
+loop	intro_repeat_draw_with_offset_8_6
 retn
-sub_721B endp
+intro_repeat_draw_with_offset_8_6 endp
 
 
 
 
-sub_7238 proc near
+intro_repeat_draw_with_offset_12_8 proc near
 push	cx
 push	si
 push	ax
@@ -12854,9 +12854,9 @@ pop	bx
 pop	ax
 pop	si
 pop	cx
-loop	sub_7238
+loop	intro_repeat_draw_with_offset_12_8
 retn
-sub_7238 endp
+intro_repeat_draw_with_offset_12_8 endp
 
 
 

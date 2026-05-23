@@ -154,6 +154,9 @@ ent_probe_tile_range_in_viewport (was sub_5CA1)                 → Probe tile i
 ent_set_horizontal_chase_direction_to_comic (was sub_5CCF)      → Set horizontal travel direction flag toward Comic X coordinate
 spawn_player_projectile (was sub_5CEB)                          → Allocate and initialize next projectile slot from Comic position/facing
 ui_draw_menu_frame (was sub_5F86)                               → Clear page and draw framed menu border/header glyph layout
+intro_repeat_draw_with_offset_4_3 (was sub_71FE)               → Repeat intro sprite draw/present loop with (-4,+3) positional offset
+intro_repeat_draw_with_offset_8_6 (was sub_721B)               → Repeat intro sprite draw/present loop with (-8,+6) positional offset
+intro_repeat_draw_with_offset_12_8 (was sub_7238)              → Repeat intro sprite draw/present loop with (-12,+8) positional offset
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)
