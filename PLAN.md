@@ -112,6 +112,10 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_65FD` -> `io_verify_frcfg_or_prompt_retry`
 	  - `sub_677A` -> `ui_render_game_selection_panel`
 	  - `sub_6DF4` -> `cfg_run_integrity_challenge`
+	  - `sub_6D99` -> `hud_add_bcd_counter_from_low_digit`
+	  - `sub_6DE7` -> `hud_add_bcd_counter_from_mid_digit`
+	  - `sub_7057` -> `cfg_input_challenge_code`
+	  - `sub_6F47` -> `cfg_draw_integrity_challenge_screen`
 	- Remaining: isolate item-specific handler(s) and explicit spawn/respawn routine(s)
 4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
 5. [x] Trace INT 3 handler entry and initial sound effect table anchors

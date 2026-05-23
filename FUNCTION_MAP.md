@@ -92,6 +92,10 @@ io_verify_game000_or_prompt_retry (was sub_65EF)     → Verify GAME.000 availab
 io_verify_frcfg_or_prompt_retry (was sub_65FD)       → Verify FR.CFG availability; on failure show prompt/retry loop
 ui_render_game_selection_panel (was sub_677A)        → Render game-selection panel entries and current highlight
 cfg_run_integrity_challenge (was sub_6DF4)           → Run startup config integrity challenge/update flow
+hud_add_bcd_counter_from_low_digit (was sub_6D99)    → Add value into HUD BCD counter chain starting at lowest digit pair
+hud_add_bcd_counter_from_mid_digit (was sub_6DE7)    → Add value into HUD BCD counter chain starting at middle digit pair
+cfg_input_challenge_code (was sub_7057)              → Input challenge code digits during config integrity flow
+cfg_draw_integrity_challenge_screen (was sub_6F47)   → Draw integrity challenge screen frame, labels, and seed/code preview
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

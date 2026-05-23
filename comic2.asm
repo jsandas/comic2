@@ -8361,7 +8361,7 @@ jnz	short loc_4CB5
 inc	al
 
 loc_4CB5:
-call	sub_6D99
+call	hud_add_bcd_counter_from_low_digit
 
 loc_4CB8:
 pop	di
@@ -8412,7 +8412,7 @@ call	sub_45A6
 call	sub_48D4
 pop	si
 mov	ax, 5
-call	sub_6DE7
+call	hud_add_bcd_counter_from_mid_digit
 jmp	loc_4C25
 
 loc_4D30:
@@ -12279,7 +12279,7 @@ sub_6D95 endp
 
 
 
-sub_6D99 proc near
+hud_add_bcd_counter_from_low_digit proc near
 push	si
 push	di
 mov	bx, 934h
@@ -12324,21 +12324,21 @@ loc_6DE0:
 pop	di
 pop	si
 retn
-sub_6D99 endp
+hud_add_bcd_counter_from_low_digit endp
 
 mov	ah, al
 xor	al, al
 
 
 
-sub_6DE7 proc near
+hud_add_bcd_counter_from_mid_digit proc near
 push	si
 push	di
 mov	bx, 934h
 add	bx, 2
 mov	dx, 100h
 jmp	short loc_6DA4
-sub_6DE7 endp
+hud_add_bcd_counter_from_mid_digit endp
 
 
 
@@ -12366,10 +12366,10 @@ pop	bp
 retn
 
 loc_6E19:
-call	sub_6F47
+call	cfg_draw_integrity_challenge_screen
 call	sub_774E
-call	sub_6F47
-call	sub_7057
+call	cfg_draw_integrity_challenge_screen
+call	cfg_input_challenge_code
 mov	ax, word_2FB91
 mov	[bp+var_2], ax
 mov	bx, word_2FB93
@@ -12490,7 +12490,7 @@ pop	bp
 mov	ax, word_2FB8B
 mov	bx, word_2ECC8
 xor	ax, bx
-jnz	short sub_6F47
+jnz	short cfg_draw_integrity_challenge_screen
 inc	ax
 retn
 cfg_run_integrity_challenge endp
@@ -12498,7 +12498,7 @@ cfg_run_integrity_challenge endp
 
 
 
-sub_6F47 proc near
+cfg_draw_integrity_challenge_screen proc near
 mov	ax, 0
 mov	bx, 0
 mov	cx, 140h
@@ -12614,13 +12614,13 @@ call	ui_draw_glyph_8x8
 mov	al, 2Dh	; '-'
 call	ui_draw_glyph_8x8
 retn
-sub_6F47 endp
+cfg_draw_integrity_challenge_screen endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_7057 proc near
+cfg_input_challenge_code proc near
 
 var_8= word ptr	-8
 var_6= word ptr	-6
@@ -12707,7 +12707,7 @@ call	sub_7AC8
 mov	sp, bp
 pop	bp
 retn
-sub_7057 endp
+cfg_input_challenge_code endp
 
 db 3, 5	dup(0),	3Ah, 71h, 3, 5 dup(0), 42h
 db 71h,	5, 5 dup(0), 4Ah, 71h, 0Dh, 0, 3
