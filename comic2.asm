@@ -2413,22 +2413,22 @@ mov	bx, [bx]
 mov	dx, [bx]
 add	bx, 2
 push	bx
-call	sub_1FA4
+call	io_load_rle_resource_to_e978
 pop	bx
 mov	dx, [bx]
 add	bx, 2
 push	bx
-call	sub_1FFE
+call	io_read_file_to_seg001_0600_resource
 pop	bx
 mov	dx, [bx]
 add	bx, 2
 push	bx
-call	sub_2022
+call	io_read_file_to_seg5e_base
 pop	bx
 mov	dx, [bx]
 or	dx, dx
 jz	short loc_1BDA
-call	sub_2049
+call	io_read_xor25_block_9ec0
 
 loc_1BDA:
 call	load_room_effect_script_and_trigger_ranges
@@ -2991,7 +2991,7 @@ sub_1F89 endp
 
 
 
-sub_1FA4 proc near
+io_load_rle_resource_to_e978 proc near
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
 			; DS:DX	-> ASCIZ filename
@@ -3053,12 +3053,12 @@ pop	es
 pop	ds
 assume ds:nothing
 retn
-sub_1FA4 endp
+io_load_rle_resource_to_e978 endp
 
 
 
 
-sub_1FFE proc near
+io_read_file_to_seg001_0600_resource proc near
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
 			; DS:DX	-> ASCIZ filename
@@ -3085,12 +3085,12 @@ mov	ax, 3E00h
 int	21h		; DOS -	2+ - CLOSE A FILE WITH HANDLE
 			; BX = file handle
 retn
-sub_1FFE endp
+io_read_file_to_seg001_0600_resource endp
 
 
 
 
-sub_2022 proc near
+io_read_file_to_seg5e_base proc near
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
 			; DS:DX	-> ASCIZ filename
@@ -3115,12 +3115,12 @@ mov	ax, 3E00h
 int	21h		; DOS -	2+ - CLOSE A FILE WITH HANDLE
 			; BX = file handle
 retn
-sub_2022 endp
+io_read_file_to_seg5e_base endp
 
 
 
 
-sub_2049 proc near
+io_read_xor25_block_9ec0 proc near
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
 			; DS:DX	-> ASCIZ filename
@@ -3148,7 +3148,7 @@ xor	byte ptr [bx], 25h
 inc	bx
 loop	loc_206B
 retn
-sub_2049 endp
+io_read_xor25_block_9ec0 endp
 
 
 
@@ -12743,7 +12743,7 @@ call	gfx_present_and_flip_page
 mov	dx, 0ABC0h
 call	sub_15D
 mov	dx, 0ABF7h
-call	sub_2022
+call	io_read_file_to_seg5e_base
 mov	ax, 12h
 call	wait_ticks_or_abort
 call	gfx_copy_backbuffer_to_active_page
@@ -12936,7 +12936,7 @@ mov	di, cs:word_773F
 call	gfx_copy_page_4plane
 call	gfx_present_and_flip_page
 mov	dx, 0AC00h
-call	sub_2022
+call	io_read_file_to_seg5e_base
 mov	ax, 32h	; '2'
 call	wait_ticks_or_abort
 mov	ax, 8
@@ -13304,7 +13304,7 @@ intro_draw_comic_walk_frame endp
 
 loc_7660:
 mov	dx, 0AC09h
-call	sub_2022
+call	io_read_file_to_seg5e_base
 mov	ax, 0Dh
 int	10h		; - VIDEO - SET	VIDEO MODE
 			; AL = mode

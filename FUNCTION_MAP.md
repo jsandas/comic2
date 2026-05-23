@@ -157,6 +157,10 @@ ui_draw_menu_frame (was sub_5F86)                               → Clear page a
 load_room_effect_script_and_trigger_ranges (was sub_198E)       → Load per-room ISR script pointer and tile-trigger range tables
 check_word_is_ffff_or_0005 (was sub_1BFB)                      → Return clear when word at CS:BX equals 0xFFFF or 0x0005
 update_level5_memory_signature (was sub_1C0B)                   → Recompute level-5 memory signature/check word from fixed memory regions
+io_load_rle_resource_to_e978 (was sub_1FA4)                     → Open file, read packed stream, and unpack RLE data into E978h buffer
+io_read_file_to_seg001_0600_resource (was sub_1FFE)             → Read full file into seg001:0600h resource scratch buffer
+io_read_file_to_seg5e_base (was sub_2022)                       → Read full file into seg_5E base buffer (offset 0000h)
+io_read_xor25_block_9ec0 (was sub_2049)                         → Read 0x0C00 bytes at 9EC0h and decode with XOR 0x25
 intro_repeat_draw_with_offset_4_3 (was sub_71FE)               → Repeat intro sprite draw/present loop with (-4,+3) positional offset
 intro_repeat_draw_with_offset_8_6 (was sub_721B)               → Repeat intro sprite draw/present loop with (-8,+6) positional offset
 intro_repeat_draw_with_offset_12_8 (was sub_7238)              → Repeat intro sprite draw/present loop with (-12,+8) positional offset
