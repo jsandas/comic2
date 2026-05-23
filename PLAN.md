@@ -188,6 +188,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_1F89` -> `gfx_copy_16x16_tile_plane_to_segment`
 	  - `sub_22B` -> `gfx_disable_retrace_palette_script`
 	  - `sub_238` -> `gfx_enable_retrace_palette_script`
+	  - `sub_15D` -> `gfx_load_ega_palette_16_from_table`
 	  - `sub_71FE` -> `intro_repeat_draw_with_offset_4_3`
 	  - `sub_721B` -> `intro_repeat_draw_with_offset_8_6`
 	  - `sub_7238` -> `intro_repeat_draw_with_offset_12_8`

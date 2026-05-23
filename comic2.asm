@@ -212,10 +212,10 @@ call	gfx_rle_blit_masked_or_4plane
 pop	ds
 assume ds:nothing
 mov	dx, 2
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 call	gfx_present_and_flip_page
 mov	dx, 13h
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 mov	cs:byte_61, 0
 mov	cx, 19h
 
@@ -238,7 +238,7 @@ call	gfx_rle_blit_opaque_4plane
 pop	ds
 assume ds:nothing
 mov	dx, 2
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 call	gfx_present_and_flip_page
 mov	ax, 3
 call	sub_27A
@@ -249,7 +249,7 @@ start endp
 
 
 
-sub_15D	proc near
+gfx_load_ega_palette_16_from_table	proc near
 push	si
 mov	si, dx
 mov	dx, 3DAh
@@ -300,7 +300,7 @@ out	dx, al		; EGA: palette register: select	colors for attribute AL:
 pop	si
 sti
 retn
-sub_15D	endp
+gfx_load_ega_palette_16_from_table	endp
 
 ; START	OF FUNCTION CHUNK FOR game_loop
 
@@ -323,7 +323,7 @@ mov	dx, 1EBh
 mov	di, cs:word_773F
 call	gfx_load_and_blit_masked_file
 mov	dx, 24h	; '$'
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 call	gfx_present_and_flip_page
 mov	ax, 1
 mov	bx, 0DBh ; '�'
@@ -343,7 +343,7 @@ mov	dx, 1F5h
 mov	di, cs:word_773F
 call	gfx_load_and_blit_masked_file
 mov	dx, 24h	; '$'
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 call	gfx_present_and_flip_page
 mov	ax, 1
 mov	bx, 96B6h
@@ -476,7 +476,7 @@ db 0CDh, 10h, 5Bh, 0EBh, 0ECh, 0C3h
 ; Input:  Uses seg004 graphic data and word_773F screen offset state
 ; Output: Copies two EGA assets, probes a small config/resource file, and
 ;         branches into the startup/menu flow based on byte_61
-; Calls:  gfx_rle_blit_opaque_4plane, gfx_rle_blit_masked_or_4plane, sub_15D, gfx_present_and_flip_page, sub_599, gfx_init_double_buffer_pages
+; Calls:  gfx_rle_blit_opaque_4plane, gfx_rle_blit_masked_or_4plane, gfx_load_ega_palette_16_from_table, gfx_present_and_flip_page, sub_599, gfx_init_double_buffer_pages
 ; Evidence: First two calls are plane blits from seg004; later INT 21h open/
 ;           read/close sequence touches a 6-byte buffer at 25Eh; byte_61 gates
 ;           exit/menu paths immediately afterward
@@ -499,10 +499,10 @@ call	gfx_rle_blit_masked_or_4plane
 pop	ds
 assume ds:nothing
 mov	dx, 2
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 call	gfx_present_and_flip_page
 mov	dx, 24h	; '$'
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 mov	ax, 1
 mov	bx, 0DBh ; '�'
 mov	cx, 1
@@ -12741,7 +12741,7 @@ mov	si, 6000h
 call	gfx_copy_page_4plane
 call	gfx_present_and_flip_page
 mov	dx, 0ABC0h
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 mov	dx, 0ABF7h
 call	io_read_file_to_seg5e_base
 mov	ax, 12h
@@ -12924,7 +12924,7 @@ mov	word ptr cs:[bx+14h], 0
 sti
 call	gfx_enable_retrace_palette_script
 mov	dx, 0ABD1h
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 mov	di, 4000h
 mov	dx, 0AC12h
 call	gfx_load_and_blit_opaque_file
@@ -12963,7 +12963,7 @@ mov	word ptr cs:[bx+14h], 0
 sti
 call	gfx_enable_retrace_palette_script
 mov	dx, 0ABD1h
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 mov	comic_x, 0
 mov	comic_y, 81h	; '�'
 mov	comic_facing, 1
@@ -13319,7 +13319,7 @@ call	gfx_rle_blit_opaque_4plane
 pop	ds
 assume ds:nothing
 mov	dx, 0ABC0h
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 mov	word ptr ds:6C6h, 84h ;	'�'
 mov	word ptr ds:6C8h, 0B4h ; '�'
 mov	ax, 0
@@ -13356,7 +13356,7 @@ mov	dx, 0AC26h
 mov	di, cs:word_773F
 call	gfx_load_and_blit_masked_file
 mov	dx, 0ABE2h
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 call	gfx_present_and_flip_page
 mov	ax, 1
 mov	bx, 0DBh ; '�'
@@ -13377,10 +13377,10 @@ mov	dx, 0AC30h
 mov	di, cs:word_773F
 call	gfx_load_and_blit_masked_file
 mov	dx, 2
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 call	gfx_present_and_flip_page
 mov	dx, 24h	; '$'
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 
 loc_7737:
 mov	ax, 1

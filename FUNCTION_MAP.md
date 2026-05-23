@@ -168,6 +168,7 @@ gfx_copy_16x16_tile_plane_to_active_page (was sub_1F72)         → Copy one 16x
 gfx_copy_16x16_tile_plane_to_segment (was sub_1F89)             → Copy one 16x16 tile plane to caller-selected destination segment
 gfx_disable_retrace_palette_script (was sub_22B)                → Disable retrace-time palette/script runner by clearing immediate and latched flags
 gfx_enable_retrace_palette_script (was sub_238)                 → Enable retrace-time palette/script runner on next present/flip
+gfx_load_ega_palette_16_from_table (was sub_15D)                → Load 16 EGA attribute entries from DS:DX table during vertical retrace
 intro_repeat_draw_with_offset_4_3 (was sub_71FE)               → Repeat intro sprite draw/present loop with (-4,+3) positional offset
 intro_repeat_draw_with_offset_8_6 (was sub_721B)               → Repeat intro sprite draw/present loop with (-8,+6) positional offset
 intro_repeat_draw_with_offset_12_8 (was sub_7238)              → Repeat intro sprite draw/present loop with (-12,+8) positional offset
