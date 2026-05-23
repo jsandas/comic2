@@ -12973,7 +12973,7 @@ loc_736A:
 mov	si, 6000h
 mov	di, cs:word_773F
 call	sub_7765
-call	sub_7622
+call	intro_draw_comic_walk_frame
 call	sub_774E
 mov	ax, 1
 call	wait_ticks_or_abort
@@ -12981,7 +12981,7 @@ add	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_736A
 xor	si, si
-call	sub_75AD
+call	intro_flash_comic_with_optional_overlay
 mov	comic_facing, 2
 mov	word_2FBD5, 0Ah
 
@@ -12989,7 +12989,7 @@ loc_739C:
 mov	si, 6000h
 mov	di, cs:word_773F
 call	sub_7765
-call	sub_7622
+call	intro_draw_comic_walk_frame
 call	sub_774E
 mov	ax, 1
 call	wait_ticks_or_abort
@@ -12997,7 +12997,7 @@ sub	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_739C
 xor	si, si
-call	sub_75AD
+call	intro_flash_comic_with_optional_overlay
 mov	comic_facing, 1
 mov	word_2FBD5, 2
 
@@ -13005,7 +13005,7 @@ loc_73CE:
 mov	si, 6000h
 mov	di, cs:word_773F
 call	sub_7765
-call	sub_7622
+call	intro_draw_comic_walk_frame
 call	sub_774E
 mov	ax, 1
 call	wait_ticks_or_abort
@@ -13013,7 +13013,7 @@ add	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_73CE
 xor	si, si
-call	sub_75AD
+call	intro_flash_comic_with_optional_overlay
 mov	ax, 1
 lea	bx, unk_2FC1A
 mov	cx, 9
@@ -13034,7 +13034,7 @@ mov	di, cs:word_773F
 call	sub_7927
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_7622
+call	intro_draw_comic_walk_frame
 call	sub_774E
 mov	ax, 1
 call	wait_ticks_or_abort
@@ -13042,9 +13042,9 @@ add	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_740B
 mov	si, 28Ch
-call	sub_75AD
+call	intro_flash_comic_with_optional_overlay
 mov	si, 710h
-call	sub_756D
+call	intro_draw_overlay_with_comic
 mov	ax, 1
 lea	bx, unk_2FC5A
 mov	cx, 9
@@ -13052,9 +13052,9 @@ int	3		; Trap to Debugger
 mov	ax, 1Eh
 call	wait_ticks_or_abort
 mov	si, 710h
-call	sub_75AD
+call	intro_flash_comic_with_optional_overlay
 mov	si, 0B94h
-call	sub_756D
+call	intro_draw_overlay_with_comic
 mov	ax, 1
 lea	bx, unk_2FC5A
 mov	cx, 9
@@ -13062,7 +13062,7 @@ int	3		; Trap to Debugger
 mov	ax, 1Eh
 call	wait_ticks_or_abort
 mov	si, 0B94h
-call	sub_75AD
+call	intro_flash_comic_with_optional_overlay
 mov	ax, 1
 lea	bx, unk_2FC1A
 mov	cx, 9
@@ -13083,7 +13083,7 @@ mov	di, cs:word_773F
 call	sub_7927
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_7622
+call	intro_draw_comic_walk_frame
 call	sub_774E
 mov	ax, 1
 call	wait_ticks_or_abort
@@ -13186,7 +13186,7 @@ gfx_copy_rect_rows_stride40 endp
 
 
 
-sub_756D proc near
+intro_draw_overlay_with_comic proc near
 push	si
 mov	si, 6000h
 mov	di, cs:word_773F
@@ -13210,12 +13210,12 @@ mov	ds, cs:seg_5C
 assume ds:seg005
 call	sub_774E
 retn
-sub_756D endp
+intro_draw_overlay_with_comic endp
 
 
 
 
-sub_75AD proc near
+intro_flash_comic_with_optional_overlay proc near
 mov	word_2FBD5, 0Ah
 
 loc_75B3:
@@ -13265,12 +13265,12 @@ loc_761B:
 dec	word_2FBD5
 jnz	short loc_75B3
 retn
-sub_75AD endp
+intro_flash_comic_with_optional_overlay endp
 
 
 
 
-sub_7622 proc near
+intro_draw_comic_walk_frame proc near
 mov	ch, byte_2588F
 inc	ch
 cmp	ch, 4
@@ -13298,7 +13298,7 @@ call	sub_77A3
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
-sub_7622 endp
+intro_draw_comic_walk_frame endp
 
 ; START	OF FUNCTION CHUNK FOR play_intro_cinematic
 

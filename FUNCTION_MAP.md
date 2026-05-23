@@ -103,6 +103,9 @@ wait_ticks_or_abort (was sub_7278)                   → Wait N ticks unless abo
 intro_wipe_split_buffers_step (was sub_74E1)         → Compose one intro wipe step by splitting columns between two source buffers
 gfx_copy_rect_all_planes (was sub_752A)              → Copy rectangle region across EGA planes 0-3
 gfx_copy_rect_rows_stride40 (was sub_7553)           → Copy DX-byte rows for 0xA0 lines with 0x28 byte stride
+intro_draw_overlay_with_comic (was sub_756D)         → Draw intro overlay sprite plus current Comic frame, then present
+intro_flash_comic_with_optional_overlay (was sub_75AD) → Run 10-frame Comic flash loop with optional overlay sprite
+intro_draw_comic_walk_frame (was sub_7622)           → Advance facing-dependent Comic walk frame and draw it to active page
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)
