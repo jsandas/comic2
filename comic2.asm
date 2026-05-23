@@ -14367,7 +14367,7 @@ gfx_blit_masked_plane_shift4_clipped endp
 
 
 
-sub_7C79 proc near
+gfx_blit_sprite_masked_bottom_clipped_active_page proc near
 
 ; FUNCTION CHUNK AT 7D1B SIZE 00000016 BYTES
 
@@ -14405,21 +14405,21 @@ db 90h
 
 loc_7CB7:
 mov	cl, 0
-call	sub_7CCD
+call	gfx_blit_masked_plane_aligned_bottom_clipped
 mov	cl, 1
-call	sub_7CCD
+call	gfx_blit_masked_plane_aligned_bottom_clipped
 mov	cl, 2
-call	sub_7CCD
+call	gfx_blit_masked_plane_aligned_bottom_clipped
 mov	cl, 3
-call	sub_7CCD
+call	gfx_blit_masked_plane_aligned_bottom_clipped
 pop	bp
 retn
-sub_7C79 endp
+gfx_blit_sprite_masked_bottom_clipped_active_page endp
 
 
 
 
-sub_7CCD proc near
+gfx_blit_masked_plane_aligned_bottom_clipped proc near
 push	dx
 call	ega_select_plane_read_write
 pop	dx
@@ -14468,26 +14468,26 @@ jnz	short loc_7CD8
 pop	bx
 pop	di
 retn
-sub_7CCD endp
+gfx_blit_masked_plane_aligned_bottom_clipped endp
 
-; START	OF FUNCTION CHUNK FOR sub_7C79
+; START	OF FUNCTION CHUNK FOR gfx_blit_sprite_masked_bottom_clipped_active_page
 
 loc_7D1B:
 mov	cl, 0
-call	sub_7D31
+call	gfx_blit_masked_plane_shift4_bottom_clipped
 mov	cl, 1
-call	sub_7D31
+call	gfx_blit_masked_plane_shift4_bottom_clipped
 mov	cl, 2
-call	sub_7D31
+call	gfx_blit_masked_plane_shift4_bottom_clipped
 mov	cl, 3
-call	sub_7D31
+call	gfx_blit_masked_plane_shift4_bottom_clipped
 pop	bp
 retn
-; END OF FUNCTION CHUNK	FOR sub_7C79
+; END OF FUNCTION CHUNK	FOR gfx_blit_sprite_masked_bottom_clipped_active_page
 
 
 
-sub_7D31 proc near
+gfx_blit_masked_plane_shift4_bottom_clipped proc near
 push	dx
 call	ega_select_plane_read_write
 pop	dx
@@ -14573,7 +14573,7 @@ pop	bp
 pop	bx
 pop	di
 retn
-sub_7D31 endp
+gfx_blit_masked_plane_shift4_bottom_clipped endp
 
 
 
@@ -14626,7 +14626,7 @@ jge	short loc_7E3F
 add	bx, 8
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_7C79
+call	gfx_blit_sprite_masked_bottom_clipped_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 jmp	short loc_7E43
