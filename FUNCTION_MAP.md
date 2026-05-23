@@ -142,6 +142,7 @@ ent_normalize_runtime_y_magnitudes (was sub_48D4)               → Convert sign
 ent_copy_descriptor_to_runtime_slot (was sub_4A70)              → Copy spawn descriptor record into runtime slot and initialize state fields
 ent_deactivate_runtime_slot (was sub_4C06)                      → Clear runtime slot active flag and sync descriptor state/position fields
 ent_build_runtime_slots_for_viewport (was sub_49AD)             → Build up to 6 active runtime slots from descriptors intersecting viewport
+ent_move_x_and_bounce (was sub_5A4E)                            → Attempt horizontal move, flipping travel direction when tile collision blocks step
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

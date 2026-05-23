@@ -8866,7 +8866,7 @@ jz	short loc_515D
 
 loc_5155:
 mov	bx, cs:[si+1Ch]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 
 loc_515D:
@@ -8940,7 +8940,7 @@ jz	short loc_5214
 loc_5205:
 mov	bx, 4
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 pop	word ptr cs:[si+18h]
 retn
 
@@ -8965,7 +8965,7 @@ jz	short loc_5230
 
 loc_5245:
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 pop	word ptr cs:[si+18h]
 jnb	short locret_5258
 mov	word ptr cs:[si+16h], 0FFF7h
@@ -9126,7 +9126,7 @@ mov	word ptr cs:[si+18h], 1
 
 loc_53C6:
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 
 locret_53CC:
 retn
@@ -9165,7 +9165,7 @@ call	sub_5CCF
 or	ax, ax
 jz	short loc_542F
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 
 loc_542F:
 pop	word_25272
@@ -9179,7 +9179,7 @@ mov	word ptr cs:[si+16h], 0FFF8h
 loc_544B:
 call	sub_5B01
 mov	bx, 8
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 call	sub_5A99
 jb	short loc_545D
@@ -9307,7 +9307,7 @@ loc_5560:
 mov	word ptr cs:[si+16h], 0
 call	sub_5A99
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 mov	word ptr cs:[si+14h], 0
 mov	ax, cs:[si+10h]
@@ -9334,13 +9334,13 @@ neg	word ptr cs:[si+16h]
 loc_55AF:
 call	sub_5B01
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 inc	word ptr cs:[si+16h]
 call	sub_5A99
 jb	short loc_55C9
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 
 loc_55C9:
@@ -9359,7 +9359,7 @@ jz	short loc_55F5
 loc_55E6:
 mov	bx, 4
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 pop	word ptr cs:[si+18h]
 retn
 
@@ -9369,7 +9369,7 @@ or	ax, ax
 jz	short loc_5614
 mov	bx, 4
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 pop	word ptr cs:[si+18h]
 jnb	short locret_561A
 mov	word ptr cs:[si+16h], 0FFF7h
@@ -9434,7 +9434,7 @@ call	ent_deactivate_runtime_slot
 retn
 mov	word ptr cs:[si+18h], 2
 mov	bx, 8
-call	sub_5A4E
+call	ent_move_x_and_bounce
 jnb	short loc_56B4
 mov	ax, cs:[si+10h]
 sub	ax, word_256A2
@@ -9486,7 +9486,7 @@ call	sub_5A99
 loc_5712:
 mov	bx, 8
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 call	sub_5CCF
 mov	bx, cs:[si+18h]
 pop	word ptr cs:[si+18h]
@@ -9519,7 +9519,7 @@ call	sub_5CCF
 cmp	ax, 8
 jl	short locret_576C
 mov	bx, 8
-call	sub_5A4E
+call	ent_move_x_and_bounce
 
 locret_576C:
 retn
@@ -9531,7 +9531,7 @@ jz	short loc_5788
 loc_5779:
 mov	bx, 8
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 pop	word ptr cs:[si+18h]
 retn
 
@@ -9552,7 +9552,7 @@ mov	word ptr cs:[si+16h], 0FFF8h
 loc_57A6:
 mov	bx, 8
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 pop	word ptr cs:[si+18h]
 jnb	short loc_57BC
 mov	word ptr cs:[si+16h], 0FFF7h
@@ -9609,7 +9609,7 @@ retn
 mov	word ptr cs:[si+16h], 0
 mov	word ptr cs:[si+14h], 4
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 cmp	word ptr cs:[si+1Ch], 1
 jge	short loc_5878
@@ -9618,7 +9618,7 @@ jb	short loc_5871
 mov	word ptr cs:[si+18h], 1
 mov	word ptr cs:[si+14h], 4
 mov	bx, 6
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 
 loc_5871:
@@ -9634,7 +9634,7 @@ mov	word ptr cs:[si+14h], 4
 cmp	word ptr cs:[si+1Ch], 10h
 jg	short locret_589C
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 
 locret_589C:
 retn
@@ -9659,14 +9659,14 @@ call	sub_5B01
 mov	word ptr cs:[si+18h], 1
 mov	word ptr cs:[si+14h], 4
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 
 loc_58E8:
 mov	word ptr cs:[si+18h], 1
 mov	word ptr cs:[si+14h], 4
 mov	bx, 0Ch
-call	sub_5A4E
+call	ent_move_x_and_bounce
 jb	short loc_58FD
 retn
 
@@ -9677,7 +9677,7 @@ mov	word ptr cs:[si+18h], 2
 mov	word ptr cs:[si+16h], 0
 mov	word ptr cs:[si+14h], 4
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 jb	short loc_591C
 retn
 
@@ -9700,7 +9700,7 @@ mov	word ptr cs:[si+18h], 1
 mov	word ptr cs:[si+16h], 0
 mov	word ptr cs:[si+14h], 8
 mov	bx, 8
-call	sub_5A4E
+call	ent_move_x_and_bounce
 jb	short loc_5968
 retn
 
@@ -9775,7 +9775,7 @@ jz	short loc_5A4A
 mov	word ptr cs:[si+1Ch], 1
 mov	bx, 0Ch
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 jb	short loc_5A47
 call	sub_5CCF
 pop	ax
@@ -9813,7 +9813,7 @@ retn
 
 
 
-sub_5A4E proc near
+ent_move_x_and_bounce proc near
 cmp	word ptr cs:[si+18h], 2
 jz	short loc_5A67
 mov	cs:[si+14h], bx
@@ -9850,7 +9850,7 @@ loc_5A93:
 mov	cs:[si+10h], ax
 clc
 retn
-sub_5A4E endp
+ent_move_x_and_bounce endp
 
 
 
