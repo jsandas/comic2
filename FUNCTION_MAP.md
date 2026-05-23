@@ -149,6 +149,9 @@ ent_move_y_with_probe_and_bounce (was sub_5B7B)                 → Advance vert
 ent_move_x_with_range_probe_and_bounce (was sub_5BAC)           → Attempt horizontal move using range-based tile probe, then bounce on collision
 ent_probe_x_collision_strict (was sub_5BF7)                     → Strict X collision probe against high-threshold blocking tiles
 ent_probe_x_collision_range (was sub_5C3E)                      → X collision probe accepting bounded tile range as passable
+ent_probe_tile_above_threshold (was sub_5C91)                   → Probe tile at pixel position and pass only when tile id exceeds threshold DI
+ent_probe_tile_range_in_viewport (was sub_5CA1)                 → Probe tile in viewport Y-range and pass when tile id falls within allowed range
+ent_set_horizontal_chase_direction_to_comic (was sub_5CCF)      → Set horizontal travel direction flag toward Comic X coordinate
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

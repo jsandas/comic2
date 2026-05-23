@@ -8839,7 +8839,7 @@ jb	short loc_5129
 mov	bx, cs:[si+12h]
 add	bx, cs:[si+2]
 mov	di, word_25274
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 jb	short loc_5143
 
 loc_5129:
@@ -9022,7 +9022,7 @@ locret_52BE:
 retn
 mov	word ptr cs:[si+16h], 0
 mov	word ptr cs:[si+14h], 0
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_52DE
@@ -9071,7 +9071,7 @@ jb	short loc_5341
 mov	bx, cs:[si+12h]
 add	bx, cs:[si+2]
 mov	di, word_25274
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 jb	short loc_535B
 
 loc_5341:
@@ -9161,7 +9161,7 @@ mov	word ptr cs:[si+16h], 0FFFDh
 call	ent_apply_gravity_and_move_y
 
 loc_5422:
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 or	ax, ax
 jz	short loc_542F
 mov	bx, 4
@@ -9230,7 +9230,7 @@ jb	short loc_54C8
 mov	bx, cs:[si+12h]
 add	bx, cs:[si+2]
 mov	di, word_25274
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 jb	short loc_54E2
 
 loc_54C8:
@@ -9278,7 +9278,7 @@ jb	short loc_5530
 mov	bx, cs:[si+12h]
 add	bx, cs:[si+2]
 mov	di, word_25274
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 jb	short loc_554A
 
 loc_5530:
@@ -9301,7 +9301,7 @@ retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_5560
 mov	word ptr cs:[si+1Ch], 1
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 
 loc_5560:
 mov	word ptr cs:[si+16h], 0
@@ -9347,7 +9347,7 @@ loc_55C9:
 cmp	word ptr cs:[si+16h], 0
 jl	short locret_55D9
 mov	word ptr cs:[si+16h], 0FFF4h
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 
 locret_55D9:
 retn
@@ -9364,7 +9364,7 @@ pop	word ptr cs:[si+18h]
 retn
 
 loc_55F5:
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 or	ax, ax
 jz	short loc_5614
 mov	bx, 4
@@ -9462,7 +9462,7 @@ call	ent_apply_gravity_and_move_y
 retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_56E3
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 mov	word ptr cs:[si+1Ch], 1
 
 loc_56E3:
@@ -9487,7 +9487,7 @@ loc_5712:
 mov	bx, 8
 push	word ptr cs:[si+18h]
 call	ent_move_x_and_bounce
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 mov	bx, cs:[si+18h]
 pop	word ptr cs:[si+18h]
 cmp	bx, cs:[si+18h]
@@ -9515,7 +9515,7 @@ mov	word ptr cs:[si+16h], 0FFF7h
 call	ent_apply_gravity_and_move_y
 
 loc_575E:
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 cmp	ax, 8
 jl	short locret_576C
 mov	bx, 8
@@ -9536,7 +9536,7 @@ pop	word ptr cs:[si+18h]
 retn
 
 loc_5788:
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 or	ax, ax
 jz	short loc_57BC
 mov	ax, cs:[si+18h]
@@ -9686,7 +9686,7 @@ call	ent_deactivate_runtime_slot
 retn
 mov	word ptr cs:[si+14h], 0
 mov	word ptr cs:[si+16h], 0
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 cmp	word ptr cs:[si+1Ch], 1
 jz	short loc_593B
 cmp	ax, 10h
@@ -9777,7 +9777,7 @@ mov	bx, 0Ch
 push	word ptr cs:[si+18h]
 call	ent_move_x_and_bounce
 jb	short loc_5A47
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 pop	ax
 cmp	ax, cs:[si+18h]
 jnz	short loc_5A28
@@ -9873,7 +9873,7 @@ cmp	word ptr cs:[si+16h], 0
 jl	short loc_5AF0
 add	bx, cs:[si+2]
 mov	di, word_25274
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 pop	bx
 jnb	short loc_5AEA
 mov	word ptr cs:[si+16h], 0
@@ -9891,7 +9891,7 @@ retn
 
 loc_5AF0:
 mov	di, word_25272
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 pop	bx
 jnb	short loc_5AEA
 and	word ptr cs:[si+12h], 0FFF0h
@@ -9919,7 +9919,7 @@ jnz	short loc_5B2D
 mov	di, word_25272
 
 loc_5B2D:
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 pop	bx
 jb	short loc_5B43
 mov	ax, word_256A4
@@ -9945,7 +9945,7 @@ retn
 
 loc_5B5E:
 mov	di, word_25272
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 pop	bx
 jb	short loc_5B70
 cmp	bx, word_256A4
@@ -9977,7 +9977,7 @@ loc_5B93:
 mov	cx, cs:[si]
 shr	cx, 1
 add	ax, cx
-call	sub_5CA1
+call	ent_probe_tile_range_in_viewport
 pop	bx
 jnb	short loc_5BA6
 neg	word ptr cs:[si+16h]
@@ -10115,7 +10115,7 @@ ent_probe_x_collision_range endp
 
 
 
-sub_5C91 proc near
+ent_probe_tile_above_threshold proc near
 cmp	bx, 0
 jl	short loc_5C9F
 call	get_tile_at_pixels
@@ -10127,12 +10127,12 @@ retn
 loc_5C9F:
 stc
 retn
-sub_5C91 endp
+ent_probe_tile_above_threshold endp
 
 
 
 
-sub_5CA1 proc near
+ent_probe_tile_range_in_viewport proc near
 cmp	bx, 0
 jl	short loc_5CCD
 cmp	bx, word_2527E
@@ -10154,12 +10154,12 @@ retn
 loc_5CCD:
 stc
 retn
-sub_5CA1 endp
+ent_probe_tile_range_in_viewport endp
 
 
 
 
-sub_5CCF proc near
+ent_set_horizontal_chase_direction_to_comic proc near
 mov	ax, cs:[si+10h]
 sub	ax, comic_x
 jl	short loc_5CE2
@@ -10173,7 +10173,7 @@ neg	ax
 
 locret_5CEA:
 retn
-sub_5CCF endp
+ent_set_horizontal_chase_direction_to_comic endp
 
 
 
