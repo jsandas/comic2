@@ -8087,7 +8087,7 @@ jge	short loc_4A52
 add	ax, cs:[bx+2]
 cmp	ax, word_256A4
 jle	short loc_4A52
-call	sub_4A70
+call	ent_copy_descriptor_to_runtime_slot
 add	si, 20h	; ' '
 inc	[bp+var_2]
 cmp	[bp+var_2], 6
@@ -8114,7 +8114,7 @@ sub_49AD endp
 
 
 
-sub_4A70 proc near
+ent_copy_descriptor_to_runtime_slot proc near
 mov	cx, 8
 push	bx
 push	si
@@ -8157,7 +8157,7 @@ mov	byte_2EA02, al
 loc_4ADE:
 inc	byte_2EA04
 retn
-sub_4A70 endp
+ent_copy_descriptor_to_runtime_slot endp
 
 out	50h, ax
 dec	cx
@@ -8276,7 +8276,7 @@ mov	byte ptr cs:[di+6], 2
 jmp	short loc_4BFD
 
 loc_4BEC:
-call	sub_4A70
+call	ent_copy_descriptor_to_runtime_slot
 add	di, 0Ch
 dec	[bp+var_2]
 jmp	loc_4F15
@@ -14660,7 +14660,7 @@ draw_sprite endp
 ; Callers:
 ;   - draw_sprite (draw path consumes frame descriptor records)
 ;   - sub_378E (selects frame offset words word_8DB8..word_8DC2)
-;   - sub_4A70 (copies a descriptor record into runtime entity storage)
+;   - ent_copy_descriptor_to_runtime_slot (copies a descriptor record into runtime entity storage)
 ;   - jmp near ptr byte_834B (direct transfer into a likely landing pad)
 ; Evidence: Repeated little-endian address pairs, flag bytes, and small
 ;           fixed-size records; mixed with a direct jump target label, so this
@@ -14786,7 +14786,7 @@ db 0A1h, 80h, 4	dup(0)
 ; Callers:
 ;   - ent_update_object_behaviors / nearby state flow (jmp near ptr byte_834B)
 ;   - draw_sprite-style descriptor consumers in the graphics pipeline (indirect)
-;   - sub_4A70 entity-copy routine likely uses the same record shape nearby
+;   - ent_copy_descriptor_to_runtime_slot entity-copy routine likely uses the same record shape nearby
 ; Evidence: Repeated fixed-size records with coordinate-like words, flag bytes,
 ;           and 80h/0A1h/0B1h/0D1h marker bytes; direct jump target at line 8131.
 ; Confidence: Medium
