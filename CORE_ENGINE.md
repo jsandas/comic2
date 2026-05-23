@@ -83,7 +83,7 @@ The projectile system manages player-fired bullets using a fixed 7-slot table at
 5.  **Viewport Despawning**:
     - If projectile X/Y is outside camera bounds (`word_256A2`, `word_256A4`), it is deactivated.
 6.  **Rendering**:
-    - If active and on-screen, draws "flying" sprite (`0A4A6h`) or "impact" sprite (`0A4D4h`) using `sub_77A3`.
+    - If active and on-screen, draws "flying" sprite (`0A4A6h`) or "impact" sprite (`0A4D4h`) using `gfx_blit_sprite_masked_active_page`.
 
 ## State Variables (DS Base: 24FE0h)
 *   `ds:6C6h`: `comic_x` (word) - Player X world coordinate.

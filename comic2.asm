@@ -2091,7 +2091,7 @@ mov	bx, 90h	; '�'
 lea	si, unk_2EF30
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
@@ -2103,7 +2103,7 @@ mov	bx, 0A9h ; '�'
 lea	si, unk_2EFD6
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
@@ -2115,7 +2115,7 @@ mov	bx, 77h	; 'w'
 lea	si, aData_0	; "data.0"
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
@@ -5213,7 +5213,7 @@ push	di
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	si, [si]
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 pop	di
@@ -6387,7 +6387,7 @@ sub	bx, word_256A4
 add	bx, 8
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	gfx_present_and_flip_page
@@ -7553,7 +7553,7 @@ ent_update_entities_in_viewport endp
 ; Input:  ax=slot index into unk_25219 object mapping table
 ; Output: DI points at selected object record (unk_25AD0) or 0 on empty slot;
 ;         invokes object draw path for valid records
-; Calls:  sub_7AAB, sub_78C6
+; Calls:  sub_7AAB, gfx_blit_sprite_opaque_offset_both_pages
 ; Evidence: 0FFFFh sentinel handling in unk_25219, 12-byte index math into
 ;           unk_25AD0, then render call with DS set to seg_5E asset segment
 ; Confidence: Medium
@@ -7596,7 +7596,7 @@ mov	bx, 0B1h ; '�'
 mov	si, cs:[di+8]
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 pop	di
@@ -7728,7 +7728,7 @@ mov	bx, 90h	; '�'
 lea	si, unk_2EF30
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	ax, 8
@@ -7741,7 +7741,7 @@ mov	bx, 0A9h ; '�'
 lea	si, unk_2EFD6
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	ax, 8
@@ -7805,7 +7805,7 @@ mov	bx, 0B1h ; '�'
 lea	si, unk_2F314
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	gfx_present_and_flip_page
@@ -7953,7 +7953,7 @@ mov	bx, 77h	; 'w'
 lea	si, aData_0	; "data.0"
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	ax, 8
@@ -10299,7 +10299,7 @@ push	si
 mov	si, 0A4A6h
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 pop	si
@@ -10348,7 +10348,7 @@ push	si
 mov	si, 0A4D4h
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 pop	si
@@ -10698,7 +10698,7 @@ push	ax
 push	bx
 push	dx
 push	si
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 pop	si
 pop	dx
 pop	bx
@@ -10717,7 +10717,7 @@ push	ax
 push	bx
 push	dx
 push	si
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 pop	si
 pop	dx
 pop	bx
@@ -10757,7 +10757,7 @@ mov	si, 9EAAh
 loc_614E:
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
@@ -11558,7 +11558,7 @@ push	si
 push	cx
 mov	si, 9A8h
 add	si, 4B6h
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 pop	cx
 pop	si
 add	si, 4
@@ -11577,7 +11577,7 @@ add	si, ax
 mov	ax, [si]
 mov	bx, [si+2]
 mov	si, 9A8h
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ax, 9
 call	ega_set_map_mask
 mov	bx, ds:21Ah
@@ -12874,7 +12874,7 @@ gfx_copy_backbuffer_to_active_page endp
 intro_draw_sprite_and_present proc near
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	gfx_present_and_flip_page
@@ -13205,7 +13205,7 @@ mov	ax, comic_x
 mov	bx, comic_y
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	gfx_present_and_flip_page
@@ -13233,7 +13233,7 @@ mov	ax, comic_x
 mov	bx, comic_y
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 pop	si
@@ -13294,7 +13294,7 @@ mov	bx, comic_y
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	si, [si]
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
@@ -13456,7 +13456,7 @@ gfx_copy_page_4plane endp
 
 
 
-sub_77A3 proc near
+gfx_blit_sprite_masked_active_page proc near
 
 ; FUNCTION CHUNK AT 7833 SIZE 00000016 BYTES
 
@@ -13493,21 +13493,21 @@ align 2
 
 loc_77DC:
 mov	cl, 0
-call	sub_77F2
+call	gfx_blit_masked_plane_aligned
 mov	cl, 1
-call	sub_77F2
+call	gfx_blit_masked_plane_aligned
 mov	cl, 2
-call	sub_77F2
+call	gfx_blit_masked_plane_aligned
 mov	cl, 3
-call	sub_77F2
+call	gfx_blit_masked_plane_aligned
 pop	bp
 retn
-sub_77A3 endp
+gfx_blit_sprite_masked_active_page endp
 
 
 
 
-sub_77F2 proc near
+gfx_blit_masked_plane_aligned proc near
 push	dx
 call	ega_select_plane_read_write
 pop	dx
@@ -13551,26 +13551,26 @@ jnz	short loc_77FD
 pop	bx
 pop	di
 retn
-sub_77F2 endp
+gfx_blit_masked_plane_aligned endp
 
-; START	OF FUNCTION CHUNK FOR sub_77A3
+; START	OF FUNCTION CHUNK FOR gfx_blit_sprite_masked_active_page
 
 loc_7833:
 mov	cl, 0
-call	sub_7849
+call	gfx_blit_masked_plane_shift4
 mov	cl, 1
-call	sub_7849
+call	gfx_blit_masked_plane_shift4
 mov	cl, 2
-call	sub_7849
+call	gfx_blit_masked_plane_shift4
 mov	cl, 3
-call	sub_7849
+call	gfx_blit_masked_plane_shift4
 pop	bp
 retn
-; END OF FUNCTION CHUNK	FOR sub_77A3
+; END OF FUNCTION CHUNK	FOR gfx_blit_sprite_masked_active_page
 
 
 
-sub_7849 proc near
+gfx_blit_masked_plane_shift4 proc near
 push	dx
 call	ega_select_plane_read_write
 pop	dx
@@ -13647,30 +13647,30 @@ pop	bp
 pop	bx
 pop	di
 retn
-sub_7849 endp
+gfx_blit_masked_plane_shift4 endp
 
 
 
 
-sub_78C6 proc near
+gfx_blit_sprite_opaque_offset_both_pages proc near
 mov	di, cs:word_773F
 push	ax
 push	bx
 push	si
-call	sub_78E1
+call	gfx_blit_sprite_opaque_offset_active_page
 mov	di, cs:word_773F
 xor	di, 2000h
 pop	si
 pop	bx
 pop	ax
-call	sub_78E1
+call	gfx_blit_sprite_opaque_offset_active_page
 retn
-sub_78C6 endp
+gfx_blit_sprite_opaque_offset_both_pages endp
 
 
 
 
-sub_78E1 proc near
+gfx_blit_sprite_opaque_offset_active_page proc near
 push	bp
 shr	ax, 1
 shr	ax, 1
@@ -13694,7 +13694,7 @@ mov	bx, ax
 lodsw
 add	si, ax
 jmp	short loc_794C
-sub_78E1 endp
+gfx_blit_sprite_opaque_offset_active_page endp
 
 align 2
 
@@ -14635,7 +14635,7 @@ loc_7E2D:
 add	bx, 8
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 jmp	short loc_7E43

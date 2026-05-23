@@ -118,6 +118,11 @@ io_read_file_to_seg001_0600 (was sub_79A2)           → Open/read/close file in
 gfx_rle_decode_copy_rowspan (was sub_79ED)          → Decode one RLE row-span with literal/copy runs into destination
 gfx_rle_decode_or_rowspan (was sub_7A39)            → Decode one RLE row-span and OR-composite into destination
 ega_select_plane_read_write (was sub_7A68)          → Program EGA sequencer/GC for selected read/write plane index
+gfx_blit_sprite_masked_active_page (was sub_77A3)   → Blit masked planar sprite to active page (aligned or shift-4 path)
+gfx_blit_masked_plane_aligned (was sub_77F2)        → Draw one masked plane row-span for byte-aligned X placement
+gfx_blit_masked_plane_shift4 (was sub_7849)         → Draw one masked plane row-span for 4-pixel-shifted X placement
+gfx_blit_sprite_opaque_offset_both_pages (was sub_78C6) → Blit opaque offset-addressed sprite to both page buffers
+gfx_blit_sprite_opaque_offset_active_page (was sub_78E1) → Blit opaque offset-addressed sprite to active page
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)
