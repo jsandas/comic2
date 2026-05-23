@@ -2203,7 +2203,7 @@ setup_render_viewport endp
 
 
 
-sub_198E proc near
+load_room_effect_script_and_trigger_ranges proc near
 lea	si, unk_26688
 mov	ax, word_256DA
 shl	ax, 1
@@ -2282,7 +2282,7 @@ mov	byte_2591A, 1
 
 locret_1A62:
 retn
-sub_198E endp
+load_room_effect_script_and_trigger_ranges endp
 
 
 
@@ -2431,7 +2431,7 @@ jz	short loc_1BDA
 call	sub_2049
 
 loc_1BDA:
-call	sub_198E
+call	load_room_effect_script_and_trigger_ranges
 call	sub_238
 pop	bx
 pop	ax

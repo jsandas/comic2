@@ -174,6 +174,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_5CCF` -> `ent_set_horizontal_chase_direction_to_comic`
 	  - `sub_5CEB` -> `spawn_player_projectile`
 	  - `sub_5F86` -> `ui_draw_menu_frame`
+	  - `sub_198E` -> `load_room_effect_script_and_trigger_ranges`
 	  - `sub_71FE` -> `intro_repeat_draw_with_offset_4_3`
 	  - `sub_721B` -> `intro_repeat_draw_with_offset_8_6`
 	  - `sub_7238` -> `intro_repeat_draw_with_offset_12_8`
