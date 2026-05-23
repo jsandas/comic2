@@ -76,6 +76,16 @@ ega_set_map_mask (was sub_4339)                      → Set EGA Sequencer Map M
 ui_show_modal_prompt_wait_key (was sub_39AD)         → Show framed modal prompt and wait for acknowledgement/confirm key
 hud_update_mode_icons (was sub_3A17)                 → Update paired HUD mode/status icons from current mode index
 io_open_file_or_prompt_retry (was sub_660B)          → Attempt file open; on failure show prompt and retry loop
+ui_select_next_valid_option (was sub_6011)           → Advance to next selectable option index
+ui_select_prev_valid_option (was sub_6021)           → Move to previous selectable option index
+ui_is_option_selectable (was sub_6030)               → Test whether option index is currently selectable
+ui_render_option_list (was sub_606B)                 → Draw option list panel with current selection highlight
+ui_option_list_input_loop (was sub_615C)             → Handle option-list navigation/confirm/cancel input loop
+ui_edit_selected_option_text (was sub_61C8)          → Edit selected option text field (inline keyboard entry)
+cfg_load_options_or_defaults (was sub_62A4)          → Load options/config table from disk or initialize defaults
+cfg_save_options (was sub_631A)                      → Save options/config table to disk
+savegame_write_snapshot (was sub_633C)               → Write runtime snapshot to selected savegame file
+savegame_read_snapshot (was sub_636F)                → Read runtime snapshot from selected savegame file (with header check)
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

@@ -357,7 +357,7 @@ call	sub_7741
 jmp	loc_63AB
 ; END OF FUNCTION CHUNK	FOR game_loop
 retn
-; START	OF FUNCTION CHUNK FOR sub_636F
+; START	OF FUNCTION CHUNK FOR savegame_read_snapshot
 
 loc_202:
 mov	ax, ds:0
@@ -368,7 +368,7 @@ int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
 call	sub_599
 jmp	short loc_215
-; END OF FUNCTION CHUNK	FOR sub_636F
+; END OF FUNCTION CHUNK	FOR savegame_read_snapshot
 db 90h
 ; START	OF FUNCTION CHUNK FOR start
 
@@ -10366,7 +10366,7 @@ mov	dl, cl
 mov	word_2FB89, dx
 call	sub_6545
 mov	dx, 9C73h
-call	sub_633C
+call	savegame_write_snapshot
 mov	word_2EC6C, 0FFFFh
 jmp	short loc_5E73
 ; END OF FUNCTION CHUNK	FOR start
@@ -10374,16 +10374,16 @@ jmp	short loc_5E73
 
 loc_5E6D:
 mov	dx, 9C73h
-call	sub_636F
+call	savegame_read_snapshot
 ; END OF FUNCTION CHUNK	FOR game_loop
 ; START	OF FUNCTION CHUNK FOR start
 
 loc_5E73:
-call	sub_62A4
+call	cfg_load_options_or_defaults
 call	sub_6DF4
 or	ax, ax
 jz	short loc_5E80
-call	sub_631A
+call	cfg_save_options
 
 loc_5E80:
 mov	ax, 1
@@ -10407,11 +10407,11 @@ mov	ax, 9CFAh
 mov	word_2ED1B, ax
 mov	byte_2ED1A, 0
 mov	ax, word_2EC6C
-call	sub_6011
+call	ui_select_next_valid_option
 mov	word_2ED1D, ax
 
 loc_5EBF:
-call	sub_615C
+call	ui_option_list_input_loop
 jnb	short loc_5EC7
 jmp	loc_215
 
@@ -10432,7 +10432,7 @@ dec	word_2EC6C
 add	al, 31h	; '1'
 mov	byte_2EC6A, al
 mov	dx, 9C83h
-call	sub_636F
+call	savegame_read_snapshot
 mov	ax, 3
 int	3		; Trap to Debugger
 jmp	loc_16F8
@@ -10449,19 +10449,19 @@ inc	word_2ED1D
 cmp	byte ptr [bx], 0
 jnz	short loc_5F01
 mov	word ptr [bx], 20h ; ' '
-call	sub_606B
+call	ui_render_option_list
 call	sub_774E
-call	sub_606B
+call	ui_render_option_list
 call	sub_774E
-call	sub_61C8
+call	ui_edit_selected_option_text
 jb	short loc_5F47
 inc	word_2EC74
-call	sub_631A
+call	cfg_save_options
 mov	ax, word_2ED1D
 add	al, 31h	; '1'
 mov	byte_2EC6A, al
 mov	dx, 9C83h
-call	sub_633C
+call	savegame_write_snapshot
 mov	ax, 9CFAh
 mov	word_2ED1B, ax
 mov	byte_2ED1A, 0
@@ -10475,9 +10475,9 @@ mov	ax, 9D0Ah
 mov	word_2ED1B, ax
 mov	byte_2ED1A, 1
 mov	ax, 0FFFFh
-call	sub_6011
+call	ui_select_next_valid_option
 mov	word_2ED1D, ax
-call	sub_615C
+call	ui_option_list_input_loop
 jb	short loc_5F83
 mov	ax, word_2ED1D
 shl	ax, 1
@@ -10489,7 +10489,7 @@ mov	bx, ax
 mov	bx, [bx]
 mov	byte ptr [bx], 0
 dec	word_2EC74
-call	sub_631A
+call	cfg_save_options
 
 loc_5F83:
 jmp	loc_5EAB
@@ -10561,14 +10561,14 @@ sub_5F86 endp
 
 
 
-sub_6011 proc near
+ui_select_next_valid_option proc near
 push	ax
 
 loc_6012:
 cmp	ax, 7
 jz	short loc_601F
 inc	ax
-call	sub_6030
+call	ui_is_option_selectable
 jb	short loc_6012
 pop	cx
 retn
@@ -10576,30 +10576,30 @@ retn
 loc_601F:
 pop	ax
 retn
-sub_6011 endp
+ui_select_next_valid_option endp
 
 
 
 
-sub_6021 proc near
+ui_select_prev_valid_option proc near
 push	ax
 
 loc_6022:
 or	ax, ax
 jz	short loc_601F
 dec	ax
-call	sub_6030
+call	ui_is_option_selectable
 jb	short loc_6022
 pop	cx
 retn
-sub_6021 endp
+ui_select_prev_valid_option endp
 
 pop	ax
 retn
 
 
 
-sub_6030 proc near
+ui_is_option_selectable proc near
 cmp	ax, 7
 jz	short loc_6059
 cmp	ax, 6
@@ -10631,12 +10631,12 @@ retn
 loc_6069:
 clc
 retn
-sub_6030 endp
+ui_is_option_selectable endp
 
 
 
 
-sub_606B proc near
+ui_render_option_list proc near
 mov	word_2EC6E, 0
 mov	ax, 38h	; '8'
 mov	bx, 3Ch	; '<'
@@ -10761,13 +10761,13 @@ call	sub_77A3
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
-sub_606B endp
+ui_render_option_list endp
 
 
 
 
-sub_615C proc near
-call	sub_606B
+ui_option_list_input_loop proc near
+call	ui_render_option_list
 call	sub_774E
 mov	cs:byte_61, 0
 mov	ax, 1
@@ -10793,15 +10793,15 @@ jmp	short loc_616E
 
 loc_61AE:
 mov	ax, word_2ED1D
-call	sub_6011
+call	ui_select_next_valid_option
 mov	word_2ED1D, ax
-jmp	short sub_615C
+jmp	short ui_option_list_input_loop
 
 loc_61B9:
 mov	ax, word_2ED1D
-call	sub_6021
+call	ui_select_prev_valid_option
 mov	word_2ED1D, ax
-jmp	short sub_615C
+jmp	short ui_option_list_input_loop
 
 loc_61C4:
 stc
@@ -10810,13 +10810,13 @@ retn
 loc_61C6:
 clc
 retn
-sub_615C endp
+ui_option_list_input_loop endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_61C8 proc near
+ui_edit_selected_option_text proc near
 
 var_8= word ptr	-8
 var_6= word ptr	-6
@@ -10926,12 +10926,12 @@ mov	cs:byte_60, 0
 mov	sp, bp
 pop	bp
 retn
-sub_61C8 endp
+ui_edit_selected_option_text endp
 
 
 
 
-sub_62A4 proc near
+cfg_load_options_or_defaults proc near
 mov	dx, 9C7Ch
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
@@ -10972,12 +10972,12 @@ mov	word_2ECD2, 0
 mov	word_2ECD4, 0
 mov	word_2ECD6, 0
 retn
-sub_62A4 endp
+cfg_load_options_or_defaults endp
 
 
 
 
-sub_631A proc near
+cfg_save_options proc near
 mov	dx, 9C7Ch
 xor	cx, cx
 mov	ax, 3C00h
@@ -10998,12 +10998,12 @@ mov	ax, 3E00h
 int	21h		; DOS -	2+ - CLOSE A FILE WITH HANDLE
 			; BX = file handle
 retn
-sub_631A endp
+cfg_save_options endp
 
 
 
 
-sub_633C proc near
+savegame_write_snapshot proc near
 xor	cx, cx
 mov	ax, 3C00h
 int	21h		; DOS -	2+ - CREATE A FILE WITH	HANDLE (CREAT)
@@ -11035,12 +11035,12 @@ mov	ax, 3E00h
 int	21h		; DOS -	2+ - CLOSE A FILE WITH HANDLE
 			; BX = file handle
 retn
-sub_633C endp
+savegame_write_snapshot endp
 
 
 
 
-sub_636F proc near
+savegame_read_snapshot proc near
 
 ; FUNCTION CHUNK AT 0202 SIZE 00000012 BYTES
 
@@ -11082,7 +11082,7 @@ jmp	loc_202
 
 locret_63AA:
 retn
-sub_636F endp
+savegame_read_snapshot endp
 
 ; START	OF FUNCTION CHUNK FOR game_loop
 
@@ -11215,9 +11215,9 @@ mov	ax, 9D2Ah
 mov	ds:9D3Bh, ax
 mov	byte ptr ds:9D3Ah, 2
 mov	ax, 0FFFFh
-call	sub_6011
+call	ui_select_next_valid_option
 mov	ds:9D3Dh, ax
-call	sub_615C
+call	ui_option_list_input_loop
 jnb	short loc_64D9
 jmp	short loc_64F2
 ; END OF FUNCTION CHUNK	FOR game_loop
@@ -11230,9 +11230,9 @@ jnz	short loc_64F2
 mov	bx, ds:9C92h
 mov	ax, ds:9C90h
 mov	[bx], ax
-call	sub_631A
+call	cfg_save_options
 mov	dx, 9C83h
-call	sub_633C
+call	savegame_write_snapshot
 
 loc_64F2:
 jmp	loc_5E6D

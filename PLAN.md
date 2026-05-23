@@ -96,6 +96,16 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_39AD` -> `ui_show_modal_prompt_wait_key`
 	  - `sub_3A17` -> `hud_update_mode_icons`
 	  - `sub_660B` -> `io_open_file_or_prompt_retry`
+	  - `sub_6011` -> `ui_select_next_valid_option`
+	  - `sub_6021` -> `ui_select_prev_valid_option`
+	  - `sub_6030` -> `ui_is_option_selectable`
+	  - `sub_606B` -> `ui_render_option_list`
+	  - `sub_615C` -> `ui_option_list_input_loop`
+	  - `sub_61C8` -> `ui_edit_selected_option_text`
+	  - `sub_62A4` -> `cfg_load_options_or_defaults`
+	  - `sub_631A` -> `cfg_save_options`
+	  - `sub_633C` -> `savegame_write_snapshot`
+	  - `sub_636F` -> `savegame_read_snapshot`
 	- Remaining: isolate item-specific handler(s) and explicit spawn/respawn routine(s)
 4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
 5. [x] Trace INT 3 handler entry and initial sound effect table anchors
