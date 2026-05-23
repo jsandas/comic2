@@ -8004,7 +8004,7 @@ hud_decrement_lives_bcd endp
 
 
 
-sub_48D4 proc near
+ent_normalize_runtime_y_magnitudes proc near
 mov	cx, word_256DE
 jcxz	short locret_48EC
 mov	si, 700h
@@ -8020,7 +8020,7 @@ loop	loc_48DD
 
 locret_48EC:
 retn
-sub_48D4 endp
+ent_normalize_runtime_y_magnitudes endp
 
 db 0C0h	dup(0)
 
@@ -8043,7 +8043,7 @@ mov	al, [bx]
 mov	byte_2EA03, al
 cmp	al, 1
 jz	short loc_49D1
-call	sub_48D4
+call	ent_normalize_runtime_y_magnitudes
 
 loc_49D1:
 mov	si, word_256D8
@@ -8409,7 +8409,7 @@ add	bx, 20h	; ' '
 loop	loc_4D14
 push	si
 call	hud_increment_lives_bcd_clamped
-call	sub_48D4
+call	ent_normalize_runtime_y_magnitudes
 pop	si
 mov	ax, 5
 call	hud_add_bcd_counter_from_mid_digit

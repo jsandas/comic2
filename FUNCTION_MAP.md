@@ -138,6 +138,7 @@ hud_set_data_disk_icon_collected (was sub_4870)                  → Set data-di
 hud_bcd_decrement_cx (was sub_489E)                              → Decrement packed BCD value in CX with borrow from low to high digit
 hud_decrement_word_25202_bcd (was sub_48AA)                      → Decrement word_25202 packed BCD counter and redraw HUD field at 0x90
 hud_decrement_lives_bcd (was sub_48BF)                           → Decrement lives packed BCD counter and redraw HUD lives field
+ent_normalize_runtime_y_magnitudes (was sub_48D4)               → Convert signed runtime Y values to positive magnitudes for active entries
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)
