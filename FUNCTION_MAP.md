@@ -140,6 +140,7 @@ hud_decrement_word_25202_bcd (was sub_48AA)                      → Decrement w
 hud_decrement_lives_bcd (was sub_48BF)                           → Decrement lives packed BCD counter and redraw HUD lives field
 ent_normalize_runtime_y_magnitudes (was sub_48D4)               → Convert signed runtime Y values to positive magnitudes for active entries
 ent_copy_descriptor_to_runtime_slot (was sub_4A70)              → Copy spawn descriptor record into runtime slot and initialize state fields
+ent_deactivate_runtime_slot (was sub_4C06)                      → Clear runtime slot active flag and sync descriptor state/position fields
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

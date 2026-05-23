@@ -8293,7 +8293,7 @@ ent_update_object_behaviors endp
 
 
 
-sub_4C06 proc near
+ent_deactivate_runtime_slot proc near
 mov	word ptr cs:[si+6], 0
 mov	bx, cs:[si+1Eh]
 mov	byte ptr cs:[bx+6], 2
@@ -8302,7 +8302,7 @@ mov	cs:[bx+8], ax
 mov	ax, cs:[bx+2]
 mov	cs:[bx+0Ah], ax
 retn
-sub_4C06 endp
+ent_deactivate_runtime_slot endp
 
 ; START	OF FUNCTION CHUNK FOR ent_update_object_behaviors
 
@@ -8664,11 +8664,11 @@ cmp	ax, 15h
 jnz	short loc_4FB2
 
 loc_4FA3:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 jmp	short loc_4FC7
 
 loc_4FA8:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 mov	byte ptr cs:[bx+6], 1
 jmp	short loc_4FC7
 
@@ -9415,7 +9415,7 @@ mov	word ptr cs:[si+1Ch], 2
 retn
 
 loc_5666:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 mov	word ptr cs:[si+14h], 0
 cmp	word ptr cs:[si+1Ch], 2
@@ -9430,7 +9430,7 @@ mov	word ptr cs:[si+1Ch], 2
 retn
 
 loc_5688:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 mov	word ptr cs:[si+18h], 2
 mov	bx, 8
@@ -9671,7 +9671,7 @@ jb	short loc_58FD
 retn
 
 loc_58FD:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 mov	word ptr cs:[si+18h], 2
 mov	word ptr cs:[si+16h], 0
@@ -9682,7 +9682,7 @@ jb	short loc_591C
 retn
 
 loc_591C:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 mov	word ptr cs:[si+14h], 0
 mov	word ptr cs:[si+16h], 0
@@ -9709,7 +9709,7 @@ mov	word ptr cs:[si+1Ch], 0
 retn
 
 loc_5968:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_599F
@@ -9748,7 +9748,7 @@ mov	word ptr cs:[si+1Ch], 2
 retn
 
 loc_59BD:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 mov	word ptr cs:[si+18h], 2
 jmp	short loc_59EB
@@ -9808,7 +9808,7 @@ loc_5A47:
 add	sp, 2
 
 loc_5A4A:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 
 
