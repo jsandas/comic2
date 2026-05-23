@@ -129,6 +129,12 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_7741` -> `gfx_init_double_buffer_pages`
 	  - `sub_774E` -> `gfx_present_and_flip_page`
 	  - `sub_7765` -> `gfx_copy_page_4plane`
+	  - `sub_790C` -> `gfx_blit_sprite_opaque_both_pages`
+	  - `sub_7927` -> `gfx_blit_sprite_opaque_active_page`
+	  - `sub_7962` -> `gfx_blit_sprite_plane_rows`
+	  - `sub_7990` -> `gfx_load_and_blit_opaque_file`
+	  - `sub_7999` -> `gfx_load_and_blit_masked_file`
+	  - `sub_79A2` -> `io_read_file_to_seg001_0600`
 	- Remaining: isolate item-specific handler(s) and explicit spawn/respawn routine(s)
 4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
 5. [x] Trace INT 3 handler entry and initial sound effect table anchors

@@ -109,6 +109,12 @@ intro_draw_comic_walk_frame (was sub_7622)           → Advance facing-dependen
 gfx_init_double_buffer_pages (was sub_7741)          → Initialize CRTC/page state for double-buffered rendering
 gfx_present_and_flip_page (was sub_774E)             → Present current draw page on retrace and toggle to the other page
 gfx_copy_page_4plane (was sub_7765)                  → Copy one full 4-plane EGA page from SI to DI
+gfx_blit_sprite_opaque_both_pages (was sub_790C)     → Blit opaque planar sprite to active page and alternate page
+gfx_blit_sprite_opaque_active_page (was sub_7927)    → Blit opaque planar sprite to active page
+gfx_blit_sprite_plane_rows (was sub_7962)            → Copy one sprite plane row-span with 0x28 byte pitch
+gfx_load_and_blit_opaque_file (was sub_7990)         → Load file into scratch buffer and opaque-blit its planar stream
+gfx_load_and_blit_masked_file (was sub_7999)         → Load file into scratch buffer and masked-OR blit its planar stream
+io_read_file_to_seg001_0600 (was sub_79A2)           → Open/read/close file into seg001:0600h scratch buffer
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

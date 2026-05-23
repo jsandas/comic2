@@ -321,7 +321,7 @@ pop	ds
 assume ds:nothing
 mov	dx, 1EBh
 mov	di, cs:word_773F
-call	sub_7999
+call	gfx_load_and_blit_masked_file
 mov	dx, 24h	; '$'
 call	sub_15D
 call	gfx_present_and_flip_page
@@ -341,7 +341,7 @@ pop	ds
 assume ds:nothing
 mov	dx, 1F5h
 mov	di, cs:word_773F
-call	sub_7999
+call	gfx_load_and_blit_masked_file
 mov	dx, 24h	; '$'
 call	sub_15D
 call	gfx_present_and_flip_page
@@ -1964,7 +1964,7 @@ mov	es, ax
 assume es:nothing
 mov	dx, 93C2h
 mov	di, 0
-call	sub_7990
+call	gfx_load_and_blit_opaque_file
 mov	di, 2000h
 mov	si, 0
 call	gfx_copy_page_4plane
@@ -1976,7 +1976,7 @@ lea	si, unk_1F960
 mov	si, [si]
 mov	ax, 100h
 mov	bx, 5Eh	; '^'
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	ds, cs:seg_5E
@@ -1986,16 +1986,16 @@ mov	si, [si+2]
 mov	ax, 100h
 mov	bx, 77h	; 'w'
 push	si
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 pop	si
 mov	ax, 100h
 mov	bx, 90h	; '�'
 push	si
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 pop	si
 mov	ax, 100h
 mov	bx, 0A9h ; '�'
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	io_verify_frcfg_or_prompt_retry
@@ -6136,7 +6136,7 @@ mov	ds, cs:seg_5E
 assume ds:seg003
 lea	si, unk_1F960
 mov	si, [si+2]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 xor	bh, bh
@@ -6150,7 +6150,7 @@ mov	ds, cs:seg_5E
 assume ds:seg003
 lea	si, unk_1F960
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
@@ -6171,7 +6171,7 @@ xor	ch, ch
 shl	cx, 1
 add	si, cx
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 pop	cx
 pop	bx
 pop	ax
@@ -6181,7 +6181,7 @@ xor	ch, ch
 shl	cx, 1
 add	si, cx
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
@@ -6218,7 +6218,7 @@ push	ax
 push	bx
 push	cx
 push	si
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 pop	si
 pop	cx
 pop	bx
@@ -6260,7 +6260,7 @@ assume ds:seg003
 mov	si, 98D8h
 add	si, dx
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
@@ -6295,7 +6295,7 @@ assume ds:seg003
 mov	si, 98D8h
 add	si, dx
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
@@ -6327,7 +6327,7 @@ assume ds:seg003
 mov	si, 98D8h
 add	si, dx
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
@@ -6358,7 +6358,7 @@ assume ds:seg003
 mov	si, 98D8h
 add	si, dx
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
@@ -6829,7 +6829,7 @@ mov	si, [bp+var_6]
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	room_transition_present_frame
@@ -6849,7 +6849,7 @@ mov	si, [bp+var_6]
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	room_transition_present_frame
@@ -6866,7 +6866,7 @@ mov	si, [bp+var_6]
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	room_transition_present_frame
@@ -6886,7 +6886,7 @@ mov	si, [bp+var_6]
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	room_transition_present_frame
@@ -11454,7 +11454,7 @@ int	21h		; DOS -	2+ - CLOSE A FILE WITH HANDLE
 mov	ax, 8
 mov	bx, 8
 mov	si, 9A8h
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	dx, 9EB1h
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
@@ -11596,7 +11596,7 @@ mov	si, [bx]
 mov	di, cs:word_773F
 mov	ax, 60h	; '`'
 mov	bx, 4Ch	; 'L'
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	gfx_present_and_flip_page
@@ -12927,10 +12927,10 @@ mov	dx, 0ABD1h
 call	sub_15D
 mov	di, 4000h
 mov	dx, 0AC12h
-call	sub_7990
+call	gfx_load_and_blit_opaque_file
 mov	di, 6000h
 mov	dx, 0AC1Ch
-call	sub_7990
+call	gfx_load_and_blit_opaque_file
 mov	si, 4000h
 mov	di, cs:word_773F
 call	gfx_copy_page_4plane
@@ -13031,7 +13031,7 @@ mov	bx, offset unk_160F0
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	intro_draw_comic_walk_frame
@@ -13080,7 +13080,7 @@ mov	bx, offset unk_160F0
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	intro_draw_comic_walk_frame
@@ -13197,7 +13197,7 @@ mov	bx, offset unk_160F0
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	si, 0
@@ -13245,7 +13245,7 @@ mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
 push	si
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 pop	si
 mov	ds, cs:seg_5C
 assume ds:seg005
@@ -13354,7 +13354,7 @@ pop	ds
 assume ds:nothing
 mov	dx, 0AC26h
 mov	di, cs:word_773F
-call	sub_7999
+call	gfx_load_and_blit_masked_file
 mov	dx, 0ABE2h
 call	sub_15D
 call	gfx_present_and_flip_page
@@ -13375,7 +13375,7 @@ pop	ds
 assume ds:nothing
 mov	dx, 0AC30h
 mov	di, cs:word_773F
-call	sub_7999
+call	gfx_load_and_blit_masked_file
 mov	dx, 2
 call	sub_15D
 call	gfx_present_and_flip_page
@@ -13700,25 +13700,25 @@ align 2
 
 
 
-sub_790C proc near
+gfx_blit_sprite_opaque_both_pages proc near
 mov	di, cs:word_773F
 push	ax
 push	bx
 push	si
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	di, cs:word_773F
 xor	di, 2000h
 pop	si
 pop	bx
 pop	ax
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 retn
-sub_790C endp
+gfx_blit_sprite_opaque_both_pages endp
 
 
 
 
-sub_7927 proc near
+gfx_blit_sprite_opaque_active_page proc near
 push	bp
 shr	ax, 1
 shr	ax, 1
@@ -13742,21 +13742,21 @@ mov	bx, ax
 
 loc_794C:
 mov	cl, 0
-call	sub_7962
+call	gfx_blit_sprite_plane_rows
 mov	cl, 1
-call	sub_7962
+call	gfx_blit_sprite_plane_rows
 mov	cl, 2
-call	sub_7962
+call	gfx_blit_sprite_plane_rows
 mov	cl, 3
-call	sub_7962
+call	gfx_blit_sprite_plane_rows
 pop	bp
 retn
-sub_7927 endp
+gfx_blit_sprite_opaque_active_page endp
 
 
 
 
-sub_7962 proc near
+gfx_blit_sprite_plane_rows proc near
 push	dx
 call	sub_7A68
 pop	dx
@@ -13790,35 +13790,35 @@ jnz	short loc_796D
 pop	bx
 pop	di
 retn
-sub_7962 endp
+gfx_blit_sprite_plane_rows endp
 
 word_798E dw 0
 
 
 
-sub_7990 proc near
+gfx_load_and_blit_opaque_file proc near
 push	ds
-call	sub_79A2
+call	io_read_file_to_seg001_0600
 call	gfx_rle_blit_opaque_4plane
 pop	ds
 retn
-sub_7990 endp
+gfx_load_and_blit_opaque_file endp
 
 
 
 
-sub_7999 proc near
+gfx_load_and_blit_masked_file proc near
 push	ds
-call	sub_79A2
+call	io_read_file_to_seg001_0600
 call	gfx_rle_blit_masked_or_4plane
 pop	ds
 retn
-sub_7999 endp
+gfx_load_and_blit_masked_file endp
 
 
 
 
-sub_79A2 proc near
+io_read_file_to_seg001_0600 proc near
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
 			; DS:DX	-> ASCIZ filename
@@ -13843,7 +13843,7 @@ int	21h		; DOS -	2+ - CLOSE A FILE WITH HANDLE
 			; BX = file handle
 mov	si, 600h
 retn
-sub_79A2 endp
+io_read_file_to_seg001_0600 endp
 
 
 
