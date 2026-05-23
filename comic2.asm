@@ -225,7 +225,7 @@ call	sub_27A
 cmp	cs:byte_61, 0
 jnz	short loc_136
 loop	loc_123
-call	sub_7164
+call	play_intro_cinematic
 
 loc_136:
 push	ds
@@ -12720,7 +12720,7 @@ db 14h,	0, 18h,	0
 
 
 
-sub_7164 proc near
+play_intro_cinematic proc near
 
 ; FUNCTION CHUNK AT 7298 SIZE 00000249 BYTES
 ; FUNCTION CHUNK AT 7660 SIZE 000000DF BYTES
@@ -12745,18 +12745,18 @@ call	sub_15D
 mov	dx, 0ABF7h
 call	sub_2022
 mov	ax, 12h
-call	sub_7278
-call	sub_7255
+call	wait_ticks_or_abort
+call	gfx_copy_backbuffer_to_active_page
 mov	ax, 48h	; 'H'
 mov	bx, 60h	; '`'
 mov	si, 1722h
-call	sub_7261
+call	intro_draw_sprite_and_present
 mov	ax, 1Bh
-call	sub_7278
-call	sub_7255
+call	wait_ticks_or_abort
+call	gfx_copy_backbuffer_to_active_page
 call	sub_774E
 mov	ax, 12h
-call	sub_7278
+call	wait_ticks_or_abort
 mov	ax, 100h
 mov	bx, 0
 mov	si, 13D4h
@@ -12778,7 +12778,7 @@ mov	si, 34Eh
 mov	cx, 5
 call	sub_7238
 jmp	loc_7298
-sub_7164 endp
+play_intro_cinematic endp
 
 
 
@@ -12788,7 +12788,7 @@ push	cx
 push	si
 push	ax
 push	bx
-call	sub_7255
+call	gfx_copy_backbuffer_to_active_page
 pop	bx
 pop	ax
 pop	si
@@ -12797,7 +12797,7 @@ add	bx, 3
 push	si
 push	ax
 push	bx
-call	sub_7261
+call	intro_draw_sprite_and_present
 pop	bx
 pop	ax
 pop	si
@@ -12814,7 +12814,7 @@ push	cx
 push	si
 push	ax
 push	bx
-call	sub_7255
+call	gfx_copy_backbuffer_to_active_page
 pop	bx
 pop	ax
 pop	si
@@ -12823,7 +12823,7 @@ add	bx, 6
 push	si
 push	ax
 push	bx
-call	sub_7261
+call	intro_draw_sprite_and_present
 pop	bx
 pop	ax
 pop	si
@@ -12840,7 +12840,7 @@ push	cx
 push	si
 push	ax
 push	bx
-call	sub_7255
+call	gfx_copy_backbuffer_to_active_page
 pop	bx
 pop	ax
 pop	si
@@ -12849,7 +12849,7 @@ add	bx, 8
 push	si
 push	ax
 push	bx
-call	sub_7261
+call	intro_draw_sprite_and_present
 pop	bx
 pop	ax
 pop	si
@@ -12861,17 +12861,17 @@ sub_7238 endp
 
 
 
-sub_7255 proc near
+gfx_copy_backbuffer_to_active_page proc near
 mov	di, cs:word_773F
 mov	si, 6000h
 call	sub_7765
 retn
-sub_7255 endp
+gfx_copy_backbuffer_to_active_page endp
 
 
 
 
-sub_7261 proc near
+intro_draw_sprite_and_present proc near
 mov	ds, cs:seg_5E
 assume ds:seg003
 call	sub_77A3
@@ -12879,14 +12879,14 @@ mov	ds, cs:seg_5C
 assume ds:seg005
 call	sub_774E
 mov	ax, 1
-call	sub_7278
+call	wait_ticks_or_abort
 retn
-sub_7261 endp
+intro_draw_sprite_and_present endp
 
 
 
 
-sub_7278 proc near
+wait_ticks_or_abort proc near
 push	ax
 mov	ax, 1
 call	sub_27A
@@ -12894,7 +12894,7 @@ cmp	cs:byte_61, 0
 jnz	short loc_728C
 pop	ax
 dec	ax
-jnz	short sub_7278
+jnz	short wait_ticks_or_abort
 retn
 
 loc_728C:
@@ -12903,9 +12903,9 @@ mov	ax, 3
 int	3		; Trap to Debugger
 mov	sp, word_2FBD3
 retn
-sub_7278 endp ;	sp = -2
+wait_ticks_or_abort endp ;	sp = -2
 
-; START	OF FUNCTION CHUNK FOR sub_7164
+; START	OF FUNCTION CHUNK FOR play_intro_cinematic
 
 loc_7298:
 mov	ax, 0Dh
@@ -12938,7 +12938,7 @@ call	sub_774E
 mov	dx, 0AC00h
 call	sub_2022
 mov	ax, 32h	; '2'
-call	sub_7278
+call	wait_ticks_or_abort
 mov	ax, 8
 
 loc_7306:
@@ -12946,7 +12946,7 @@ push	ax
 call	sub_74E1
 call	sub_774E
 mov	ax, 1
-call	sub_7278
+call	wait_ticks_or_abort
 pop	ax
 add	ax, 8
 cmp	ax, 148h
@@ -12976,7 +12976,7 @@ call	sub_7765
 call	sub_7622
 call	sub_774E
 mov	ax, 1
-call	sub_7278
+call	wait_ticks_or_abort
 add	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_736A
@@ -12992,7 +12992,7 @@ call	sub_7765
 call	sub_7622
 call	sub_774E
 mov	ax, 1
-call	sub_7278
+call	wait_ticks_or_abort
 sub	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_739C
@@ -13008,7 +13008,7 @@ call	sub_7765
 call	sub_7622
 call	sub_774E
 mov	ax, 1
-call	sub_7278
+call	wait_ticks_or_abort
 add	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_73CE
@@ -13037,7 +13037,7 @@ assume ds:seg005
 call	sub_7622
 call	sub_774E
 mov	ax, 1
-call	sub_7278
+call	wait_ticks_or_abort
 add	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_740B
@@ -13050,7 +13050,7 @@ lea	bx, unk_2FC5A
 mov	cx, 9
 int	3		; Trap to Debugger
 mov	ax, 1Eh
-call	sub_7278
+call	wait_ticks_or_abort
 mov	si, 710h
 call	sub_75AD
 mov	si, 0B94h
@@ -13060,7 +13060,7 @@ lea	bx, unk_2FC5A
 mov	cx, 9
 int	3		; Trap to Debugger
 mov	ax, 1Eh
-call	sub_7278
+call	wait_ticks_or_abort
 mov	si, 0B94h
 call	sub_75AD
 mov	ax, 1
@@ -13086,13 +13086,13 @@ assume ds:seg005
 call	sub_7622
 call	sub_774E
 mov	ax, 1
-call	sub_7278
+call	wait_ticks_or_abort
 sub	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_749E
 call	sub_22B
 jmp	loc_7660
-; END OF FUNCTION CHUNK	FOR sub_7164
+; END OF FUNCTION CHUNK	FOR play_intro_cinematic
 
 
 
@@ -13253,7 +13253,7 @@ assume ds:seg005
 loc_7600:
 call	sub_774E
 mov	ax, 1
-call	sub_7278
+call	wait_ticks_or_abort
 cmp	word_2FBD5, 9
 jnz	short loc_761B
 mov	ax, 1
@@ -13300,7 +13300,7 @@ assume ds:seg005
 retn
 sub_7622 endp
 
-; START	OF FUNCTION CHUNK FOR sub_7164
+; START	OF FUNCTION CHUNK FOR play_intro_cinematic
 
 loc_7660:
 mov	dx, 0AC09h
@@ -13326,22 +13326,22 @@ mov	ax, 0
 mov	ds:0ABF5h, ax
 
 loc_7696:
-call	sub_7255
+call	gfx_copy_backbuffer_to_active_page
 mov	si, ds:0ABF5h
 mov	ax, ds:6C6h
 mov	bx, ds:6C8h
-call	sub_7261
+call	intro_draw_sprite_and_present
 sub	word ptr ds:6C8h, 0Ah
-call	sub_7255
+call	gfx_copy_backbuffer_to_active_page
 mov	si, ds:0ABF5h
 mov	ax, ds:6C6h
 mov	bx, ds:6C8h
-call	sub_7261
+call	intro_draw_sprite_and_present
 sub	word ptr ds:6C8h, 0Ah
 add	word ptr ds:0ABF5h, 34Eh
 cmp	word ptr ds:6C8h, 3Ch ;	'<'
 jg	short loc_7696
-call	sub_7255
+call	gfx_copy_backbuffer_to_active_page
 call	sub_774E
 push	ds
 mov	ax, seg	seg004
@@ -13363,7 +13363,7 @@ mov	bx, 0DBh ; '�'
 mov	cx, 1
 int	3		; Trap to Debugger
 mov	ax, 28h	; '('
-call	sub_7278
+call	wait_ticks_or_abort
 push	ds
 mov	ax, seg	seg004
 mov	ds, ax
@@ -13384,9 +13384,9 @@ call	sub_15D
 
 loc_7737:
 mov	ax, 1
-call	sub_7278
+call	wait_ticks_or_abort
 jmp	short loc_7737
-; END OF FUNCTION CHUNK	FOR sub_7164
+; END OF FUNCTION CHUNK	FOR play_intro_cinematic
 word_773F dw 0
 
 

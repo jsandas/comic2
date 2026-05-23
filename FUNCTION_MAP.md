@@ -96,6 +96,10 @@ hud_add_bcd_counter_from_low_digit (was sub_6D99)    → Add value into HUD BCD 
 hud_add_bcd_counter_from_mid_digit (was sub_6DE7)    → Add value into HUD BCD counter chain starting at middle digit pair
 cfg_input_challenge_code (was sub_7057)              → Input challenge code digits during config integrity flow
 cfg_draw_integrity_challenge_screen (was sub_6F47)   → Draw integrity challenge screen frame, labels, and seed/code preview
+play_intro_cinematic (was sub_7164)                  → Play scripted intro cinematic sequence and hand off to menu flow
+gfx_copy_backbuffer_to_active_page (was sub_7255)    → Copy 6000h backbuffer into current active display page
+intro_draw_sprite_and_present (was sub_7261)         → Draw intro sprite frame, present, and advance one tick
+wait_ticks_or_abort (was sub_7278)                   → Wait N ticks unless abort key/event requests DOS exit
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)
