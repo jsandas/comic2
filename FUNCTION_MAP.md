@@ -90,6 +90,8 @@ ui_draw_completion_delta_hint (was sub_64F5)         → Draw completion/collect
 cfg_compute_hardware_seed (was sub_6545)             → Compute hardware/time-derived seed used by settings/save flow
 io_verify_game000_or_prompt_retry (was sub_65EF)     → Verify GAME.000 availability; on failure show prompt/retry loop
 io_verify_frcfg_or_prompt_retry (was sub_65FD)       → Verify FR.CFG availability; on failure show prompt/retry loop
+ui_render_game_selection_panel (was sub_677A)        → Render game-selection panel entries and current highlight
+cfg_run_integrity_challenge (was sub_6DF4)           → Run startup config integrity challenge/update flow
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

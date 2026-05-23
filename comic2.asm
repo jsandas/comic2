@@ -10380,7 +10380,7 @@ call	savegame_read_snapshot
 
 loc_5E73:
 call	cfg_load_options_or_defaults
-call	sub_6DF4
+call	cfg_run_integrity_challenge
 or	ax, ax
 jz	short loc_5E80
 call	cfg_save_options
@@ -11487,7 +11487,7 @@ mov	word ptr cs:[bx+14h], 0
 sti
 
 loc_66E0:
-call	sub_677A
+call	ui_render_game_selection_panel
 
 loc_66E3:
 call	sub_599
@@ -11547,7 +11547,7 @@ jmp	loc_2323
 
 
 
-sub_677A proc near
+ui_render_game_selection_panel proc near
 mov	cx, 6
 mov	si, 9E90h
 
@@ -11601,7 +11601,7 @@ mov	ds, cs:seg_5C
 assume ds:seg005
 call	sub_774E
 retn
-sub_677A endp
+ui_render_game_selection_panel endp
 
 
 
@@ -12344,7 +12344,7 @@ sub_6DE7 endp
 
 ; Attributes: bp-based frame
 
-sub_6DF4 proc near
+cfg_run_integrity_challenge proc near
 
 var_4= word ptr	-4
 var_2= word ptr	-2
@@ -12493,7 +12493,7 @@ xor	ax, bx
 jnz	short sub_6F47
 inc	ax
 retn
-sub_6DF4 endp
+cfg_run_integrity_challenge endp
 
 
 
