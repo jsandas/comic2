@@ -152,6 +152,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_7C79` -> `gfx_blit_sprite_masked_bottom_clipped_active_page`
 	  - `sub_7CCD` -> `gfx_blit_masked_plane_aligned_bottom_clipped`
 	  - `sub_7D31` -> `gfx_blit_masked_plane_shift4_bottom_clipped`
+	  - `sub_3A5F` -> `hud_draw_two_digit_counter`
 	- Remaining: isolate item-specific handler(s) and explicit spawn/respawn routine(s)
 4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
 5. [x] Trace INT 3 handler entry and initial sound effect table anchors

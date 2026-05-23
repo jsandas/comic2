@@ -2071,19 +2071,19 @@ mov	ax, 120h
 mov	bx, 5Eh	; '^'
 xor	ch, ch
 mov	cl, byte_251FC
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 mov	ax, 120h
 mov	bx, 77h	; 'w'
 mov	cx, word_25204
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 mov	ax, 120h
 mov	bx, 90h	; '�'
 mov	cx, word_25202
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 mov	ax, 120h
 mov	bx, 0A9h ; '�'
 mov	cx, word_2526F
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 cmp	byte_251FE, 1
 jnz	short loc_188F
 mov	ax, 0F0h ; '�'
@@ -3411,7 +3411,7 @@ loc_2294:
 mov	ax, 120h
 mov	bx, 90h	; '�'
 mov	cx, ds:222h
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 mov	ax, ds:210h
 mov	ds:6C6h, ax
 mov	ax, ds:212h
@@ -6159,7 +6159,7 @@ hud_update_mode_icons endp
 
 
 
-sub_3A5F proc near
+hud_draw_two_digit_counter proc near
 mov	ds, cs:seg_5E
 assume ds:seg003
 push	ax
@@ -6185,7 +6185,7 @@ call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
-sub_3A5F endp
+hud_draw_two_digit_counter endp
 
 
 
@@ -7656,7 +7656,7 @@ loc_45C8:
 mov	word_2526F, cx
 mov	ax, 120h
 mov	bx, 0A9h ; '�'
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 retn
 sub_45A6 endp
 
@@ -7683,7 +7683,7 @@ loc_45FA:
 mov	word_25202, cx
 mov	ax, 120h
 mov	bx, 90h	; '�'
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 cmp	byte_25876, 2
 jnz	short loc_4613
 mov	byte_25886, 1
@@ -7715,7 +7715,7 @@ loc_4642:
 xor	ch, ch
 mov	ax, 120h
 mov	bx, 5Eh	; '^'
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 mov	ax, 1
 call	sub_6D95
 clc
@@ -7781,7 +7781,7 @@ loc_46D7:
 mov	word_25204, cx
 mov	ax, 120h
 mov	bx, 77h	; 'w'
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 clc
 retn
 
@@ -7984,7 +7984,7 @@ call	sub_489E
 mov	word_25202, cx
 mov	ax, 120h
 mov	bx, 90h	; '�'
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 retn
 sub_48AA endp
 
@@ -7997,7 +7997,7 @@ call	sub_489E
 mov	word_2526F, cx
 mov	ax, 120h
 mov	bx, 0A9h ; '�'
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 retn
 sub_48BF endp
 
@@ -12309,7 +12309,7 @@ push	dx
 mov	[bx], cx
 mov	ax, dx
 mov	bx, 10h
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 pop	dx
 pop	bx
 pop	ax
