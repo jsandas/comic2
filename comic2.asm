@@ -329,7 +329,7 @@ mov	ax, 1
 mov	bx, 0DBh ; '�'
 mov	cx, 1
 int	3		; Trap to Debugger
-call	sub_599
+call	input_wait_for_scancode_event
 push	ds
 mov	ax, seg	seg004
 mov	ds, ax
@@ -349,7 +349,7 @@ mov	ax, 1
 mov	bx, 96B6h
 mov	cx, 1
 int	3		; Trap to Debugger
-call	sub_599
+call	input_wait_for_scancode_event
 mov	ax, 0Dh
 int	10h		; - VIDEO - SET	VIDEO MODE
 			; AL = mode
@@ -366,7 +366,7 @@ mov	ah, 9
 lea	dx, ds:46h
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_599
+call	input_wait_for_scancode_event
 jmp	short loc_215
 ; END OF FUNCTION CHUNK	FOR savegame_read_snapshot
 db 90h
@@ -476,7 +476,7 @@ db 0CDh, 10h, 5Bh, 0EBh, 0ECh, 0C3h
 ; Input:  Uses seg004 graphic data and word_773F screen offset state
 ; Output: Copies two EGA assets, probes a small config/resource file, and
 ;         branches into the startup/menu flow based on byte_61
-; Calls:  gfx_rle_blit_opaque_4plane, gfx_rle_blit_masked_or_4plane, gfx_load_ega_palette_16_from_table, gfx_present_and_flip_page, sub_599, gfx_init_double_buffer_pages
+; Calls:  gfx_rle_blit_opaque_4plane, gfx_rle_blit_masked_or_4plane, gfx_load_ega_palette_16_from_table, gfx_present_and_flip_page, input_wait_for_scancode_event, gfx_init_double_buffer_pages
 ; Evidence: First two calls are plane blits from seg004; later INT 21h open/
 ;           read/close sequence touches a 6-byte buffer at 25Eh; byte_61 gates
 ;           exit/menu paths immediately afterward
@@ -532,7 +532,7 @@ pop	ds
 assume ds:nothing
 
 loc_30D:
-call	sub_599
+call	input_wait_for_scancode_event
 cmp	cs:byte_61, 25h	; '%'
 jnz	short loc_31B
 jmp	loc_45C
@@ -780,14 +780,14 @@ mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
 xor	ax, ax
-call	sub_599
+call	input_wait_for_scancode_event
 cmp	cs:byte_61, 31h	; '1'
 jz	short loc_519
 lea	dx, aCalibrateJoyst+327h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_599
+call	input_wait_for_scancode_event
 cmp	cs:byte_61, 15h
 jz	short loc_51D
 pop	ds
@@ -831,7 +831,7 @@ jmp	loc_215
 
 
 sub_54B	proc near
-call	sub_599
+call	input_wait_for_scancode_event
 mov	bl, al
 xor	bh, bh
 mov	si, bx
@@ -866,7 +866,7 @@ sub_54B	endp
 
 
 
-sub_599	proc near
+input_wait_for_scancode_event	proc near
 mov	cs:byte_61, 0
 
 loc_59F:
@@ -884,7 +884,7 @@ sti
 pop	es
 assume es:nothing
 retn
-sub_599	endp
+input_wait_for_scancode_event	endp
 
 ; ============================================================================
 ; INTERRUPT VECTOR SAVE SLOTS (db far pointers)
@@ -6088,7 +6088,7 @@ call	ui_draw_framed_message_from_stream
 call	gfx_present_and_flip_page
 
 loc_39C1:
-call	sub_599
+call	input_wait_for_scancode_event
 cmp	cs:byte_61, 10h
 jz	short loc_39DB
 cmp	cs:byte_61, 1
@@ -6120,7 +6120,7 @@ call	gfx_render_viewport_4plane
 mov	si, 9650h
 call	ui_draw_framed_message_from_stream
 call	gfx_present_and_flip_page
-call	sub_599
+call	input_wait_for_scancode_event
 jmp	loc_63AB
 ; END OF FUNCTION CHUNK	FOR game_loop
 
@@ -7880,7 +7880,7 @@ push	di
 call	ui_draw_framed_message_from_stream
 call	gfx_present_and_flip_page
 pop	di
-call	sub_599
+call	input_wait_for_scancode_event
 
 loc_47DD:
 mov	ax, word_256DA
@@ -11417,7 +11417,7 @@ call	ui_draw_framed_message_from_stream
 call	gfx_present_and_flip_page
 pop	di
 pop	si
-call	sub_599
+call	input_wait_for_scancode_event
 cmp	cs:byte_61, 1
 jnz	short io_open_file_or_prompt_retry
 jmp	loc_215
@@ -11490,7 +11490,7 @@ loc_66E0:
 call	ui_render_game_selection_panel
 
 loc_66E3:
-call	sub_599
+call	input_wait_for_scancode_event
 cmp	cs:byte_25A, 1
 jz	short loc_6729
 cmp	cs:byte_25B, 1
@@ -12659,7 +12659,7 @@ call	ui_draw_glyph_8x8
 call	gfx_present_and_flip_page
 
 loc_70AD:
-call	sub_599
+call	input_wait_for_scancode_event
 mov	al, cs:byte_61
 cmp	al, 1
 jnz	short loc_70BB
