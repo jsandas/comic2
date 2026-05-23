@@ -135,6 +135,9 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_7990` -> `gfx_load_and_blit_opaque_file`
 	  - `sub_7999` -> `gfx_load_and_blit_masked_file`
 	  - `sub_79A2` -> `io_read_file_to_seg001_0600`
+	  - `sub_79ED` -> `gfx_rle_decode_copy_rowspan`
+	  - `sub_7A39` -> `gfx_rle_decode_or_rowspan`
+	  - `sub_7A68` -> `ega_select_plane_read_write`
 	- Remaining: isolate item-specific handler(s) and explicit spawn/respawn routine(s)
 4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
 5. [x] Trace INT 3 handler entry and initial sound effect table anchors

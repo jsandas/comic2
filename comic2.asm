@@ -2710,9 +2710,9 @@ gfx_render_viewport_4plane endp
 ; ============================================================================
 ; gfx_copy_viewport_plane - Copy one EGA plane for viewport strip
 ; Input:  cl=plane index, ax=source segment for plane data, bp frame from gfx_render_viewport_4plane
-; Output: Plane data copied to A000h using map mask/read-map set by sub_7A68
-; Calls:  sub_7A68
-; Evidence: Port setup helper sub_7A68 (3C4h/3CEh), rep movsw loops with
+; Output: Plane data copied to A000h using map mask/read-map set by ega_select_plane_read_write
+; Calls:  ega_select_plane_read_write
+; Evidence: Port setup helper ega_select_plane_read_write (3C4h/3CEh), rep movsw loops with
 ;           source stride (word_25278) and destination stride (0Eh)
 ; Confidence: High
 ; ============================================================================
@@ -2720,7 +2720,7 @@ gfx_copy_viewport_plane proc near
 push	si
 push	di
 push	ax
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	dx, word_25278
 shl	dx, 1
 sub	dx, 1Ah
@@ -2951,7 +2951,7 @@ sub_1E86 endp
 
 
 sub_1F72 proc near
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	cx, 10h
 mov	dx, ds:298h
 shl	dx, 1
@@ -2972,7 +2972,7 @@ sub_1F72 endp
 sub_1F89 proc near
 push	es
 mov	es, ax
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	cx, 10h
 mov	dx, ds:298h
 shl	dx, 1
@@ -6583,7 +6583,7 @@ room_transition_blit_reveal_quad_4plane endp
 
 
 room_transition_blit_reveal_column_plane proc near
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	bx, 10h
 push	di
 
@@ -13137,22 +13137,22 @@ intro_wipe_split_buffers_step endp
 gfx_copy_rect_all_planes proc near
 xor	cl, cl
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 call	gfx_copy_rect_rows_stride40
 mov	cl, 1
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 call	gfx_copy_rect_rows_stride40
 mov	cl, 2
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 call	gfx_copy_rect_rows_stride40
 mov	cl, 3
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 call	gfx_copy_rect_rows_stride40
 retn
@@ -13421,7 +13421,7 @@ assume ds:nothing
 mov	es, ax
 assume es:nothing
 xor	cl, cl
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	cx, 0FA0h
 push	si
 push	di
@@ -13429,7 +13429,7 @@ rep movsw
 pop	di
 pop	si
 mov	cl, 1
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	cx, 0FA0h
 push	si
 push	di
@@ -13437,7 +13437,7 @@ rep movsw
 pop	di
 pop	si
 mov	cl, 2
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	cx, 0FA0h
 push	si
 push	di
@@ -13445,7 +13445,7 @@ rep movsw
 pop	di
 pop	si
 mov	cl, 3
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	cx, 0FA0h
 rep movsw
 pop	ds
@@ -13509,7 +13509,7 @@ sub_77A3 endp
 
 sub_77F2 proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -13572,7 +13572,7 @@ retn
 
 sub_7849 proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -13758,7 +13758,7 @@ gfx_blit_sprite_opaque_active_page endp
 
 gfx_blit_sprite_plane_rows proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -13853,7 +13853,7 @@ io_read_file_to_seg001_0600 endp
 ; Input:  DS:SI points at stream: [word row_bytes][RLE packets...],
 ;         ES:DI is destination start in active page
 ; Output: Writes all 4 EGA planes for one row-span and restores DI to row base
-; Calls:  sub_7A68 (plane select), sub_79ED (RLE decode copy/fill)
+; Calls:  ega_select_plane_read_write (plane select), gfx_rle_decode_copy_rowspan (RLE decode copy/fill)
 ; Evidence: Iterates CL=0..3, programs Sequencer/GC plane state, then uses
 ;           MOVSB/STOSB decoder with 0x80 packet high-bit run marker
 ; Confidence: High
@@ -13862,24 +13862,24 @@ gfx_rle_blit_opaque_4plane proc near
 lodsw
 mov	cs:word_798E, ax
 mov	cl, 0
-call	sub_7A68
-call	sub_79ED
+call	ega_select_plane_read_write
+call	gfx_rle_decode_copy_rowspan
 mov	cl, 1
-call	sub_7A68
-call	sub_79ED
+call	ega_select_plane_read_write
+call	gfx_rle_decode_copy_rowspan
 mov	cl, 2
-call	sub_7A68
-call	sub_79ED
+call	ega_select_plane_read_write
+call	gfx_rle_decode_copy_rowspan
 mov	cl, 3
-call	sub_7A68
-call	sub_79ED
+call	ega_select_plane_read_write
+call	gfx_rle_decode_copy_rowspan
 retn
 gfx_rle_blit_opaque_4plane endp
 
 
 
 
-sub_79ED proc near
+gfx_rle_decode_copy_rowspan proc near
 mov	bx, di
 
 loc_79EF:
@@ -13905,7 +13905,7 @@ cmp	ax, cs:word_798E
 jl	short loc_79EF
 mov	di, bx
 retn
-sub_79ED endp
+gfx_rle_decode_copy_rowspan endp
 
 
 
@@ -13916,7 +13916,7 @@ sub_79ED endp
 ;         ES:DI is destination start in active page
 ; Output: OR-blends decoded bytes into all 4 EGA planes; preserves uncovered
 ;         destination bits and restores DI to row base
-; Calls:  sub_7A68 (plane select), sub_7A39 (RLE decode OR writer)
+; Calls:  ega_select_plane_read_write (plane select), gfx_rle_decode_or_rowspan (RLE decode OR writer)
 ; Evidence: Same plane loop as gfx_rle_blit_opaque_4plane but inner writer uses OR es:[di],al
 ;           for both literal and run packets
 ; Confidence: High
@@ -13925,24 +13925,24 @@ gfx_rle_blit_masked_or_4plane proc near
 lodsw
 mov	cs:word_798E, ax
 mov	cl, 0
-call	sub_7A68
-call	sub_7A39
+call	ega_select_plane_read_write
+call	gfx_rle_decode_or_rowspan
 mov	cl, 1
-call	sub_7A68
-call	sub_7A39
+call	ega_select_plane_read_write
+call	gfx_rle_decode_or_rowspan
 mov	cl, 2
-call	sub_7A68
-call	sub_7A39
+call	ega_select_plane_read_write
+call	gfx_rle_decode_or_rowspan
 mov	cl, 3
-call	sub_7A68
-call	sub_7A39
+call	ega_select_plane_read_write
+call	gfx_rle_decode_or_rowspan
 retn
 gfx_rle_blit_masked_or_4plane endp
 
 
 
 
-sub_7A39 proc near
+gfx_rle_decode_or_rowspan proc near
 mov	bx, di
 
 loc_7A3B:
@@ -13977,12 +13977,12 @@ cmp	ax, cs:word_798E
 jl	short loc_7A3B
 mov	di, bx
 retn
-sub_7A39 endp
+gfx_rle_decode_or_rowspan endp
 
 
 
 
-sub_7A68 proc near
+ega_select_plane_read_write proc near
 mov	ah, 1
 shl	ah, cl
 mov	al, 2
@@ -14006,7 +14006,7 @@ out	dx, al		; EGA port: graphics controller	data register
 dec	dx
 xchg	ah, al
 retn
-sub_7A68 endp
+ega_select_plane_read_write endp
 
 
 
@@ -14114,7 +14114,7 @@ sub_7AC8 endp
 
 sub_7B03 proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -14210,7 +14210,7 @@ sub_7B31 endp
 
 sub_7B8B proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -14278,7 +14278,7 @@ retn
 
 sub_7BEF proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -14421,7 +14421,7 @@ sub_7C79 endp
 
 sub_7CCD proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -14489,7 +14489,7 @@ retn
 
 sub_7D31 proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx

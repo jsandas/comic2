@@ -115,6 +115,9 @@ gfx_blit_sprite_plane_rows (was sub_7962)            → Copy one sprite plane r
 gfx_load_and_blit_opaque_file (was sub_7990)         → Load file into scratch buffer and opaque-blit its planar stream
 gfx_load_and_blit_masked_file (was sub_7999)         → Load file into scratch buffer and masked-OR blit its planar stream
 io_read_file_to_seg001_0600 (was sub_79A2)           → Open/read/close file into seg001:0600h scratch buffer
+gfx_rle_decode_copy_rowspan (was sub_79ED)          → Decode one RLE row-span with literal/copy runs into destination
+gfx_rle_decode_or_rowspan (was sub_7A39)            → Decode one RLE row-span and OR-composite into destination
+ega_select_plane_read_write (was sub_7A68)          → Program EGA sequencer/GC for selected read/write plane index
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)
