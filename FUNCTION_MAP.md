@@ -146,6 +146,9 @@ ent_move_x_and_bounce (was sub_5A4E)                            → Attempt hori
 ent_apply_gravity_and_move_y (was sub_5A99)                     → Integrate vertical velocity with gravity clamp and resolve tile collisions
 ent_move_y_and_bounce (was sub_5B01)                            → Advance vertical motion and invert vertical velocity when collision limits are hit
 ent_move_y_with_probe_and_bounce (was sub_5B7B)                 → Advance vertical motion using probe collision check, bouncing on contact
+ent_move_x_with_range_probe_and_bounce (was sub_5BAC)           → Attempt horizontal move using range-based tile probe, then bounce on collision
+ent_probe_x_collision_strict (was sub_5BF7)                     → Strict X collision probe against high-threshold blocking tiles
+ent_probe_x_collision_range (was sub_5C3E)                      → X collision probe accepting bounded tile range as passable
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

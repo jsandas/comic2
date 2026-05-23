@@ -8833,7 +8833,7 @@ push	ax
 
 loc_5111:
 push	ax
-call	sub_5BF7
+call	ent_probe_x_collision_strict
 pop	ax
 jb	short loc_5129
 mov	bx, cs:[si+12h]
@@ -8930,7 +8930,7 @@ mov	cs:[si+12h], bx
 
 loc_51F2:
 mov	bx, 4
-call	sub_5BAC
+call	ent_move_x_with_range_probe_and_bounce
 retn
 call	ent_apply_gravity_and_move_y
 jnb	short loc_5205
@@ -8984,7 +8984,7 @@ jg	short loc_526F
 mov	bx, 8
 
 loc_526F:
-call	sub_5BAC
+call	ent_move_x_with_range_probe_and_bounce
 retn
 mov	bx, 2
 mov	ax, comic_y
@@ -9015,7 +9015,7 @@ jmp	short locret_52BE
 
 loc_52B3:
 push	word ptr cs:[si+18h]
-call	sub_5BAC
+call	ent_move_x_with_range_probe_and_bounce
 pop	word ptr cs:[si+18h]
 
 locret_52BE:
@@ -9065,7 +9065,7 @@ push	ax
 
 loc_5329:
 push	ax
-call	sub_5BF7
+call	ent_probe_x_collision_strict
 pop	ax
 jb	short loc_5341
 mov	bx, cs:[si+12h]
@@ -9224,7 +9224,7 @@ push	ax
 
 loc_54B0:
 push	ax
-call	sub_5BF7
+call	ent_probe_x_collision_strict
 pop	ax
 jb	short loc_54C8
 mov	bx, cs:[si+12h]
@@ -9272,7 +9272,7 @@ push	ax
 
 loc_5518:
 push	ax
-call	sub_5BF7
+call	ent_probe_x_collision_strict
 pop	ax
 jb	short loc_5530
 mov	bx, cs:[si+12h]
@@ -9833,7 +9833,7 @@ add	ax, bx
 push	ax
 
 loc_5A74:
-call	sub_5BF7
+call	ent_probe_x_collision_strict
 pop	ax
 jnb	short loc_5A93
 cmp	word ptr cs:[si+18h], 2
@@ -9993,7 +9993,7 @@ ent_move_y_with_probe_and_bounce endp
 
 
 
-sub_5BAC proc near
+ent_move_x_with_range_probe_and_bounce proc near
 cmp	word ptr cs:[si+18h], 2
 jz	short loc_5BC5
 mov	cs:[si+14h], bx
@@ -10013,7 +10013,7 @@ add	ax, bx
 push	ax
 
 loc_5BD2:
-call	sub_5C3E
+call	ent_probe_x_collision_range
 pop	ax
 jnb	short loc_5BF1
 cmp	word ptr cs:[si+18h], 2
@@ -10030,12 +10030,12 @@ loc_5BF1:
 mov	cs:[si+10h], ax
 clc
 retn
-sub_5BAC endp
+ent_move_x_with_range_probe_and_bounce endp
 
 
 
 
-sub_5BF7 proc near
+ent_probe_x_collision_strict proc near
 cmp	ax, word_256A2
 jl	short loc_5C3A
 mov	cx, word_256A2
@@ -10068,12 +10068,12 @@ retn
 loc_5C3C:
 clc
 retn
-sub_5BF7 endp
+ent_probe_x_collision_strict endp
 
 
 
 
-sub_5C3E proc near
+ent_probe_x_collision_range proc near
 cmp	ax, word_256A2
 jl	short loc_5C3A
 mov	cx, word_256A2
@@ -10110,7 +10110,7 @@ retn
 loc_5C8F:
 stc
 retn
-sub_5C3E endp
+ent_probe_x_collision_range endp
 
 
 
