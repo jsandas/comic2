@@ -198,7 +198,7 @@ loc_E6:
 mov	ax, 0A000h
 mov	es, ax
 assume es:nothing
-call	sub_7741
+call	gfx_init_double_buffer_pages
 push	ds
 mov	ax, seg	seg004
 mov	ds, ax
@@ -213,7 +213,7 @@ pop	ds
 assume ds:nothing
 mov	dx, 2
 call	sub_15D
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	dx, 13h
 call	sub_15D
 mov	cs:byte_61, 0
@@ -239,7 +239,7 @@ pop	ds
 assume ds:nothing
 mov	dx, 2
 call	sub_15D
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 3
 call	sub_27A
 call	gfx_startup_graphics_and_menu_probe
@@ -309,7 +309,7 @@ call	sub_22B
 mov	ax, 0Dh
 int	10h		; - VIDEO - SET	VIDEO MODE
 			; AL = mode
-call	sub_7741
+call	gfx_init_double_buffer_pages
 push	ds
 mov	ax, seg	seg004
 mov	ds, ax
@@ -324,7 +324,7 @@ mov	di, cs:word_773F
 call	sub_7999
 mov	dx, 24h	; '$'
 call	sub_15D
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
 mov	bx, 0DBh ; '�'
 mov	cx, 1
@@ -344,7 +344,7 @@ mov	di, cs:word_773F
 call	sub_7999
 mov	dx, 24h	; '$'
 call	sub_15D
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
 mov	bx, 96B6h
 mov	cx, 1
@@ -353,7 +353,7 @@ call	sub_599
 mov	ax, 0Dh
 int	10h		; - VIDEO - SET	VIDEO MODE
 			; AL = mode
-call	sub_7741
+call	gfx_init_double_buffer_pages
 jmp	loc_63AB
 ; END OF FUNCTION CHUNK	FOR game_loop
 retn
@@ -476,7 +476,7 @@ db 0CDh, 10h, 5Bh, 0EBh, 0ECh, 0C3h
 ; Input:  Uses seg004 graphic data and word_773F screen offset state
 ; Output: Copies two EGA assets, probes a small config/resource file, and
 ;         branches into the startup/menu flow based on byte_61
-; Calls:  gfx_rle_blit_opaque_4plane, gfx_rle_blit_masked_or_4plane, sub_15D, sub_774E, sub_599, sub_7741
+; Calls:  gfx_rle_blit_opaque_4plane, gfx_rle_blit_masked_or_4plane, sub_15D, gfx_present_and_flip_page, sub_599, gfx_init_double_buffer_pages
 ; Evidence: First two calls are plane blits from seg004; later INT 21h open/
 ;           read/close sequence touches a 6-byte buffer at 25Eh; byte_61 gates
 ;           exit/menu paths immediately afterward
@@ -500,7 +500,7 @@ pop	ds
 assume ds:nothing
 mov	dx, 2
 call	sub_15D
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	dx, 24h	; '$'
 call	sub_15D
 mov	ax, 1
@@ -552,7 +552,7 @@ int	10h		; - VIDEO - SET	VIDEO MODE
 			; AL = mode
 mov	ax, 0A000h
 mov	es, ax
-call	sub_7741
+call	gfx_init_double_buffer_pages
 retn
 
 loc_33C:
@@ -1967,7 +1967,7 @@ mov	di, 0
 call	sub_7990
 mov	di, 2000h
 mov	si, 0
-call	sub_7765
+call	gfx_copy_page_4plane
 mov	ax, 1
 call	sub_27A
 mov	ds, cs:seg_5E
@@ -4162,7 +4162,7 @@ dec	comic_hp
 call	hud_c_meter_step_up
 
 loc_29D7:
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, comic_y
 cmp	ax, word_2527E
 jle	short loc_2A07
@@ -6085,7 +6085,7 @@ mov	cx, 4
 int	3		; Trap to Debugger
 mov	si, 962Ch
 call	ui_draw_framed_message_from_stream
-call	sub_774E
+call	gfx_present_and_flip_page
 
 loc_39C1:
 call	sub_599
@@ -6119,7 +6119,7 @@ int	3		; Trap to Debugger
 call	gfx_render_viewport_4plane
 mov	si, 9650h
 call	ui_draw_framed_message_from_stream
-call	sub_774E
+call	gfx_present_and_flip_page
 call	sub_599
 jmp	loc_63AB
 ; END OF FUNCTION CHUNK	FOR game_loop
@@ -6390,7 +6390,7 @@ assume ds:seg003
 call	sub_77A3
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
 call	sub_27A
 call	gfx_render_viewport_4plane
@@ -6615,7 +6615,7 @@ room_transition_clear_reveal_box endp
 
 room_transition_present_frame proc near
 call	ent_update_entities_in_viewport
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
 call	sub_27A
 retn
@@ -7790,7 +7790,7 @@ retn
 ent_activate_slot_into_runtime proc near
 call	gfx_render_viewport_4plane
 call	ent_update_entities_in_viewport
-call	sub_774E
+call	gfx_present_and_flip_page
 call	gfx_render_viewport_4plane
 call	ent_update_entities_in_viewport
 
@@ -7808,7 +7808,7 @@ assume ds:seg003
 call	sub_77A3
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_774E
+call	gfx_present_and_flip_page
 
 loc_471A:
 xor	al, al
@@ -7878,7 +7878,7 @@ int	3		; Trap to Debugger
 mov	si, 991Ch
 push	di
 call	ui_draw_framed_message_from_stream
-call	sub_774E
+call	gfx_present_and_flip_page
 pop	di
 call	sub_599
 
@@ -10395,7 +10395,7 @@ mov	ax, 50h	; 'P'
 mov	bx, 28h	; '('
 mov	si, 9AE4h
 call	ui_draw_string_8x8
-call	sub_774E
+call	gfx_present_and_flip_page
 call	sub_5F86
 mov	ax, 50h	; 'P'
 mov	bx, 28h	; '('
@@ -10450,9 +10450,9 @@ cmp	byte ptr [bx], 0
 jnz	short loc_5F01
 mov	word ptr [bx], 20h ; ' '
 call	ui_render_option_list
-call	sub_774E
+call	gfx_present_and_flip_page
 call	ui_render_option_list
-call	sub_774E
+call	gfx_present_and_flip_page
 call	ui_edit_selected_option_text
 jb	short loc_5F47
 inc	word_2EC74
@@ -10768,7 +10768,7 @@ ui_render_option_list endp
 
 ui_option_list_input_loop proc near
 call	ui_render_option_list
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	cs:byte_61, 0
 mov	ax, 1
 call	sub_27A
@@ -10870,7 +10870,7 @@ mov	cx, bx
 mov	bx, ax
 mov	al, 2Bh	; '+'
 call	ui_draw_glyph_8x8
-call	sub_774E
+call	gfx_present_and_flip_page
 xor	ax, ax
 int	16h		; KEYBOARD - READ CHAR FROM BUFFER, WAIT IF EMPTY
 			; Return: AH = scan code, AL = character
@@ -11202,7 +11202,7 @@ mov	ax, 28h	; '('
 mov	bx, 38h	; '8'
 mov	si, 9B65h
 call	ui_draw_string_8x8
-call	sub_774E
+call	gfx_present_and_flip_page
 call	sub_5F86
 call	ui_draw_completion_delta_hint
 mov	ax, 7
@@ -11414,7 +11414,7 @@ loc_661C:
 push	si
 push	di
 call	ui_draw_framed_message_from_stream
-call	sub_774E
+call	gfx_present_and_flip_page
 pop	di
 pop	si
 call	sub_599
@@ -11599,7 +11599,7 @@ mov	bx, 4Ch	; 'L'
 call	sub_7927
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_774E
+call	gfx_present_and_flip_page
 retn
 ui_render_game_selection_panel endp
 
@@ -12367,14 +12367,14 @@ retn
 
 loc_6E19:
 call	cfg_draw_integrity_challenge_screen
-call	sub_774E
+call	gfx_present_and_flip_page
 call	cfg_draw_integrity_challenge_screen
 call	cfg_input_challenge_code
 mov	ax, word_2FB91
 mov	[bp+var_2], ax
 mov	bx, word_2FB93
 mov	[bp+var_4], bx
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	dx, 25h	; '%'
 mov	ax, word_2FB91
 mov	cx, word_2FB91
@@ -12410,7 +12410,7 @@ loc_6E71:
 mov	word_2ECD8, ax
 mov	word_2FB91, bx
 mov	word_2FB93, cx
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	dx, 25h	; '%'
 mov	ax, word_2FB91
 mov	cx, word_2FB91
@@ -12439,7 +12439,7 @@ mov	word_2FB91, ax
 mov	word_2FB93, cx
 push	ax
 push	bx
-call	sub_774E
+call	gfx_present_and_flip_page
 pop	bx
 pop	ax
 add	ax, bx
@@ -12463,7 +12463,7 @@ xor	cx, ax
 xor	bx, dx
 add	cx, word_2FB93
 mov	word_2FB91, cx
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	dx, 25h	; '%'
 mov	ax, word_2FB91
 mov	cx, word_2FB91
@@ -12656,7 +12656,7 @@ mov	cx, bx
 mov	bx, ax
 mov	al, 2Bh	; '+'
 call	ui_draw_glyph_8x8
-call	sub_774E
+call	gfx_present_and_flip_page
 
 loc_70AD:
 call	sub_599
@@ -12738,8 +12738,8 @@ pop	ds
 assume ds:nothing
 mov	di, cs:word_773F
 mov	si, 6000h
-call	sub_7765
-call	sub_774E
+call	gfx_copy_page_4plane
+call	gfx_present_and_flip_page
 mov	dx, 0ABC0h
 call	sub_15D
 mov	dx, 0ABF7h
@@ -12754,7 +12754,7 @@ call	intro_draw_sprite_and_present
 mov	ax, 1Bh
 call	wait_ticks_or_abort
 call	gfx_copy_backbuffer_to_active_page
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 12h
 call	wait_ticks_or_abort
 mov	ax, 100h
@@ -12864,7 +12864,7 @@ sub_7238 endp
 gfx_copy_backbuffer_to_active_page proc near
 mov	di, cs:word_773F
 mov	si, 6000h
-call	sub_7765
+call	gfx_copy_page_4plane
 retn
 gfx_copy_backbuffer_to_active_page endp
 
@@ -12877,7 +12877,7 @@ assume ds:seg003
 call	sub_77A3
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
 call	wait_ticks_or_abort
 retn
@@ -12911,7 +12911,7 @@ loc_7298:
 mov	ax, 0Dh
 int	10h		; - VIDEO - SET	VIDEO MODE
 			; AL = mode
-call	sub_7741
+call	gfx_init_double_buffer_pages
 mov	bx, 7106h
 cli
 mov	cs:word_278, bx
@@ -12933,8 +12933,8 @@ mov	dx, 0AC1Ch
 call	sub_7990
 mov	si, 4000h
 mov	di, cs:word_773F
-call	sub_7765
-call	sub_774E
+call	gfx_copy_page_4plane
+call	gfx_present_and_flip_page
 mov	dx, 0AC00h
 call	sub_2022
 mov	ax, 32h	; '2'
@@ -12944,7 +12944,7 @@ mov	ax, 8
 loc_7306:
 push	ax
 call	intro_wipe_split_buffers_step
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
 call	wait_ticks_or_abort
 pop	ax
@@ -12972,9 +12972,9 @@ mov	word_2FBD5, 10h
 loc_736A:
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
+call	gfx_copy_page_4plane
 call	intro_draw_comic_walk_frame
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
 call	wait_ticks_or_abort
 add	comic_x, 8
@@ -12988,9 +12988,9 @@ mov	word_2FBD5, 0Ah
 loc_739C:
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
+call	gfx_copy_page_4plane
 call	intro_draw_comic_walk_frame
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
 call	wait_ticks_or_abort
 sub	comic_x, 8
@@ -13004,9 +13004,9 @@ mov	word_2FBD5, 2
 loc_73CE:
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
+call	gfx_copy_page_4plane
 call	intro_draw_comic_walk_frame
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
 call	wait_ticks_or_abort
 add	comic_x, 8
@@ -13024,7 +13024,7 @@ mov	word_2FBD5, 12h
 loc_740B:
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
+call	gfx_copy_page_4plane
 mov	si, 28Ch
 mov	ax, 0C0h ; '�'
 mov	bx, offset unk_160F0
@@ -13035,7 +13035,7 @@ call	sub_7927
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	intro_draw_comic_walk_frame
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
 call	wait_ticks_or_abort
 add	comic_x, 8
@@ -13073,7 +13073,7 @@ mov	word_2FBD5, 1Ah
 loc_749E:
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
+call	gfx_copy_page_4plane
 mov	si, 1018h
 mov	ax, 0C0h ; '�'
 mov	bx, offset unk_160F0
@@ -13084,7 +13084,7 @@ call	sub_7927
 mov	ds, cs:seg_5C
 assume ds:seg005
 call	intro_draw_comic_walk_frame
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
 call	wait_ticks_or_abort
 sub	comic_x, 8
@@ -13190,7 +13190,7 @@ intro_draw_overlay_with_comic proc near
 push	si
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
+call	gfx_copy_page_4plane
 pop	si
 mov	ax, 0C0h ; '�'
 mov	bx, offset unk_160F0
@@ -13208,7 +13208,7 @@ assume ds:seg003
 call	sub_77A3
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_774E
+call	gfx_present_and_flip_page
 retn
 intro_draw_overlay_with_comic endp
 
@@ -13222,7 +13222,7 @@ loc_75B3:
 push	si
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
+call	gfx_copy_page_4plane
 mov	si, 0
 test	word_2FBD5, 1
 jnz	short loc_75CD
@@ -13251,7 +13251,7 @@ mov	ds, cs:seg_5C
 assume ds:seg005
 
 loc_7600:
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
 call	wait_ticks_or_abort
 cmp	word_2FBD5, 9
@@ -13308,7 +13308,7 @@ call	sub_2022
 mov	ax, 0Dh
 int	10h		; - VIDEO - SET	VIDEO MODE
 			; AL = mode
-call	sub_7741
+call	gfx_init_double_buffer_pages
 push	ds
 mov	ax, seg	seg004
 mov	ds, ax
@@ -13342,7 +13342,7 @@ add	word ptr ds:0ABF5h, 34Eh
 cmp	word ptr ds:6C8h, 3Ch ;	'<'
 jg	short loc_7696
 call	gfx_copy_backbuffer_to_active_page
-call	sub_774E
+call	gfx_present_and_flip_page
 push	ds
 mov	ax, seg	seg004
 mov	ds, ax
@@ -13357,7 +13357,7 @@ mov	di, cs:word_773F
 call	sub_7999
 mov	dx, 0ABE2h
 call	sub_15D
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
 mov	bx, 0DBh ; '�'
 mov	cx, 1
@@ -13378,7 +13378,7 @@ mov	di, cs:word_773F
 call	sub_7999
 mov	dx, 2
 call	sub_15D
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	dx, 24h	; '$'
 call	sub_15D
 
@@ -13391,29 +13391,29 @@ word_773F dw 0
 
 
 
-sub_7741 proc near
+gfx_init_double_buffer_pages proc near
 xor	ax, ax
 call	gfx_set_crtc_start_on_retrace
 mov	cs:word_773F, 2000h
 retn
-sub_7741 endp
+gfx_init_double_buffer_pages endp
 
 
 
 
-sub_774E proc near
+gfx_present_and_flip_page proc near
 mov	al, cs:byte_229
 mov	cs:byte_22A, al
 mov	ax, cs:word_773F
 call	gfx_set_crtc_start_on_retrace
 xor	cs:word_773F, 2000h
 retn
-sub_774E endp
+gfx_present_and_flip_page endp
 
 
 
 
-sub_7765 proc near
+gfx_copy_page_4plane proc near
 push	ds
 mov	ax, 0A000h
 mov	ds, ax
@@ -13451,7 +13451,7 @@ rep movsw
 pop	ds
 assume ds:nothing
 retn
-sub_7765 endp
+gfx_copy_page_4plane endp
 
 
 

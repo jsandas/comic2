@@ -106,6 +106,9 @@ gfx_copy_rect_rows_stride40 (was sub_7553)           → Copy DX-byte rows for 0
 intro_draw_overlay_with_comic (was sub_756D)         → Draw intro overlay sprite plus current Comic frame, then present
 intro_flash_comic_with_optional_overlay (was sub_75AD) → Run 10-frame Comic flash loop with optional overlay sprite
 intro_draw_comic_walk_frame (was sub_7622)           → Advance facing-dependent Comic walk frame and draw it to active page
+gfx_init_double_buffer_pages (was sub_7741)          → Initialize CRTC/page state for double-buffered rendering
+gfx_present_and_flip_page (was sub_774E)             → Present current draw page on retrace and toggle to the other page
+gfx_copy_page_4plane (was sub_7765)                  → Copy one full 4-plane EGA page from SI to DI
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)
