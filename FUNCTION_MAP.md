@@ -100,6 +100,9 @@ play_intro_cinematic (was sub_7164)                  → Play scripted intro cin
 gfx_copy_backbuffer_to_active_page (was sub_7255)    → Copy 6000h backbuffer into current active display page
 intro_draw_sprite_and_present (was sub_7261)         → Draw intro sprite frame, present, and advance one tick
 wait_ticks_or_abort (was sub_7278)                   → Wait N ticks unless abort key/event requests DOS exit
+intro_wipe_split_buffers_step (was sub_74E1)         → Compose one intro wipe step by splitting columns between two source buffers
+gfx_copy_rect_all_planes (was sub_752A)              → Copy rectangle region across EGA planes 0-3
+gfx_copy_rect_rows_stride40 (was sub_7553)           → Copy DX-byte rows for 0xA0 lines with 0x28 byte stride
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

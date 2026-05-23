@@ -120,6 +120,9 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_7255` -> `gfx_copy_backbuffer_to_active_page`
 	  - `sub_7261` -> `intro_draw_sprite_and_present`
 	  - `sub_7278` -> `wait_ticks_or_abort`
+	  - `sub_74E1` -> `intro_wipe_split_buffers_step`
+	  - `sub_752A` -> `gfx_copy_rect_all_planes`
+	  - `sub_7553` -> `gfx_copy_rect_rows_stride40`
 	- Remaining: isolate item-specific handler(s) and explicit spawn/respawn routine(s)
 4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
 5. [x] Trace INT 3 handler entry and initial sound effect table anchors

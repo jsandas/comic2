@@ -12943,7 +12943,7 @@ mov	ax, 8
 
 loc_7306:
 push	ax
-call	sub_74E1
+call	intro_wipe_split_buffers_step
 call	sub_774E
 mov	ax, 1
 call	wait_ticks_or_abort
@@ -13096,7 +13096,7 @@ jmp	loc_7660
 
 
 
-sub_74E1 proc near
+intro_wipe_split_buffers_step proc near
 push	ds
 mov	bx, 0A000h
 mov	ds, bx
@@ -13114,7 +13114,7 @@ mov	dx, 28h	; '('
 sub	dx, ax
 add	si, 280h
 add	di, 280h
-call	sub_752A
+call	gfx_copy_rect_all_planes
 pop	ax
 
 loc_750E:
@@ -13125,43 +13125,43 @@ sub	si, ax
 mov	dx, ax
 add	si, 280h
 add	di, 280h
-call	sub_752A
+call	gfx_copy_rect_all_planes
 pop	ds
 assume ds:nothing
 retn
-sub_74E1 endp
+intro_wipe_split_buffers_step endp
 
 
 
 
-sub_752A proc near
+gfx_copy_rect_all_planes proc near
 xor	cl, cl
 push	dx
 call	sub_7A68
 pop	dx
-call	sub_7553
+call	gfx_copy_rect_rows_stride40
 mov	cl, 1
 push	dx
 call	sub_7A68
 pop	dx
-call	sub_7553
+call	gfx_copy_rect_rows_stride40
 mov	cl, 2
 push	dx
 call	sub_7A68
 pop	dx
-call	sub_7553
+call	gfx_copy_rect_rows_stride40
 mov	cl, 3
 push	dx
 call	sub_7A68
 pop	dx
-call	sub_7553
+call	gfx_copy_rect_rows_stride40
 retn
-sub_752A endp
+gfx_copy_rect_all_planes endp
 
 
 
 
-sub_7553 proc near
+gfx_copy_rect_rows_stride40 proc near
 push	si
 push	di
 mov	cx, 0A0h ; '�'
@@ -13181,7 +13181,7 @@ loop	loc_7558
 pop	di
 pop	si
 retn
-sub_7553 endp
+gfx_copy_rect_rows_stride40 endp
 
 
 
