@@ -123,6 +123,9 @@ gfx_blit_masked_plane_aligned (was sub_77F2)        → Draw one masked plane ro
 gfx_blit_masked_plane_shift4 (was sub_7849)         → Draw one masked plane row-span for 4-pixel-shifted X placement
 gfx_blit_sprite_opaque_offset_both_pages (was sub_78C6) → Blit opaque offset-addressed sprite to both page buffers
 gfx_blit_sprite_opaque_offset_active_page (was sub_78E1) → Blit opaque offset-addressed sprite to active page
+gfx_clear_rect_both_pages (was sub_7AAB)            → Clear rectangular region on active and alternate page buffers
+gfx_clear_rect_active_page (was sub_7AC8)           → Clear rectangular region on active page buffer
+gfx_clear_rect_plane_rows (was sub_7B03)            → Zero-fill rectangle rows for one selected EGA plane
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

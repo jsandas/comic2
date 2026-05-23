@@ -6606,7 +6606,7 @@ mov	bx, [bp-4]
 mov	cx, 20h	; ' '
 mov	dx, 20h	; ' '
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 retn
 room_transition_clear_reveal_box endp
 
@@ -7163,7 +7163,7 @@ loc_424E:
 mov	[bp+var_6], ax
 mov	[bp+var_8], bx
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, 9
 call	ega_set_map_mask
 sub	[bp+var_4], 2
@@ -7322,7 +7322,7 @@ mov	bx, cx
 mov	cx, 8
 mov	dx, cx
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 pop	di
 pop	dx
 pop	cx
@@ -7553,7 +7553,7 @@ ent_update_entities_in_viewport endp
 ; Input:  ax=slot index into unk_25219 object mapping table
 ; Output: DI points at selected object record (unk_25AD0) or 0 on empty slot;
 ;         invokes object draw path for valid records
-; Calls:  sub_7AAB, gfx_blit_sprite_opaque_offset_both_pages
+; Calls:  gfx_clear_rect_both_pages, gfx_blit_sprite_opaque_offset_both_pages
 ; Evidence: 0FFFFh sentinel handling in unk_25219, 12-byte index math into
 ;           unk_25AD0, then render call with DS set to seg_5E asset segment
 ; Confidence: Medium
@@ -7574,7 +7574,7 @@ add	ax, 8
 mov	bx, 0B1h ; '�'
 mov	cx, 10h
 mov	dx, 10h
-call	sub_7AAB
+call	gfx_clear_rect_both_pages
 xor	di, di
 retn
 
@@ -10503,7 +10503,7 @@ mov	bx, 0
 mov	cx, 140h
 mov	dx, 0C8h ; '�'
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, 9
 call	ega_set_map_mask
 mov	cx, 18h
@@ -10649,7 +10649,7 @@ sub	dx, 8
 
 loc_608A:
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, word_2ED1D
 neg	ax
 add	ax, 8
@@ -10859,7 +10859,7 @@ mov	bx, [bp+var_4]
 mov	cx, 0A0h ; '�'
 mov	dx, 8
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, 7
 call	ega_set_map_mask
 mov	ax, [bp+var_2]
@@ -11568,7 +11568,7 @@ mov	bx, 5Ah	; 'Z'
 mov	cx, 30h	; '0'
 mov	dx, 8
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, ds:21Ah
 shl	ax, 1
 shl	ax, 1
@@ -12504,7 +12504,7 @@ mov	bx, 0
 mov	cx, 140h
 mov	dx, 0C8h ; '�'
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, 9
 call	ega_set_map_mask
 mov	cx, 18h
@@ -12645,7 +12645,7 @@ mov	bx, [bp+var_4]
 mov	cx, 30h	; '0'
 mov	dx, 8
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, 7
 call	ega_set_map_mask
 mov	ax, [bp+var_2]
@@ -12703,7 +12703,7 @@ mov	bx, [bp+var_4]
 mov	cx, 30h	; '0'
 mov	dx, 8
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	sp, bp
 pop	bp
 retn
@@ -14056,27 +14056,27 @@ gfx_set_crtc_start_on_retrace endp
 
 
 
-sub_7AAB proc near
+gfx_clear_rect_both_pages proc near
 mov	di, cs:word_773F
 push	ax
 push	bx
 push	cx
 push	dx
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	di, cs:word_773F
 xor	di, 2000h
 pop	dx
 pop	cx
 pop	bx
 pop	ax
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 retn
-sub_7AAB endp
+gfx_clear_rect_both_pages endp
 
 
 
 
-sub_7AC8 proc near
+gfx_clear_rect_active_page proc near
 push	dx
 push	cx
 shr	ax, 1
@@ -14099,20 +14099,20 @@ mov	dx, ax
 pop	ax
 mov	bx, ax
 mov	cl, 0
-call	sub_7B03
+call	gfx_clear_rect_plane_rows
 mov	cl, 1
-call	sub_7B03
+call	gfx_clear_rect_plane_rows
 mov	cl, 2
-call	sub_7B03
+call	gfx_clear_rect_plane_rows
 mov	cl, 3
-call	sub_7B03
+call	gfx_clear_rect_plane_rows
 retn
-sub_7AC8 endp
+gfx_clear_rect_active_page endp
 
 
 
 
-sub_7B03 proc near
+gfx_clear_rect_plane_rows proc near
 push	dx
 call	ega_select_plane_read_write
 pop	dx
@@ -14146,7 +14146,7 @@ jnz	short loc_7B0C
 pop	bx
 pop	di
 retn
-sub_7B03 endp
+gfx_clear_rect_plane_rows endp
 
 word_7B2F dw 0
 
