@@ -8859,7 +8859,7 @@ mov	cs:[si+10h], ax
 
 locret_5148:
 retn
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jnb	short loc_5155
 cmp	word ptr cs:[si+16h], 0
 jz	short loc_515D
@@ -8932,7 +8932,7 @@ loc_51F2:
 mov	bx, 4
 call	sub_5BAC
 retn
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jnb	short loc_5205
 cmp	word ptr cs:[si+16h], 0
 jz	short loc_5214
@@ -9101,13 +9101,13 @@ cmp	ax, comic_y
 jg	short loc_5389
 jz	short loc_53AE
 mov	word ptr cs:[si+16h], 7
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 dec	word ptr cs:[si+1Ch]
 jmp	short loc_53AE
 
 loc_5389:
 mov	word ptr cs:[si+16h], 0FFF7h
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jnb	short loc_53AE
 cmp	word ptr cs:[si+1Ch], 1
 jnz	short loc_53AE
@@ -9151,14 +9151,14 @@ sub	ax, comic_y
 jz	short loc_5422
 jg	short loc_5414
 mov	word ptr cs:[si+16h], 1
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jmp	short loc_5422
 
 loc_5414:
 cmp	ax, 1
 jle	short loc_5422
 mov	word ptr cs:[si+16h], 0FFFDh
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 
 loc_5422:
 call	sub_5CCF
@@ -9181,7 +9181,7 @@ call	sub_5B01
 mov	bx, 8
 call	ent_move_x_and_bounce
 retn
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_545D
 jmp	loc_54E7
 
@@ -9305,7 +9305,7 @@ call	sub_5CCF
 
 loc_5560:
 mov	word ptr cs:[si+16h], 0
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 mov	bx, 4
 call	ent_move_x_and_bounce
 retn
@@ -9321,7 +9321,7 @@ jg	short loc_558D
 mov	word ptr cs:[si+16h], 0FFF7h
 
 loc_558D:
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_55AF
@@ -9337,7 +9337,7 @@ mov	bx, 4
 call	ent_move_x_and_bounce
 retn
 inc	word ptr cs:[si+16h]
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_55C9
 mov	bx, 4
 call	ent_move_x_and_bounce
@@ -9351,7 +9351,7 @@ call	sub_5CCF
 
 locret_55D9:
 retn
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jnb	short loc_55E6
 cmp	word ptr cs:[si+16h], 0
 jz	short loc_55F5
@@ -9406,7 +9406,7 @@ mov	word ptr cs:[si+14h], 0
 cmp	word ptr cs:[si+1Ch], 2
 jz	short loc_5666
 inc	word ptr cs:[si+16h]
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_565F
 retn
 
@@ -9421,7 +9421,7 @@ mov	word ptr cs:[si+14h], 0
 cmp	word ptr cs:[si+1Ch], 2
 jz	short loc_5688
 inc	word ptr cs:[si+16h]
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_5681
 retn
 
@@ -9458,7 +9458,7 @@ jl	short loc_56CF
 mov	word ptr cs:[si+16h], 1
 
 loc_56CF:
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_56E3
@@ -9474,14 +9474,14 @@ sub	ax, comic_y
 jz	short loc_5712
 jg	short loc_5704
 mov	word ptr cs:[si+16h], 3
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jmp	short loc_5712
 
 loc_5704:
 cmp	ax, 4
 jl	short loc_5712
 mov	word ptr cs:[si+16h], 0FFFBh
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 
 loc_5712:
 mov	bx, 8
@@ -9505,14 +9505,14 @@ sub	ax, comic_y
 jz	short loc_575E
 jg	short loc_5750
 mov	word ptr cs:[si+16h], 7
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jmp	short loc_575E
 
 loc_5750:
 cmp	ax, 8
 jl	short loc_575E
 mov	word ptr cs:[si+16h], 0FFF7h
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 
 loc_575E:
 call	sub_5CCF
@@ -9523,7 +9523,7 @@ call	ent_move_x_and_bounce
 
 locret_576C:
 retn
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jnb	short loc_5779
 cmp	word ptr cs:[si+16h], 0
 jz	short loc_5788
@@ -9587,7 +9587,7 @@ push	word_25272
 mov	word_25274, 0FFFFh
 mov	word_25272, 0FFFFh
 inc	word ptr cs:[si+16h]
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 pop	word_25272
 pop	word_25274
 retn
@@ -9613,7 +9613,7 @@ call	ent_move_x_and_bounce
 retn
 cmp	word ptr cs:[si+1Ch], 1
 jge	short loc_5878
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_5871
 mov	word ptr cs:[si+18h], 1
 mov	word ptr cs:[si+14h], 4
@@ -9642,7 +9642,7 @@ retn
 loc_589D:
 mov	word ptr cs:[si+14h], 0
 mov	word ptr cs:[si+16h], 0FFEFh
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 retn
 cmp	word ptr cs:[si+1Ch], 1
 jge	short loc_58C1
@@ -9739,7 +9739,7 @@ mov	word ptr cs:[si+14h], 0
 cmp	word ptr cs:[si+1Ch], 2
 jz	short loc_59BD
 inc	word ptr cs:[si+16h]
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_59B6
 retn
 
@@ -9794,7 +9794,7 @@ loc_5A28:
 mov	word ptr cs:[si+16h], 0Ch
 
 loc_5A2E:
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_5A34
 retn
 
@@ -9855,7 +9855,7 @@ ent_move_x_and_bounce endp
 
 
 
-sub_5A99 proc near
+ent_apply_gravity_and_move_y proc near
 inc	word ptr cs:[si+16h]
 cmp	word ptr cs:[si+16h], 0Ch
 jl	short loc_5AAA
@@ -9897,7 +9897,7 @@ jnb	short loc_5AEA
 and	word ptr cs:[si+12h], 0FFF0h
 stc
 retn
-sub_5A99 endp
+ent_apply_gravity_and_move_y endp
 
 
 
