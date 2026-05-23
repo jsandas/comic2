@@ -2442,7 +2442,7 @@ jz	short locret_1BFA
 cmp	bx, 0FFFFh
 jz	short locret_1BFA
 mov	word_256DC, bx
-call	sub_2072
+call	load_room_tilemap_from_resource_buffer
 call	sub_1E86
 call	ent_build_room_entity_list
 
@@ -3153,7 +3153,7 @@ io_read_xor25_block_9ec0 endp
 
 
 
-sub_2072 proc near
+load_room_tilemap_from_resource_buffer proc near
 push	ds
 push	es
 mov	cx, ds
@@ -3235,7 +3235,7 @@ shl	ax, 1
 shl	ax, 1
 mov	ds:29Eh, ax
 retn
-sub_2072 endp
+load_room_tilemap_from_resource_buffer endp
 
 ; START	OF FUNCTION CHUNK FOR game_loop
 
