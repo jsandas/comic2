@@ -2453,7 +2453,7 @@ load_resource endp
 
 
 
-sub_1BFB proc near
+check_word_is_ffff_or_0005 proc near
 cmp	word ptr cs:[bx], 0FFFFh
 jz	short loc_1C07
 cmp	word ptr cs:[bx], 5
@@ -2466,7 +2466,7 @@ retn
 loc_1C09:
 stc
 retn
-sub_1BFB endp
+check_word_is_ffff_or_0005 endp
 
 
 
@@ -2493,22 +2493,22 @@ retn
 
 loc_1C1E:
 mov	bx, 10B4h
-call	sub_1BFB
+call	check_word_is_ffff_or_0005
 jb	short loc_1C63
 mov	bx, 11E0h
-call	sub_1BFB
+call	check_word_is_ffff_or_0005
 jb	short loc_1C63
 mov	bx, 12A0h
-call	sub_1BFB
+call	check_word_is_ffff_or_0005
 jb	short loc_1C63
 mov	bx, 1324h
-call	sub_1BFB
+call	check_word_is_ffff_or_0005
 jb	short loc_1C63
 mov	bx, 14F8h
-call	sub_1BFB
+call	check_word_is_ffff_or_0005
 jb	short loc_1C63
 mov	bx, 1558h
-call	sub_1BFB
+call	check_word_is_ffff_or_0005
 jb	short loc_1C63
 cmp	byte_25200, 5
 jge	short loc_1C18
