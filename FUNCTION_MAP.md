@@ -170,6 +170,7 @@ gfx_disable_retrace_palette_script (was sub_22B)                → Disable retr
 gfx_enable_retrace_palette_script (was sub_238)                 → Enable retrace-time palette/script runner on next present/flip
 gfx_load_ega_palette_16_from_table (was sub_15D)                → Load 16 EGA attribute entries from DS:DX table during vertical retrace
 input_wait_for_scancode_event (was sub_599)                     → Block until ISR reports a key event and return scancode in AL
+input_wait_for_joystick_or_key_confirm (was sub_424)            → Wait for joystick-button confirm transition or keyboard abort during calibration prompts
 intro_repeat_draw_with_offset_4_3 (was sub_71FE)               → Repeat intro sprite draw/present loop with (-4,+3) positional offset
 intro_repeat_draw_with_offset_8_6 (was sub_721B)               → Repeat intro sprite draw/present loop with (-8,+6) positional offset
 intro_repeat_draw_with_offset_12_8 (was sub_7238)              → Repeat intro sprite draw/present loop with (-12,+8) positional offset

@@ -568,7 +568,7 @@ lea	dx, aCalibrateJoyst ; "\n\n\n\n\n\n\r				    C"...
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_424
+call	input_wait_for_joystick_or_key_confirm
 or	ax, ax
 jnz	short loc_35F
 jmp	loc_416
@@ -585,7 +585,7 @@ lea	dx, aCalibrateJoyst+0A8h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_424
+call	input_wait_for_joystick_or_key_confirm
 or	ax, ax
 jnz	short loc_381
 jmp	loc_416
@@ -604,7 +604,7 @@ lea	dx, aCalibrateJoyst+0E6h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_424
+call	input_wait_for_joystick_or_key_confirm
 or	ax, ax
 jnz	short loc_3A8
 jmp	short loc_416
@@ -625,7 +625,7 @@ lea	dx, aCalibrateJoyst+125h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_424
+call	input_wait_for_joystick_or_key_confirm
 or	ax, ax
 jnz	short loc_3D1
 jmp	short loc_416
@@ -645,7 +645,7 @@ lea	dx, aCalibrateJoyst+162h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_424
+call	input_wait_for_joystick_or_key_confirm
 or	ax, ax
 jnz	short loc_3F6
 jmp	short loc_416
@@ -683,7 +683,7 @@ gfx_startup_graphics_and_menu_probe	endp
 
 
 
-sub_424	proc near
+input_wait_for_joystick_or_key_confirm	proc near
 mov	ax, 2
 call	sub_27A
 cmp	cs:byte_61, 0
@@ -694,9 +694,9 @@ int	15h		; SYSTEM - READ	JOYSTICK (AT,XT2,XT286,PS)
 			; DX = 0000h get switch	settings
 			; Return: AL = switch settings
 test	al, 10h
-jz	short sub_424
+jz	short input_wait_for_joystick_or_key_confirm
 test	al, 20h
-jz	short sub_424
+jz	short input_wait_for_joystick_or_key_confirm
 
 loc_440:
 xor	ax, ax
@@ -717,7 +717,7 @@ mov	ax, 1
 
 locret_45B:
 retn
-sub_424	endp
+input_wait_for_joystick_or_key_confirm	endp
 
 ; START	OF FUNCTION CHUNK FOR gfx_startup_graphics_and_menu_probe
 
@@ -16675,7 +16675,7 @@ assume es:nothing, ss:nothing, ds:nothing, fs:nothing, gs:nothing
 ;          key binding setup screens.
 ; Callers:
 ;   - gfx_startup_graphics_and_menu_probe (multiple lea dx, aCalibrateJoyst+offset prompts)
-;   - sub_424 / sub_54B interaction flow that waits for input and captures keys
+;   - input_wait_for_joystick_or_key_confirm / sub_54B interaction flow that waits for input and captures keys
 ; Evidence: Repeated INT 21h AH=9 prints from offsets +0A8h..+327h.
 ; Confidence: High
 ; ============================================================================
