@@ -86,6 +86,10 @@ cfg_load_options_or_defaults (was sub_62A4)          → Load options/config tab
 cfg_save_options (was sub_631A)                      → Save options/config table to disk
 savegame_write_snapshot (was sub_633C)               → Write runtime snapshot to selected savegame file
 savegame_read_snapshot (was sub_636F)                → Read runtime snapshot from selected savegame file (with header check)
+ui_draw_completion_delta_hint (was sub_64F5)         → Draw completion/collection delta hint for current selection
+cfg_compute_hardware_seed (was sub_6545)             → Compute hardware/time-derived seed used by settings/save flow
+io_verify_game000_or_prompt_retry (was sub_65EF)     → Verify GAME.000 availability; on failure show prompt/retry loop
+io_verify_frcfg_or_prompt_retry (was sub_65FD)       → Verify FR.CFG availability; on failure show prompt/retry loop
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

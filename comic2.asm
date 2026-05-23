@@ -1998,7 +1998,7 @@ mov	bx, 0A9h ; '�'
 call	sub_790C
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_65FD
+call	io_verify_frcfg_or_prompt_retry
 mov	ax, word_251F4
 mov	bx, word_251F6
 cmp	byte_25200, 6
@@ -3350,7 +3350,7 @@ mov	ax, cs:word_9300
 call	room_transition_palette_wave
 mov	ax, 5
 call	sub_27A
-call	sub_65EF
+call	io_verify_game000_or_prompt_retry
 jmp	loc_185
 
 loc_2205:
@@ -10364,7 +10364,7 @@ int	21h		; DOS -	GET CURRENT TIME
 			; DL = hundredths of seconds
 mov	dl, cl
 mov	word_2FB89, dx
-call	sub_6545
+call	cfg_compute_hardware_seed
 mov	dx, 9C73h
 call	savegame_write_snapshot
 mov	word_2EC6C, 0FFFFh
@@ -11087,7 +11087,7 @@ savegame_read_snapshot endp
 ; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_63AB:
-call	sub_65EF
+call	io_verify_game000_or_prompt_retry
 mov	al, ds:21Ch
 xor	ah, ah
 test	cs:word_CC2, 0F00h
@@ -11195,7 +11195,7 @@ xor	bh, bh
 shl	bx, 1
 add	bx, 9CEEh
 mov	ds:9C92h, bx
-call	sub_64F5
+call	ui_draw_completion_delta_hint
 mov	ax, 7
 call	ega_set_map_mask
 mov	ax, 28h	; '('
@@ -11204,7 +11204,7 @@ mov	si, 9B65h
 call	ui_draw_string_8x8
 call	sub_774E
 call	sub_5F86
-call	sub_64F5
+call	ui_draw_completion_delta_hint
 mov	ax, 7
 call	ega_set_map_mask
 mov	ax, 28h	; '('
@@ -11240,7 +11240,7 @@ jmp	loc_5E6D
 
 
 
-sub_64F5 proc near
+ui_draw_completion_delta_hint proc near
 mov	ax, ds:9C90h
 mov	bx, ds:9C92h
 sub	ax, [bx]
@@ -11278,12 +11278,12 @@ call	ui_draw_string_8x8
 
 locret_6544:
 retn
-sub_64F5 endp
+ui_draw_completion_delta_hint endp
 
 
 
 
-sub_6545 proc near
+cfg_compute_hardware_seed proc near
 push	es
 mov	ax, ds:0ABA9h
 mov	ds:9CE6h, ax
@@ -11363,12 +11363,12 @@ neg	bx
 loc_65EA:
 mov	ds:0ABBBh, bx
 retn
-sub_6545 endp
+cfg_compute_hardware_seed endp
 
 
 
 
-sub_65EF proc near
+io_verify_game000_or_prompt_retry proc near
 push	si
 push	di
 mov	si, 9BDFh
@@ -11377,12 +11377,12 @@ call	io_open_file_or_prompt_retry
 pop	di
 pop	si
 retn
-sub_65EF endp
+io_verify_game000_or_prompt_retry endp
 
 
 
 
-sub_65FD proc near
+io_verify_frcfg_or_prompt_retry proc near
 push	si
 push	di
 mov	si, 9C29h
@@ -11391,7 +11391,7 @@ call	io_open_file_or_prompt_retry
 pop	di
 pop	si
 retn
-sub_65FD endp
+io_verify_frcfg_or_prompt_retry endp
 
 
 
