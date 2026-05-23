@@ -10390,13 +10390,13 @@ mov	ax, 1
 mov	bx, 9D3Fh
 mov	cx, 1
 int	3		; Trap to Debugger
-call	sub_5F86
+call	ui_draw_menu_frame
 mov	ax, 50h	; 'P'
 mov	bx, 28h	; '('
 mov	si, 9AE4h
 call	ui_draw_string_8x8
 call	gfx_present_and_flip_page
-call	sub_5F86
+call	ui_draw_menu_frame
 mov	ax, 50h	; 'P'
 mov	bx, 28h	; '('
 mov	si, 9AE4h
@@ -10497,7 +10497,7 @@ jmp	loc_5EAB
 
 
 
-sub_5F86 proc near
+ui_draw_menu_frame proc near
 mov	ax, 0
 mov	bx, 0
 mov	cx, 140h
@@ -10556,7 +10556,7 @@ mov	bx, 10h
 mov	si, 9AC5h
 call	ui_draw_string_8x8
 retn
-sub_5F86 endp
+ui_draw_menu_frame endp
 
 
 
@@ -11188,7 +11188,7 @@ inc	ax
 
 loc_6474:
 mov	ds:9C90h, ax
-call	sub_5F86
+call	ui_draw_menu_frame
 mov	bl, ds:9C8Ah
 sub	bl, 31h	; '1'
 xor	bh, bh
@@ -11203,7 +11203,7 @@ mov	bx, 38h	; '8'
 mov	si, 9B65h
 call	ui_draw_string_8x8
 call	gfx_present_and_flip_page
-call	sub_5F86
+call	ui_draw_menu_frame
 call	ui_draw_completion_delta_hint
 mov	ax, 7
 call	ega_set_map_mask
