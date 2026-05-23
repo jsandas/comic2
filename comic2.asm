@@ -743,37 +743,37 @@ lea	dx, aCalibrateJoyst+1D6h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_54B
+call	input_capture_unique_key_binding_and_echo
 mov	cs:byte_25E, al
 lea	dx, aCalibrateJoyst+205h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_54B
+call	input_capture_unique_key_binding_and_echo
 mov	cs:byte_25F, al
 lea	dx, aCalibrateJoyst+234h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_54B
+call	input_capture_unique_key_binding_and_echo
 mov	cs:byte_260, al
 lea	dx, aCalibrateJoyst+263h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_54B
+call	input_capture_unique_key_binding_and_echo
 mov	cs:byte_261, al
 lea	dx, aCalibrateJoyst+292h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_54B
+call	input_capture_unique_key_binding_and_echo
 mov	cs:byte_262, al
 lea	dx, aCalibrateJoyst+2C1h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_54B
+call	input_capture_unique_key_binding_and_echo
 mov	cs:byte_263, al
 lea	dx, aCalibrateJoyst+2F0h
 mov	ah, 9
@@ -830,27 +830,27 @@ jmp	loc_215
 
 
 
-sub_54B	proc near
+input_capture_unique_key_binding_and_echo	proc near
 call	input_wait_for_scancode_event
 mov	bl, al
 xor	bh, bh
 mov	si, bx
 cmp	bl, cs:byte_262
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 cmp	bl, cs:byte_25E
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 cmp	bl, cs:byte_25F
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 cmp	bl, cs:byte_263
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 cmp	bl, cs:byte_260
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 cmp	bl, cs:byte_261
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 dec	bx
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 cmp	bx, 52h	; 'R'
-jg	short sub_54B
+jg	short input_capture_unique_key_binding_and_echo
 shl	bx, 1
 shl	bx, 1
 shl	bx, 1
@@ -861,7 +861,7 @@ int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
 mov	ax, si
 retn
-sub_54B	endp
+input_capture_unique_key_binding_and_echo	endp
 
 
 
@@ -16675,7 +16675,7 @@ assume es:nothing, ss:nothing, ds:nothing, fs:nothing, gs:nothing
 ;          key binding setup screens.
 ; Callers:
 ;   - gfx_startup_graphics_and_menu_probe (multiple lea dx, aCalibrateJoyst+offset prompts)
-;   - input_wait_for_joystick_or_key_confirm / sub_54B interaction flow that waits for input and captures keys
+;   - input_wait_for_joystick_or_key_confirm / input_capture_unique_key_binding_and_echo interaction flow that waits for input and captures keys
 ; Evidence: Repeated INT 21h AH=9 prints from offsets +0A8h..+327h.
 ; Confidence: High
 ; ============================================================================

@@ -191,6 +191,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_15D` -> `gfx_load_ega_palette_16_from_table`
 	  - `sub_599` -> `input_wait_for_scancode_event`
 	  - `sub_424` -> `input_wait_for_joystick_or_key_confirm`
+	  - `sub_54B` -> `input_capture_unique_key_binding_and_echo`
 	  - `sub_71FE` -> `intro_repeat_draw_with_offset_4_3`
 	  - `sub_721B` -> `intro_repeat_draw_with_offset_8_6`
 	  - `sub_7238` -> `intro_repeat_draw_with_offset_12_8`
