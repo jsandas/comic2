@@ -133,6 +133,11 @@ gfx_blit_sprite_masked_bottom_clipped_active_page (was sub_7C79) → Blit masked
 gfx_blit_masked_plane_aligned_bottom_clipped (was sub_7CCD)      → Draw one masked aligned plane row-span for bottom-clipped sprite path
 gfx_blit_masked_plane_shift4_bottom_clipped (was sub_7D31)       → Draw one masked shift-4 plane row-span for bottom-clipped sprite path
 hud_draw_two_digit_counter (was sub_3A5F)                        → Draw two-digit HUD counter glyphs (tens then ones) on both pages
+hud_increment_lives_bcd_clamped (was sub_45A6)                   → Increment lives BCD counter up to 99 and redraw HUD lives field
+hud_set_data_disk_icon_collected (was sub_4870)                  → Set data-disk collected flag and render its HUD icon with pickup SFX
+hud_bcd_decrement_cx (was sub_489E)                              → Decrement packed BCD value in CX with borrow from low to high digit
+hud_decrement_word_25202_bcd (was sub_48AA)                      → Decrement word_25202 packed BCD counter and redraw HUD field at 0x90
+hud_decrement_lives_bcd (was sub_48BF)                           → Decrement lives packed BCD counter and redraw HUD lives field
 
 Key Patterns:
 - Port 0x3C4/0x3C5 → Sequencer (Map Mask for write plane selection)

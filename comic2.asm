@@ -4180,7 +4180,7 @@ jnz	short loc_2A01
 jmp	loc_39EE
 
 loc_2A01:
-call	sub_48BF
+call	hud_decrement_lives_bcd
 jmp	loc_227B
 
 loc_2A07:
@@ -5329,7 +5329,7 @@ test	byte_2E60B, 3
 jnz	short loc_3341
 cmp	cs:word_14D4, 0FFFFh
 jz	short loc_3341
-call	sub_48AA
+call	hud_decrement_word_25202_bcd
 
 loc_3341:
 cmp	cs:byte_25D, 1
@@ -7340,7 +7340,7 @@ db 0D6h, 45h, 15h, 46h
 ; Input:  word_256DE entity count, viewport (word_256A2/word_256A4), comic_x/y
 ; Output: Draws in-range entities (draw_sprite), may consume entity slots and
 ;         trigger scripted/object interactions via ent_draw_mapped_slot_or_placeholder and other handlers
-; Calls:  draw_sprite, ent_draw_mapped_slot_or_placeholder, sub_6D95, sub_48AA
+; Calls:  draw_sprite, ent_draw_mapped_slot_or_placeholder, sub_6D95, hud_decrement_word_25202_bcd
 ; Evidence: AABB-style bounds checks around viewport extents, iterates 8-byte
 ;           records at unk_256E0, branches on flag bit 8000h and object ids
 ; Confidence: Medium
@@ -7525,7 +7525,7 @@ jmp	short loc_44BB
 loc_44EB:
 push	di
 mov	word_25202, 0A00h
-call	sub_48AA
+call	hud_decrement_word_25202_bcd
 pop	di
 jmp	short loc_44BB
 
@@ -7629,7 +7629,7 @@ jnz	short loc_4586
 retn
 ent_deactivate_at_coords endp
 
-call	sub_45A6
+call	hud_increment_lives_bcd_clamped
 mov	ax, 5
 call	sub_6D95
 clc
@@ -7637,7 +7637,7 @@ retn
 
 
 
-sub_45A6 proc near
+hud_increment_lives_bcd_clamped proc near
 mov	ax, 1
 lea	bx, unk_2E8E4
 mov	cx, 9
@@ -7658,7 +7658,7 @@ mov	ax, 120h
 mov	bx, 0A9h ; '�'
 call	hud_draw_two_digit_counter
 retn
-sub_45A6 endp
+hud_increment_lives_bcd_clamped endp
 
 mov	cx, word_25202
 cmp	cx, 909h
@@ -7774,7 +7774,7 @@ cmp	ch, 0Ah
 jnz	short loc_46D7
 mov	ch, 0
 push	cx
-call	sub_45A6
+call	hud_increment_lives_bcd_clamped
 pop	cx
 
 loc_46D7:
@@ -7942,7 +7942,7 @@ ent_activate_slot_into_runtime endp
 
 
 
-sub_4870 proc near
+hud_set_data_disk_icon_collected proc near
 mov	ax, 1
 lea	bx, unk_2E8C0
 mov	cx, 3
@@ -7959,12 +7959,12 @@ assume ds:seg005
 mov	ax, 8
 call	sub_6D95
 retn
-sub_4870 endp
+hud_set_data_disk_icon_collected endp
 
 
 
 
-sub_489E proc near
+hud_bcd_decrement_cx proc near
 jcxz	short locret_48A9
 dec	cl
 jge	short locret_48A9
@@ -7973,33 +7973,33 @@ dec	ch
 
 locret_48A9:
 retn
-sub_489E endp
+hud_bcd_decrement_cx endp
 
 
 
 
-sub_48AA proc near
+hud_decrement_word_25202_bcd proc near
 mov	cx, word_25202
-call	sub_489E
+call	hud_bcd_decrement_cx
 mov	word_25202, cx
 mov	ax, 120h
 mov	bx, 90h	; '�'
 call	hud_draw_two_digit_counter
 retn
-sub_48AA endp
+hud_decrement_word_25202_bcd endp
 
 
 
 
-sub_48BF proc near
+hud_decrement_lives_bcd proc near
 mov	cx, word_2526F
-call	sub_489E
+call	hud_bcd_decrement_cx
 mov	word_2526F, cx
 mov	ax, 120h
 mov	bx, 0A9h ; '�'
 call	hud_draw_two_digit_counter
 retn
-sub_48BF endp
+hud_decrement_lives_bcd endp
 
 
 
@@ -8408,7 +8408,7 @@ mov	word ptr cs:[bx+6], 0
 add	bx, 20h	; ' '
 loop	loc_4D14
 push	si
-call	sub_45A6
+call	hud_increment_lives_bcd_clamped
 call	sub_48D4
 pop	si
 mov	ax, 5
@@ -11832,7 +11832,7 @@ jmp	loc_6D75
 loc_69BA:
 push	si
 push	di
-call	sub_4870
+call	hud_set_data_disk_icon_collected
 pop	di
 pop	si
 mov	ax, 6
