@@ -302,7 +302,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	10. `handle_tile_hazard`
 	11. `handle_player_special_state`
 	12. `handle_input_fallback`
-- [ ] Add a trace-mode dispatcher logger that records selected stage per tick for oracle comparison
+- [x] Add a trace-mode dispatcher logger that records selected stage per tick for oracle comparison
 
 #### 7.3 Player Movement and Physics Plan
 - [ ] Implement horizontal movement parity for known left/right paths (`sub_2BDC`, `sub_2C39`)

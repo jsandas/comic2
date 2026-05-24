@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <vector>
 #include <utility>
 
 #include "comic2/game_state.hpp"
@@ -34,6 +35,10 @@ public:
     DispatchStage choose_stage(const RuntimeState& state) const;
     DispatchResult run_tick(RuntimeState& state) const;
 
+    void set_trace_enabled(bool enabled) { trace_enabled_ = enabled; }
+    void clear_trace() { trace_log_.clear(); }
+    const std::vector<DispatchStage>& trace_log() const { return trace_log_; }
+
     void set_level_transition_hook(StageHook hook) { level_transition_hook_ = std::move(hook); }
     void set_special_logic1_hook(StageHook hook) { special_logic1_hook_ = std::move(hook); }
     void set_special_logic2_hook(StageHook hook) { special_logic2_hook_ = std::move(hook); }
@@ -50,6 +55,8 @@ public:
 private:
     static bool call_hook(const StageHook& hook, RuntimeState& state);
 
+    void record_stage(DispatchStage stage) const;
+
     StageHook level_transition_hook_;
     StageHook special_logic1_hook_;
     StageHook special_logic2_hook_;
@@ -62,6 +69,9 @@ private:
     StageHook tile_hazard_hook_;
     StageHook player_special_state_hook_;
     StageHook input_handling_hook_;
+
+    mutable std::vector<DispatchStage> trace_log_;
+    bool trace_enabled_ = false;
 };
 
 const char* to_string(DispatchStage stage) noexcept;
