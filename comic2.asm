@@ -4272,7 +4272,7 @@ cmp	word_2E600, 0
 jle	short loc_2B4C
 cmp	byte_25904, 1
 jnz	short loc_2AE8
-call	sub_362A
+call	check_comic_near_room_event_anchor
 jnb	short loc_2AE8
 jmp	loc_2B73
 
@@ -5699,7 +5699,7 @@ player_start_timed_overlay_sprite endp
 
 
 
-sub_362A proc near
+check_comic_near_room_event_anchor proc near
 mov	ax, comic_x
 sub	ax, word_25908
 jl	short loc_3655
@@ -5721,7 +5721,7 @@ retn
 loc_3655:
 clc
 retn
-sub_362A endp
+check_comic_near_room_event_anchor endp
 
 ; START	OF FUNCTION CHUNK FOR game_loop
 
