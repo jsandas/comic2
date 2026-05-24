@@ -4344,13 +4344,13 @@ mov	comic_is_physics_active, 0
 mov	comic_y_vel, 0
 
 loc_2B88:
-call	sub_2B8E
+call	camera_update_y_follow_comic_clamped
 jmp	loc_267F
 ; END OF FUNCTION CHUNK	FOR game_loop
 
 
 
-sub_2B8E proc near
+camera_update_y_follow_comic_clamped proc near
 mov	ax, comic_y
 mov	bx, word_256A4
 sub	ax, bx
@@ -4390,7 +4390,7 @@ jmp	short locret_2BA1
 loc_2BD6:
 mov	word_256A4, cx
 jmp	short locret_2BA1
-sub_2B8E endp
+camera_update_y_follow_comic_clamped endp
 
 
 
@@ -5762,7 +5762,7 @@ jz	short loc_36BA
 add	word_256A2, 8
 
 loc_36BA:
-call	sub_2B8E
+call	camera_update_y_follow_comic_clamped
 jmp	loc_267F
 ; END OF FUNCTION CHUNK	FOR game_loop
 
@@ -6072,7 +6072,7 @@ jz	short loc_39A7
 add	word_256A2, 8
 
 loc_39A7:
-call	sub_2B8E
+call	camera_update_y_follow_comic_clamped
 jmp	loc_267F
 ; END OF FUNCTION CHUNK	FOR game_loop
 
