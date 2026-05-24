@@ -3849,7 +3849,7 @@ mov	al, ds:897h
 or	al, ds:89Dh
 or	al, ds:8A3h
 jnz	short loc_2714
-call	sub_30C6
+call	player_start_state4_action_animation
 jmp	short loc_2714
 
 loc_2708:
@@ -5033,7 +5033,7 @@ check_airborne_side_clear endp
 
 
 
-sub_30C6 proc near
+player_start_state4_action_animation proc near
 cmp	comic_facing, 1
 jz	short loc_30DB
 cmp	comic_x, 8
@@ -5057,7 +5057,7 @@ mov	comic_x_vel, 0
 
 locret_3106:
 retn
-sub_30C6 endp
+player_start_state4_action_animation endp
 
 ; START	OF FUNCTION CHUNK FOR game_loop
 
