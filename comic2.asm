@@ -4130,7 +4130,7 @@ call	draw_sprite
 loc_297F:
 cmp	byte_25904, 1
 jnz	short loc_2989
-call	sub_378E
+call	update_room_event_anchor_sprite
 
 loc_2989:
 cmp	byte_2590C, 1
@@ -5860,7 +5860,7 @@ update_room_event_anchor_motion endp
 
 
 
-sub_378E proc near
+update_room_event_anchor_sprite proc near
 cmp	byte_25905, 2
 jz	short loc_37B8
 mov	si, cs:word_8DB8
@@ -5940,7 +5940,7 @@ mov	word_2590A, 0
 loc_385C:
 pop	ax
 jmp	short loc_381C
-sub_378E endp
+update_room_event_anchor_sprite endp
 
 ; START	OF FUNCTION CHUNK FOR game_loop
 
@@ -14659,7 +14659,7 @@ draw_sprite endp
 ;          data used by the renderer and entity copy/setup logic.
 ; Callers:
 ;   - draw_sprite (draw path consumes frame descriptor records)
-;   - sub_378E (selects frame offset words word_8DB8..word_8DC2)
+;   - update_room_event_anchor_sprite (selects frame offset words word_8DB8..word_8DC2)
 ;   - ent_copy_descriptor_to_runtime_slot (copies a descriptor record into runtime entity storage)
 ;   - jmp near ptr byte_834B (direct transfer into a likely landing pad)
 ; Evidence: Repeated little-endian address pairs, flag bytes, and small
@@ -15020,7 +15020,7 @@ db 9, 0, 1, 0, 4, 0, 0C4h, 8Dh,	0C4h, 8Dh
 ; ANIMATION FRAME OFFSET TABLE (indexes into sprite metadata blob above)
 ; Purpose: Selects frame descriptor offsets used by animation draw logic.
 ; Callers:
-;   - sub_378E (loads word_8DB8/word_8DBA/word_8DBC into SI)
+;   - update_room_event_anchor_sprite (loads word_8DB8/word_8DBA/word_8DBC into SI)
 ;   - loc_27F7 path in main loop chunk (loads word_8DBE/word_8DC0/word_8DC2)
 ; Use: SI is passed to draw_sprite for sprite render descriptor decode.
 ; Confidence: High
