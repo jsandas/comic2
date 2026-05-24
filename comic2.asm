@@ -7340,7 +7340,7 @@ db 0D6h, 45h, 15h, 46h
 ; Input:  word_256DE entity count, viewport (word_256A2/word_256A4), comic_x/y
 ; Output: Draws in-range entities (draw_sprite), may consume entity slots and
 ;         trigger scripted/object interactions via ent_draw_mapped_slot_or_placeholder and other handlers
-; Calls:  draw_sprite, ent_draw_mapped_slot_or_placeholder, sub_6D95, hud_decrement_word_25202_bcd
+; Calls:  draw_sprite, ent_draw_mapped_slot_or_placeholder, hud_add_bcd_counter_from_tens_value, hud_decrement_word_25202_bcd
 ; Evidence: AABB-style bounds checks around viewport extents, iterates 8-byte
 ;           records at unk_256E0, branches on flag bit 8000h and object ids
 ; Confidence: Medium
@@ -7507,7 +7507,7 @@ mov	al, ah
 xor	ah, ah
 or	ax, ax
 jz	short loc_44D0
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 
 loc_44D0:
 jmp	loc_4415
@@ -7631,7 +7631,7 @@ ent_deactivate_at_coords endp
 
 call	hud_increment_lives_bcd_clamped
 mov	ax, 5
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 clc
 retn
 
@@ -7701,7 +7701,7 @@ retn
 loc_4622:
 mov	comic_hp, 0Ch
 mov	ax, 1
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 clc
 retn
 inc	byte_251FC
@@ -7717,7 +7717,7 @@ mov	ax, 120h
 mov	bx, 5Eh	; '^'
 call	hud_draw_two_digit_counter
 mov	ax, 1
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 clc
 retn
 clc
@@ -7732,7 +7732,7 @@ call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	ax, 8
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 clc
 retn
 mov	byte_251FF, 1
@@ -7745,7 +7745,7 @@ call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	ax, 8
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 clc
 retn
 mov	cx, word_25204
@@ -7757,7 +7757,7 @@ add	cl, 5
 jmp	short loc_46C1
 align 2
 mov	ax, 1
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 mov	cx, word_25204
 inc	ch
 jmp	short loc_46C1
@@ -7957,7 +7957,7 @@ call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	ax, 8
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 retn
 hud_set_data_disk_icon_collected endp
 
@@ -12271,10 +12271,10 @@ ent_process_interaction_script_and_queue_message endp
 
 
 
-sub_6D95 proc near
+hud_add_bcd_counter_from_tens_value proc near
 mov	ah, al
 xor	al, al
-sub_6D95 endp
+hud_add_bcd_counter_from_tens_value endp
 
 
 

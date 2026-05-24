@@ -201,6 +201,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_36C0` -> `update_room_event_anchor_motion`
 	  - `sub_378E` -> `update_room_event_anchor_sprite`
 	  - `sub_6806` -> `ent_process_interaction_script_and_queue_message`
+	  - `sub_6D95` -> `hud_add_bcd_counter_from_tens_value`
 	  - `sub_71FE` -> `intro_repeat_draw_with_offset_4_3`
 	  - `sub_721B` -> `intro_repeat_draw_with_offset_8_6`
 	  - `sub_7238` -> `intro_repeat_draw_with_offset_12_8`
