@@ -8435,7 +8435,7 @@ jnz	short loc_4D62
 jmp	loc_4E29
 
 loc_4D5F:
-call	sub_6806
+call	ent_process_interaction_script_and_queue_message
 
 loc_4D62:
 jmp	loc_5090
@@ -11606,7 +11606,7 @@ ui_render_game_selection_panel endp
 
 
 
-sub_6806 proc near
+ent_process_interaction_script_and_queue_message proc near
 mov	al, comic_is_physics_active
 or	al, byte_25901
 or	al, byte_25886
@@ -12266,7 +12266,7 @@ lea	bx, unk_2FAA0
 mov	cx, 9
 int	3		; Trap to Debugger
 retn
-sub_6806 endp
+ent_process_interaction_script_and_queue_message endp
 
 
 

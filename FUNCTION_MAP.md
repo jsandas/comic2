@@ -180,6 +180,7 @@ player_start_timed_overlay_sprite (was sub_3610)                → Latch an ove
 check_comic_near_room_event_anchor (was sub_362A)               → Check proximity to room-event anchor and arm event state when comic is near
 update_room_event_anchor_motion (was sub_36C0)                  → Advance room-event anchor position/state and release comic into physics when blocked
 update_room_event_anchor_sprite (was sub_378E)                  → Draw room-event anchor sprite and reseed anchor position when it exits past comic
+ent_process_interaction_script_and_queue_message (was sub_6806) → Dispatch per-object interaction script state and queue context message text
 intro_repeat_draw_with_offset_4_3 (was sub_71FE)               → Repeat intro sprite draw/present loop with (-4,+3) positional offset
 intro_repeat_draw_with_offset_8_6 (was sub_721B)               → Repeat intro sprite draw/present loop with (-8,+6) positional offset
 intro_repeat_draw_with_offset_12_8 (was sub_7238)              → Repeat intro sprite draw/present loop with (-12,+8) positional offset
