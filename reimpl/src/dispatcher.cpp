@@ -44,48 +44,48 @@ DispatchStage GameDispatcher::choose_stage(const RuntimeState& state) const {
 
 DispatchResult GameDispatcher::run_tick(RuntimeState& state) const {
     const auto stage = choose_stage(state);
-    bool mutated = false;
+    bool hook_executed = false;
 
     switch (stage) {
         case DispatchStage::LevelTransition:
-            mutated = call_hook(level_transition_hook_, state);
+            hook_executed = call_hook(level_transition_hook_, state);
             break;
         case DispatchStage::SpecialLogic1:
-            mutated = call_hook(special_logic1_hook_, state);
+            hook_executed = call_hook(special_logic1_hook_, state);
             break;
         case DispatchStage::SpecialLogic2:
-            mutated = call_hook(special_logic2_hook_, state);
+            hook_executed = call_hook(special_logic2_hook_, state);
             break;
         case DispatchStage::AirbornePhysics:
-            mutated = call_hook(airborne_physics_hook_, state);
+            hook_executed = call_hook(airborne_physics_hook_, state);
             break;
         case DispatchStage::TimedOverlay:
-            mutated = call_hook(timed_overlay_hook_, state);
+            hook_executed = call_hook(timed_overlay_hook_, state);
             break;
         case DispatchStage::GroundedPhysics:
-            mutated = call_hook(grounded_physics_hook_, state);
+            hook_executed = call_hook(grounded_physics_hook_, state);
             break;
         case DispatchStage::PlayerAnimation:
-            mutated = call_hook(player_animation_hook_, state);
+            hook_executed = call_hook(player_animation_hook_, state);
             break;
         case DispatchStage::AttackAnimation:
-            mutated = call_hook(attack_animation_hook_, state);
+            hook_executed = call_hook(attack_animation_hook_, state);
             break;
         case DispatchStage::DistanceInteraction:
-            mutated = call_hook(distance_interaction_hook_, state);
+            hook_executed = call_hook(distance_interaction_hook_, state);
             break;
         case DispatchStage::TileHazard:
-            mutated = call_hook(tile_hazard_hook_, state);
+            hook_executed = call_hook(tile_hazard_hook_, state);
             break;
         case DispatchStage::PlayerSpecialState:
-            mutated = call_hook(player_special_state_hook_, state);
+            hook_executed = call_hook(player_special_state_hook_, state);
             break;
         case DispatchStage::InputHandling:
-            mutated = call_hook(input_handling_hook_, state);
+            hook_executed = call_hook(input_handling_hook_, state);
             break;
     }
 
-    return DispatchResult{.stage = stage, .hook_executed = mutated};
+    return DispatchResult{.stage = stage, .hook_executed = hook_executed};
 }
 
 bool GameDispatcher::call_hook(const StageHook& hook, RuntimeState& state) {
