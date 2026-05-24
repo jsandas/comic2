@@ -13,7 +13,6 @@ This directory contains the initial C++ scaffolding for Phase 7.
   - Signed-RLE decode (FRDATA-style payloads)
   - 4-plane EGA packet decode (FRPAK-style payloads)
 - Validation executable in `src/main.cpp` that parses `FRPAK.001`..`FRPAK.007`.
-- Test tree under `tests/` covering decoders and renderer primitives.
 - Test tree under `tests/` covering decoders, renderer primitives, and dispatcher stage ordering.
 - Dispatcher tests also validate deterministic replay for fixed input sequences.
 

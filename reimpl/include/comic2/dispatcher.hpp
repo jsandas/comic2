@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <utility>
 #include <vector>
 
 #include "comic2/game_state.hpp"
@@ -24,7 +25,7 @@ enum class DispatchStage {
 
 struct DispatchResult {
     DispatchStage stage = DispatchStage::InputHandling;
-    bool state_mutated = false;
+    bool hook_executed = false;
 };
 
 using StageHook = std::function<void(RuntimeState&)>;
