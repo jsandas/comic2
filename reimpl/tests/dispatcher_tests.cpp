@@ -134,7 +134,7 @@ void test_default_stage_hook_coverage() {
     comic2::GameDispatcher dispatcher;
     comic2::install_default_stage_hooks(dispatcher);
 
-    const auto expect_stage = [&](comic2::RuntimeState state, comic2::DispatchStage expected_stage) {
+    const auto expect_stage = [&](comic2::RuntimeState& state, comic2::DispatchStage expected_stage) {
         const auto result = dispatcher.run_tick(state);
         expect(result.stage == expected_stage, "stage selection mismatch while checking default hook coverage");
         expect(result.hook_executed, "default hook should be installed for every dispatch stage");
