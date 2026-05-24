@@ -47,7 +47,7 @@ void test_stage_hook_execution() {
 
     const auto result = dispatcher.run_tick(state);
     expect(result.stage == comic2::DispatchStage::InputHandling, "run_tick should select input stage");
-    expect(result.state_mutated, "run_tick should report hook execution");
+    expect(result.hook_executed, "run_tick should report hook execution");
     expect(state.player.jump_counter == 7, "input hook should mutate state");
 }
 

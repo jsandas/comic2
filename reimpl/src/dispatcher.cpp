@@ -85,7 +85,7 @@ DispatchResult GameDispatcher::run_tick(RuntimeState& state) const {
             break;
     }
 
-    return DispatchResult{.stage = stage, .state_mutated = mutated};
+    return DispatchResult{.stage = stage, .hook_executed = mutated};
 }
 
 bool GameDispatcher::call_hook(const StageHook& hook, RuntimeState& state) {
