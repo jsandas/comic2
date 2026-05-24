@@ -10,6 +10,7 @@
 void run_dispatcher_tests();
 void run_player_controller_tests();
 void run_renderer_tests();
+void run_subsystem_scaffold_tests();
 
 namespace {
 
@@ -64,6 +65,7 @@ int main() {
         run_dispatcher_tests();
         run_player_controller_tests();
         run_renderer_tests();
+        run_subsystem_scaffold_tests();
         std::cout << "comic2_unit_tests: OK\n";
         return 0;
     } catch (const std::exception& ex) {
