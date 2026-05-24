@@ -2410,6 +2410,9 @@ lea	bx, unk_2E3CC
 shl	ax, 1
 add	bx, ax
 mov	bx, [bx]
+; unk_2E3CC -> pointer table to per-level 8-byte file tuples:
+; [rle_stream, room_table, seg5e_blob, optional_xor_block].
+; Tuple fields are word pointers to ASCIIZ filenames (fr000.* / frdata.* family).
 mov	dx, [bx]
 add	bx, 2
 push	bx
@@ -12742,7 +12745,7 @@ call	gfx_copy_page_4plane
 call	gfx_present_and_flip_page
 mov	dx, 0ABC0h
 call	gfx_load_ega_palette_16_from_table
-mov	dx, 0ABF7h
+mov	dx, 0ABF7h	; "frdemo.0"
 call	io_read_file_to_seg5e_base
 mov	ax, 12h
 call	wait_ticks_or_abort
@@ -12926,16 +12929,16 @@ call	gfx_enable_retrace_palette_script
 mov	dx, 0ABD1h
 call	gfx_load_ega_palette_16_from_table
 mov	di, 4000h
-mov	dx, 0AC12h
+mov	dx, 0AC12h	; "frpak.003"
 call	gfx_load_and_blit_opaque_file
 mov	di, 6000h
-mov	dx, 0AC1Ch
+mov	dx, 0AC1Ch	; "frpak.004"
 call	gfx_load_and_blit_opaque_file
 mov	si, 4000h
 mov	di, cs:word_773F
 call	gfx_copy_page_4plane
 call	gfx_present_and_flip_page
-mov	dx, 0AC00h
+mov	dx, 0AC00h	; "frdemo.1"
 call	io_read_file_to_seg5e_base
 mov	ax, 32h	; '2'
 call	wait_ticks_or_abort
@@ -13303,7 +13306,7 @@ intro_draw_comic_walk_frame endp
 ; START	OF FUNCTION CHUNK FOR play_intro_cinematic
 
 loc_7660:
-mov	dx, 0AC09h
+mov	dx, 0AC09h	; "frdemo.2"
 call	io_read_file_to_seg5e_base
 mov	ax, 0Dh
 int	10h		; - VIDEO - SET	VIDEO MODE
@@ -13352,7 +13355,7 @@ mov	di, cs:word_773F
 call	gfx_rle_blit_opaque_4plane
 pop	ds
 assume ds:nothing
-mov	dx, 0AC26h
+mov	dx, 0AC26h	; "frpak.005"
 mov	di, cs:word_773F
 call	gfx_load_and_blit_masked_file
 mov	dx, 0ABE2h
@@ -13373,7 +13376,7 @@ mov	di, cs:word_773F
 call	gfx_rle_blit_opaque_4plane
 pop	ds
 assume ds:nothing
-mov	dx, 0AC30h
+mov	dx, 0AC30h	; "frpak.006"
 mov	di, cs:word_773F
 call	gfx_load_and_blit_masked_file
 mov	dx, 2

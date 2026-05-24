@@ -84,16 +84,86 @@ comic_y_vel         - Vertical velocity (fixed-point 1/8 units)
 comic_jump_counter  - Jump acceleration counter
 ```
 
-#### Enemy Structure (12-byte format)
+#### Mapped Object Record (12-byte format at `unk_25AD0`)
+Confirmed from `ent_build_room_entity_list`, `ent_update_object_behaviors`, and `ent_activate_slot_into_runtime`.
+
 ```
 Offset  Size    Description
-+0x00   word    X position (screen-relative)
-+0x02   word    Y position (screen-relative)
-+0x04   word    Sprite/resource index
-+0x06   word    State flags
-+0x08   word    Absolute X coordinate
-+0x0A   word    Absolute Y coordinate
-+0x0C   ...     Collision data
++0x00   word    room_x index (copied from room map key)
++0x02   word    room_y index (copied from room map key)
++0x04   word    descriptor_ptr (points to per-object bounds/behavior descriptor)
++0x06   word    activation/state flags (low byte used for state, high bits for timers/masks)
++0x08   word    world_x (base/persistent x used by activation and culling)
++0x0A   word    world_y (base/persistent y used by activation and culling)
+```
+
+Related runtime formats used by the same pipeline:
+
+```
+; Active entity list (8-byte records at unk_256E0)
+Offset  Size    Description
++0x00   word    x
++0x02   word    y
++0x04   word    flags or mapped-slot index (bit 15 used as state marker)
++0x06   word    sprite/object id pointer used by draw path
+
+; Runtime behavior slot (0x20-byte records at 0x48ED)
+Offset  Size    Description
++0x00   word    hitbox_w
++0x02   word    hitbox_h
++0x04   word    type_flags (ah is primary behavior discriminator)
++0x06   word    behavior_state (0 = inactive)
++0x08   word    anim_cycle_len_or_span
++0x0A   word    anim_period
++0x0C   word    unknown_0c
++0x0E   word    unknown_0e
++0x10   word    x
++0x12   word    y
++0x14   word    vel_x_or_param_a
++0x16   word    vel_y_or_param_b
++0x18   word    dir_or_toggle
++0x1A   word    anim_tick
++0x1C   word    unknown_1c
++0x1E   word    mapped_object_ptr (back-reference into unk_25AD0)
+```
+
+C-equivalent declarations for currently confirmed fields:
+
+```c
+typedef struct {
+  uint16_t room_x;
+  uint16_t room_y;
+  uint16_t descriptor_ptr;
+  uint16_t state_flags;
+  uint16_t world_x;
+  uint16_t world_y;
+} MappedObject12;
+
+typedef struct {
+  int16_t x;
+  int16_t y;
+  uint16_t flags_or_slot;
+  uint16_t sprite_or_obj;
+} ActiveEntity8;
+
+typedef struct {
+  uint16_t hitbox_w;
+  uint16_t hitbox_h;
+  uint16_t type_flags;
+  uint16_t behavior_state;
+  uint16_t anim_span;
+  uint16_t anim_period;
+  uint16_t unknown_0c;
+  uint16_t unknown_0e;
+  int16_t x;
+  int16_t y;
+  int16_t param_a;
+  int16_t param_b;
+  uint16_t dir_toggle;
+  uint16_t anim_tick;
+  uint16_t unknown_1c;
+  uint16_t mapped_object_ptr;
+} RuntimeEntitySlot32;
 ```
 
 ### Graphics System
@@ -119,13 +189,112 @@ blit_16xH_plane_with_mask:
     ; ... blitting loop ...
 ```
 
-### Resource Files
+### Resource Files (Phase 6)
 
-#### Comic 2 Resources
-- **data.0, data.1** - Graphics/sprite data
-- **frdata.0, frdata.1** - Level data
-- **frdemo.0, frdemo.1, frdemo.2** - Demo sequences
-- **frpak.003 - frpak.007** - Packed resource archives
+#### Confirmed Decode Formats
+
+1. Signed-RLE stream (`io_load_rle_resource_to_e978`, `load_room_tilemap_from_resource_buffer`):
+```
+while (1) {
+    int8_t control = *src++;
+    if (control == 0) break;                // terminator
+    if (control < 0) {                      // run
+        uint8_t value = *src++;
+        repeat(-control) *dst++ = value;
+    } else {                                // literal
+        copy(control) bytes from src to dst;
+    }
+}
+```
+
+2. 4-plane EGA blit stream (`gfx_rle_blit_opaque_4plane`, `gfx_rle_blit_masked_or_4plane`):
+- Stream starts with `uint16_t row_span_bytes`.
+- For each of 4 planes, decode packets until produced bytes reach `row_span_bytes`.
+- Packet encoding:
+  - `packet & 0x80 == 0`: copy `packet` literal bytes.
+  - `packet & 0x80 != 0`: repeat next byte `packet & 0x7f` times.
+- Masked variant ORs decoded bytes into VRAM; opaque variant writes bytes directly.
+
+#### FR* Family Current Findings
+
+- `frdata.0` / `frdata.1`:
+  - Loaded via level resource table (`load_resource`) into `seg001:0600` and other work segments.
+  - `load_resource` uses `unk_2E3CC` as an indirection table:
+    - level id `ax` indexes a word pointer table at `unk_2E3CC`.
+    - each entry points to an 8-byte tuple of 4 filename pointers:
+      1) signed-RLE stream file, 2) room-table file, 3) seg5E blob file, 4) optional XOR-0x25 block file.
+    - filename pool includes `fr000.*` ... `fr014.*` and `frdata.*` names.
+  - `load_room_tilemap_from_resource_buffer` parses header/room entries as:
+    - `+0x0002`: `level_id` (must match AX from caller)
+    - `+0x0004`: room table of 6-byte entries, indexed by room id BX
+    - room entry layout:
+      - `+0x00`: `tile_w` (stored to `ds:298h`)
+      - `+0x02`: `tile_h` (stored to `ds:29Ah`)
+      - `+0x04`: `rle_data_off` (offset from base `0x0600`)
+  - Room payload at `0x0600 + rle_data_off` uses signed-RLE decode into tile buffer `ds:09A8`.
+  - After decode, engine builds row pointer table at `ds:02A0` and derived pixel extents:
+    - `ds:29Ch = tile_w * 16`
+    - `ds:29Eh = tile_h * 16`
+
+- `frpak.001`..`frpak.007`:
+  - In currently confirmed paths, payloads are loaded by direct filename constants rather than archive-entry parsing.
+  - Intro/cinematic path uses fixed string-offset calls:
+    - `0xAC12` -> `"frpak.003"` (opaque blit source)
+    - `0xAC1C` -> `"frpak.004"` (opaque blit source)
+    - `0xAC26` -> `"frpak.005"` (masked blit source)
+    - `0xAC30` -> `"frpak.006"` (masked blit source)
+  - Adjacent demo loads in same path:
+    - `0xABF7` -> `"frdemo.0"`
+    - `0xAC00` -> `"frdemo.1"`
+    - `0xAC09` -> `"frdemo.2"`
+  - Byte-level validation using engine packet rules confirms:
+    - all `FRPAK.001`..`FRPAK.007` begin with `row_span=0x1F40` and decode as one complete 4-plane RLE stream from offset 0,
+    - decoded stream length consumes entire file for each `.00x` file.
+    - validated consumed lengths: `001=17391`, `002=6193`, `003=14568`, `004=10992`, `005=5842`, `006=6643`, `007=1223` bytes.
+  - Conclusion: in this code path, FRPAK files behave as direct full-image 4-plane payload files (not directory-based multi-entry archives).
+  - Confidence: High.
+
+- `frdemo.0`..`frdemo.2`:
+  - Referenced by intro/cinematic resource string table.
+  - Byte patterns are consistent with the same packetized RLE families above.
+  - Confidence: Medium.
+
+#### .SHP / .EGA Layout Equivalence (engine-side)
+
+- No explicit `.SHP`/`.EGA` filename strings have been promoted yet in this binary branch.
+- Engine-side decode now shows three concrete payload classes that map to the expected external concepts:
+  - Full-screen/image file payload (`.EGA`-equivalent):
+    - `uint16_t row_span_bytes`, then packetized 4-plane stream.
+    - Packet rule: literal (`0x00..0x7F`) or run (`0x80..0xFF`, count=`b&0x7F`, repeated next byte).
+  - Opaque sprite record (`.SHP` opaque-equivalent in loaded blobs):
+    - `uint16_t width_pixels`, `uint16_t height_rows`, then 4 plane blocks of raw row bytes.
+  - Masked sprite record (`.SHP` masked-equivalent in loaded blobs):
+    - `uint16_t width_pixels`, `uint16_t height_rows`, `uint16_t image_data_off`,
+    - mask block first, image block at `record_base + image_data_off`, both organized in plane-major row order.
+
+Reference C-style declarations:
+
+```c
+typedef struct {
+    uint16_t row_span_bytes;
+    /* followed by packetized bytes for plane0..plane3 */
+} EgaRle4PlaneFile;
+
+typedef struct {
+    uint16_t width_pixels;
+    uint16_t height_rows;
+    /* followed by opaque plane-major row bytes for 4 planes */
+} OpaqueSpriteRecord;
+
+typedef struct {
+    uint16_t width_pixels;
+    uint16_t height_rows;
+    uint16_t image_data_off;
+    /* mask bytes start immediately after header; image bytes at +image_data_off */
+} MaskedSpriteRecord;
+```
+
+- These are the C++ reimplementation-facing layout contracts regardless of final extension-name promotion.
 
 ## Function Mapping Progress
 
@@ -189,23 +358,30 @@ The main loop is fragmented into 7 primary chunks that handle different states:
 3. Locate player X/Y and velocity variables
 4. Identify core movement and collision functions
 
-### Phase 3: Graphics System (In Progress)
+### Phase 3: Graphics System (Completed)
 1. EGA plane manipulation
 2. Blitting functions
 3. Double-buffer swapping
 4. Palette operations
 
-### Phase 4: Specific Systems
+### Phase 4: Specific Systems (Completed)
 1. Enemy AI
 2. Collision detection
 3. Item collection
 4. Sound effects
 
-### Phase 5: Data Structures
-1. Level format
-2. Sprite definitions
-3. Map tiles
-4. Animation sequences
+### Phase 5: Annotation and System Mapping (Completed)
+1. Confirmed high-value rendering, input, and entity function names
+2. Confirmed loader wrappers and sound handler command API
+3. Promoted stable naming for major intro/UI/transition routines
+
+### Phase 6: Data Structures and Resource Format (Completed)
+1. [x] Confirm 12-byte mapped object layout
+2. [x] Confirm active-runtime 8-byte list and 0x20-byte behavior slot shape
+3. [x] Document signed-RLE and 4-plane EGA packet formats used by engine
+4. [x] Document FRDATA room-table/header semantics with offset-level detail
+5. [x] Document FRPAK `.00x` file behavior and stream boundaries
+6. [x] Promote stable `.SHP`/`.EGA`-equivalent payload contracts for reimplementation
 
 ## Assembly Patterns Reference
 
@@ -250,13 +426,9 @@ xchg ah, al
 
 ## Next Steps
 
-1. ✓ Complete core analysis
-2. ✓ Map common functions
-3. → Annotate comic2.asm with function names
-4. → Create detailed data structure definitions
-5. → Extract and document level format
-6. → Build function call graph
-7. → Verify functionality equivalence
+1. Export Phase 6 structs and resource contracts into dedicated C++ headers.
+2. Start Phase 7 platform abstraction and renderer bring-up using the verified packet/sprite formats.
+3. Implement loader stubs that mirror `load_resource` tuple semantics and room decode flow.
 
 ## Tools Used
 
@@ -275,5 +447,5 @@ xchg ah, al
 
 ---
 
-*Last Updated: 2026-03-07*
-*Status: Phase 2 - Graphics System Annotation*
+*Last Updated: 2026-05-23*
+*Status: Phase 6 - Data Structures and Resource Format Documentation (Completed)*

@@ -231,7 +231,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 
 ---
 
-## Phase 6: Data Structure & Resource Format Documentation
+## Phase 6: Data Structure & Resource Format Documentation (COMPLETED)
 
 ### Goals
 - Confirm full enemy struct layout (12-byte format, all offsets)
@@ -239,6 +239,16 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 - Document frpak.* archive format
 - Document .SHP and .EGA sprite/graphics layouts
 - Write C-equivalent `struct` definitions for all confirmed layouts
+
+### Progress (Current)
+- [x] Confirmed 12-byte mapped object record at `unk_25AD0` (`+0x00..+0x0A`)
+- [x] Confirmed active runtime entity list format (8-byte records at `unk_256E0`)
+- [x] Confirmed 0x20-byte runtime behavior slot layout (table at `0x48ED`)
+- [x] Documented signed-RLE and 4-plane EGA packet decode contracts from code paths
+- [x] Confirmed `unk_2E3CC` level loader indirection (per-level pointer -> 4 filename-pointer tuple)
+- [x] FRDATA header/room-offset schema documented with field-level semantics used by loader
+- [x] FRPAK `.001`..`.007` validated as direct full-file 4-plane streams (no directory walk in confirmed paths)
+- [x] `.SHP` / `.EGA`-equivalent payload contracts finalized from sprite and RLE blit routines
 
 ---
 
