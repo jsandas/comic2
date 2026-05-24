@@ -268,4 +268,82 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 - [x] Added FRPAK validator executable (`reimpl/src/main.cpp`)
 - [x] Verified build succeeds and FRPAK.001..FRPAK.007 decode with row span `0x1f40`
 - [x] Added renderer abstraction baseline (`reimpl/include/comic2/renderer.hpp`, `reimpl/src/renderer.cpp`) with tests
-- [ ] Port dispatcher skeleton and player/runtime state containers
+- [x] Ported dispatcher skeleton and player/runtime state containers (`reimpl/include/comic2/dispatcher.hpp`, `reimpl/include/comic2/game_state.hpp`, `reimpl/src/dispatcher.cpp`) with tests
+- [x] Added default input + physics stage handlers and deterministic tick replay tests (`reimpl/include/comic2/default_handlers.hpp`, `reimpl/src/default_handlers.cpp`, `reimpl/tests/dispatcher_tests.cpp`)
+
+### Detailed Reimplementation Roadmap
+
+#### 7.1 Architecture and Module Boundaries
+- [x] `resource_loader` module: signed-RLE + 4-plane packet decode contracts
+- [x] `renderer` module baseline: planar surface abstraction + presenter interface
+- [x] `dispatcher` module baseline: stage priority selector + hookable tick execution
+- [x] `game_state` baseline: player/input/flags/runtime containers
+- [ ] Split runtime into explicit subsystem modules:
+	- `player_controller` (movement/jump/fall/state transitions)
+	- `tile_collision` (tile lookup + threshold checks)
+	- `entity_runtime` (activation/deactivation/runtime slot updates)
+	- `projectiles` (spawn/update/collision/despawn)
+	- `room_loader` (load_resource equivalent, room decode and setup)
+
+#### 7.2 Dispatcher Parity Plan (`loc_2341` Ordering)
+- [x] Encoded current stage order and priority chain in `GameDispatcher`
+- [ ] Add dedicated stage handlers matching known flow order:
+	1. `handle_level_transition`
+	2. `handle_special_logic_1`
+	3. `handle_special_logic_2`
+	4. `handle_airborne_movement`
+	5. `handle_timed_overlay`
+	6. `update_player_physics` (grounded)
+	7. `handle_player_animation`
+	8. `handle_attack_animation`
+	9. `handle_distance_interaction`
+	10. `handle_tile_hazard`
+	11. `handle_player_special_state`
+	12. `handle_input_fallback`
+- [ ] Add a trace-mode dispatcher logger that records selected stage per tick for oracle comparison
+
+#### 7.3 Player Movement and Physics Plan
+- [ ] Implement horizontal movement parity for known left/right paths (`sub_2BDC`, `sub_2C39`)
+- [ ] Implement grounded physics (`sub_2A10`) including jump counter consumption and fall start
+- [ ] Implement airborne path (`sub_2EDC`) including lateral drift checks and vertical velocity updates
+- [ ] Implement floor check trigger (`sub_2C9D`) to enter fall state when no support tile
+- [ ] Add deterministic fixtures for edge cases:
+	- jump while moving left/right
+	- short-hop vs full jump counter usage
+	- ledge walk-off transitioning into fall
+
+#### 7.4 Tile Collision and Room Grid Plan
+- [ ] Implement tile query service equivalent to `get_tile_at_pixels` (`sub_1CFE`)
+- [ ] Port documented FRDATA room entry interpretation (`tile_w`, `tile_h`, `rle_data_off`)
+- [ ] Build room row-pointer table equivalent (`0x2A0` pointer map behavior)
+- [ ] Implement collision thresholds and hazard band checks used by dispatcher/hazard path
+- [ ] Add tests for pixel->tile mapping and threshold comparisons at room bounds
+
+#### 7.5 Entity and Projectile Plan
+- [ ] Implement mapped-object activation pipeline:
+	- room list build (`ent_build_room_entity_list`)
+	- runtime slot build (`ent_build_runtime_slots_for_viewport`)
+	- slot copy/deactivate behavior (`ent_copy_descriptor_to_runtime_slot`, `ent_deactivate_runtime_slot`)
+- [ ] Implement projectile loop parity (`update_projectiles`) with viewport culling and tile collision
+- [ ] Implement player projectile spawn (`spawn_player_projectile`) and impact dispatch
+- [ ] Add table-driven tests for runtime slot state transitions and projectile despawn conditions
+
+#### 7.6 Rendering Plan (EGA-Parity-Oriented)
+- [ ] Implement masked and opaque sprite blit adapters over `EgaPlanarSurface`
+- [ ] Implement page-flip abstraction compatible with current double-buffer assumptions
+- [ ] Add validation helpers that compare plane bytes for known decode/blit fixtures
+- [ ] Add optional SDL2 presenter behind `IFramePresenter` while keeping core logic headless-testable
+
+#### 7.7 Integration Gates and Oracle Verification
+- [ ] Gate A (Unit): all module tests pass in CI (`ctest`) with deterministic replay checks
+- [ ] Gate B (Frame): scripted input sequences produce stable dispatcher-stage traces
+- [ ] Gate C (State): key state vectors (`x/y/vel/state flags`) match expected snapshots per tick
+- [ ] Gate D (Visual): selected rooms produce matching planar frame hashes against oracle captures
+- [ ] Gate E (Behavior): death/hazard, room transition, and projectile interactions match expected outcomes
+
+#### 7.8 Immediate Next Execution Order
+- [ ] 1) Implement `tile_collision` service and replace physics stubs with tile-aware checks
+- [ ] 2) Implement grounded + airborne handlers using documented priority and state flags
+- [ ] 3) Implement room-loader integration (`load_resource` equivalent path) into runtime state
+- [ ] 4) Implement projectile update path and add deterministic scripted tick tests
+- [ ] 5) Add dispatcher trace capture and compare against oracle-driven expected stage sequences
