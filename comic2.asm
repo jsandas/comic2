@@ -3530,7 +3530,7 @@ cmp	cs:byte_25D, 1
 jnz	short loc_23E0
 
 loc_23D7:
-call	sub_3610
+call	player_start_timed_overlay_sprite
 mov	cs:byte_25A, 0
 
 loc_23E0:
@@ -3662,7 +3662,7 @@ cmp	word ptr cs:[bx], 0FFFFh
 jz	short loc_252D
 
 loc_2528:
-call	sub_3610
+call	player_start_timed_overlay_sprite
 jmp	short loc_2548
 
 loc_252D:
@@ -3834,7 +3834,7 @@ jz	short loc_2714
 cmp	byte ptr ds:21Ch, 0
 jnz	short loc_26EE
 mov	ax, 0A09Ch
-call	sub_3610
+call	player_start_timed_overlay_sprite
 jmp	short loc_26F1
 
 loc_26EE:
@@ -5682,7 +5682,7 @@ game_loop endp
 
 
 
-sub_3610 proc near
+player_start_timed_overlay_sprite proc near
 cmp	byte_258FE, 0
 jnz	short locret_3629
 mov	word_258FF, ax
@@ -5694,7 +5694,7 @@ int	3		; Trap to Debugger
 
 locret_3629:
 retn
-sub_3610 endp
+player_start_timed_overlay_sprite endp
 
 
 
@@ -11848,7 +11848,7 @@ cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_6A21
 mov	word ptr cs:[si+1Ch], 1
 mov	ax, 0AC0Ah
-call	sub_3610
+call	player_start_timed_overlay_sprite
 mov	ax, 8
 jmp	loc_6D75
 
@@ -11859,7 +11859,7 @@ cmp	word ptr cs:[si+1Ch], 1
 jz	short loc_6A15
 mov	byte_25200, 2
 mov	ax, 0AC0Ah
-call	sub_3610
+call	player_start_timed_overlay_sprite
 mov	ax, 5
 jmp	loc_6D75
 

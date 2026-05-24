@@ -21,7 +21,7 @@ Address: `loc_2341` (Line 3394 in `comic2.asm`)
     *   Target: `handle_airborne_movement` (was `loc_2EDC`)
 5.  **Sub-state 3610 Check**
     *   Variables: `ds:896h` == 2, and others
-    *   Calls: `sub_3610`
+    *   Calls: `player_start_timed_overlay_sprite`
 6.  **Grounded Physics Check**
     *   Variables: `ds:897h` != 0 (`comic_is_physics_active`)
     *   Target: `update_player_physics` (was `loc_2A10`)
