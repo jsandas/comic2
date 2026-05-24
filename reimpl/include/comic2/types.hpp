@@ -13,6 +13,8 @@ struct MappedObject12 {
     std::uint16_t state_flags;
     std::uint16_t world_x;
     std::uint16_t world_y;
+
+    bool operator==(const MappedObject12&) const = default;
 };
 
 struct ActiveEntity8 {
@@ -20,6 +22,8 @@ struct ActiveEntity8 {
     std::int16_t y;
     std::uint16_t flags_or_slot;
     std::uint16_t sprite_or_obj;
+
+    bool operator==(const ActiveEntity8&) const = default;
 };
 
 struct RuntimeEntitySlot32 {
@@ -39,12 +43,16 @@ struct RuntimeEntitySlot32 {
     std::uint16_t anim_tick;
     std::uint16_t unknown_1c;
     std::uint16_t mapped_object_ptr;
+
+    bool operator==(const RuntimeEntitySlot32&) const = default;
 };
 
 struct FrdataRoomEntry {
     std::uint16_t tile_w;
     std::uint16_t tile_h;
     std::uint16_t rle_data_off;
+
+    bool operator==(const FrdataRoomEntry&) const = default;
 };
 
 #pragma pack(pop)

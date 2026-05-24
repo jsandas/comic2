@@ -7,6 +7,7 @@
 
 #include "comic2/resource_formats.hpp"
 
+void run_dispatcher_tests();
 void run_renderer_tests();
 
 namespace {
@@ -59,11 +60,12 @@ int main() {
     try {
         test_signed_rle_decode();
         test_ega_4plane_decode();
+        run_dispatcher_tests();
         run_renderer_tests();
-        std::cout << "resource_loader_tests: OK\n";
+        std::cout << "comic2_unit_tests: OK\n";
         return 0;
     } catch (const std::exception& ex) {
-        std::cerr << "resource_loader_tests: FAIL: " << ex.what() << "\n";
+        std::cerr << "comic2_unit_tests: FAIL: " << ex.what() << "\n";
         return 1;
     }
 }
