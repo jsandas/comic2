@@ -31,7 +31,7 @@ target_link_libraries(comic2_reimpl
 add_executable(comic2_unit_tests
     tests/dispatcher_tests.cpp
     tests/renderer_tests.cpp
-    tests/resource_loader_tests.cpp
+    tests/unit_tests_main.cpp
 )
 
 target_link_libraries(comic2_unit_tests
