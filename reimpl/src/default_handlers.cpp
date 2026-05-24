@@ -5,32 +5,38 @@
 
 namespace comic2 {
 
+namespace {
+
+void apply_default_physics(RuntimeState& state) {
+    static constexpr PlayerMotionConfig kDefaultMotion{};
+    static constexpr TileCollisionConfig kDefaultCollision{};
+    apply_physics_tick(state, kDefaultMotion, kDefaultCollision);
+}
+
+}  // namespace
+
 void handle_level_transition(RuntimeState& state) {
     (void)state;
 }
 
-void handle_special_logic_1(RuntimeState& state) {
+void handle_special_logic1(RuntimeState& state) {
     (void)state;
 }
 
-void handle_special_logic_2(RuntimeState& state) {
+void handle_special_logic2(RuntimeState& state) {
     (void)state;
 }
 
 void handle_airborne_movement(RuntimeState& state) {
-    static constexpr PlayerMotionConfig kDefaultMotion{};
-    static constexpr TileCollisionConfig kDefaultCollision{};
-    apply_physics_tick(state, kDefaultMotion, kDefaultCollision);
+    apply_default_physics(state);
 }
 
 void handle_timed_overlay(RuntimeState& state) {
     (void)state;
 }
 
-void update_player_physics(RuntimeState& state) {
-    static constexpr PlayerMotionConfig kDefaultMotion{};
-    static constexpr TileCollisionConfig kDefaultCollision{};
-    apply_physics_tick(state, kDefaultMotion, kDefaultCollision);
+void handle_grounded_physics(RuntimeState& state) {
+    apply_default_physics(state);
 }
 
 void handle_player_animation(RuntimeState& state) {
@@ -60,11 +66,11 @@ void handle_input_fallback(RuntimeState& state) {
 
 void install_default_stage_hooks(GameDispatcher& dispatcher) {
     dispatcher.set_level_transition_hook([](RuntimeState& state) { handle_level_transition(state); });
-    dispatcher.set_special_logic1_hook([](RuntimeState& state) { handle_special_logic_1(state); });
-    dispatcher.set_special_logic2_hook([](RuntimeState& state) { handle_special_logic_2(state); });
+    dispatcher.set_special_logic1_hook([](RuntimeState& state) { handle_special_logic1(state); });
+    dispatcher.set_special_logic2_hook([](RuntimeState& state) { handle_special_logic2(state); });
     dispatcher.set_airborne_physics_hook([](RuntimeState& state) { handle_airborne_movement(state); });
     dispatcher.set_timed_overlay_hook([](RuntimeState& state) { handle_timed_overlay(state); });
-    dispatcher.set_grounded_physics_hook([](RuntimeState& state) { update_player_physics(state); });
+    dispatcher.set_grounded_physics_hook([](RuntimeState& state) { handle_grounded_physics(state); });
     dispatcher.set_player_animation_hook([](RuntimeState& state) { handle_player_animation(state); });
     dispatcher.set_attack_animation_hook([](RuntimeState& state) { handle_attack_animation(state); });
     dispatcher.set_distance_interaction_hook([](RuntimeState& state) { handle_distance_interaction(state); });
