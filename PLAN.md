@@ -280,7 +280,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 - [x] `renderer` module baseline: planar surface abstraction + presenter interface
 - [x] `dispatcher` module baseline: stage priority selector + hookable tick execution
 - [x] `game_state` baseline: player/input/flags/runtime containers
-- [ ] Split runtime into explicit subsystem modules:
+- [x] Split runtime into explicit subsystem modules:
 	- [x] `player_controller` (movement/jump/fall/state transitions)
 	- [x] `tile_collision` (tile lookup + threshold checks)
 	- [x] `entity_runtime` scaffold (activation/deactivation/runtime slot updates)
