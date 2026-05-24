@@ -1,0 +1,55 @@
+#pragma once
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <span>
+#include <vector>
+
+namespace comic2 {
+
+class EgaPlanarSurface {
+public:
+    static constexpr std::size_t kPlaneCount = 4;
+
+    EgaPlanarSurface(std::uint16_t width_pixels = 320, std::uint16_t height_rows = 200);
+
+    std::uint16_t width_pixels() const noexcept { return width_pixels_; }
+    std::uint16_t height_rows() const noexcept { return height_rows_; }
+    std::size_t row_stride_bytes() const noexcept { return row_stride_bytes_; }
+    std::size_t plane_size_bytes() const noexcept { return row_stride_bytes_ * static_cast<std::size_t>(height_rows_); }
+
+    void clear(std::uint8_t value = 0);
+
+    std::span<std::uint8_t> plane(std::size_t index);
+    std::span<const std::uint8_t> plane(std::size_t index) const;
+
+    std::uint8_t get_plane_byte(std::size_t plane_index, std::size_t x_byte, std::size_t y_row) const;
+    void set_plane_byte(std::size_t plane_index, std::size_t x_byte, std::size_t y_row, std::uint8_t value);
+
+private:
+    std::uint16_t width_pixels_;
+    std::uint16_t height_rows_;
+    std::size_t row_stride_bytes_;
+    std::array<std::vector<std::uint8_t>, kPlaneCount> planes_;
+};
+
+class IFramePresenter {
+public:
+    virtual ~IFramePresenter() = default;
+    virtual void present(const EgaPlanarSurface& frame) = 0;
+};
+
+class MemoryFramePresenter final : public IFramePresenter {
+public:
+    void present(const EgaPlanarSurface& frame) override;
+
+    bool has_frame() const noexcept { return has_frame_; }
+    const EgaPlanarSurface& last_frame() const;
+
+private:
+    bool has_frame_ = false;
+    EgaPlanarSurface last_frame_{};
+};
+
+}  // namespace comic2

@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(comic2_core
+    src/renderer.cpp
     src/resource_loader.cpp
 )
 
@@ -26,6 +27,7 @@ target_link_libraries(comic2_reimpl
 )
 
 add_executable(comic2_tests
+    tests/renderer_tests.cpp
     tests/resource_loader_tests.cpp
 )
 

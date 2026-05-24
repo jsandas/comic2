@@ -267,5 +267,5 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 - [x] Implemented signed-RLE and 4-plane EGA packet decoders in `reimpl/src/resource_loader.cpp`
 - [x] Added FRPAK validator executable (`reimpl/src/main.cpp`)
 - [x] Verified build succeeds and FRPAK.001..FRPAK.007 decode with row span `0x1f40`
-- [ ] Add renderer abstraction and first SDL2-backed EGA surface implementation
+- [x] Added renderer abstraction baseline (`reimpl/include/comic2/renderer.hpp`, `reimpl/src/renderer.cpp`) with tests
 - [ ] Port dispatcher skeleton and player/runtime state containers

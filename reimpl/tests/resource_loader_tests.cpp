@@ -7,6 +7,8 @@
 
 #include "comic2/resource_formats.hpp"
 
+void run_renderer_tests();
+
 namespace {
 
 void expect(bool condition, const char* message) {
@@ -57,6 +59,7 @@ int main() {
     try {
         test_signed_rle_decode();
         test_ega_4plane_decode();
+        run_renderer_tests();
         std::cout << "resource_loader_tests: OK\n";
         return 0;
     } catch (const std::exception& ex) {
