@@ -3856,7 +3856,7 @@ loc_2708:
 mov	al, ds:897h
 or	al, ds:89Dh
 jnz	short loc_2714
-call	sub_3468
+call	player_start_attack_animation
 
 loc_2714:
 mov	al, cs:byte_61
@@ -5454,7 +5454,7 @@ jmp	loc_2B88
 
 
 
-sub_3468 proc near
+player_start_attack_animation proc near
 cmp	comic_facing, 1
 jz	short loc_347D
 cmp	comic_x, 8
@@ -5478,7 +5478,7 @@ mov	comic_x_vel, 0
 
 locret_34A8:
 retn
-sub_3468 endp
+player_start_attack_animation endp
 
 ; START	OF FUNCTION CHUNK FOR game_loop
 

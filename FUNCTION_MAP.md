@@ -175,6 +175,7 @@ input_capture_unique_key_binding_and_echo (was sub_54B)         → Capture a no
 camera_update_y_follow_comic_clamped (was sub_2B8E)             → Keep camera Y origin within follow band around comic_y, clamped to room bounds
 player_cycle_mode_selection (was sub_327D)                      → Cycle player mode index with availability checks and apply related physics toggles
 player_start_state4_action_animation (was sub_30C6)             → Start facing-aware state-4 action animation when horizontal bounds allow it
+player_start_attack_animation (was sub_3468)                    → Start facing-aware attack animation when horizontal bounds allow it
 intro_repeat_draw_with_offset_4_3 (was sub_71FE)               → Repeat intro sprite draw/present loop with (-4,+3) positional offset
 intro_repeat_draw_with_offset_8_6 (was sub_721B)               → Repeat intro sprite draw/present loop with (-8,+6) positional offset
 intro_repeat_draw_with_offset_12_8 (was sub_7238)              → Repeat intro sprite draw/present loop with (-12,+8) positional offset
