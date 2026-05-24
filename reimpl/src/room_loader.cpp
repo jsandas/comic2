@@ -5,11 +5,13 @@ namespace comic2 {
 bool decode_frdata_room_entry(const std::vector<std::uint8_t>& bytes,
                               std::size_t offset,
                               FrdataRoomEntry* out_entry) {
+    constexpr std::size_t kFrdataRoomEntrySize = 6;
+
     if (out_entry == nullptr) {
         return false;
     }
 
-    if (offset + 5 >= bytes.size()) {
+    if (offset > bytes.size() || (bytes.size() - offset) < kFrdataRoomEntrySize) {
         return false;
     }
 

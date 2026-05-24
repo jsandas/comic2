@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <limits>
 #include <vector>
 
 #include "comic2/entity_runtime.hpp"
@@ -50,10 +51,20 @@ void test_room_loader_decodes_frdata_entry() {
     expect(entry.rle_data_off == 0x1234, "rle_data_off decode mismatch");
 }
 
+void test_room_loader_rejects_huge_offset() {
+    const std::vector<std::uint8_t> bytes = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+    comic2::FrdataRoomEntry entry{};
+    const bool ok = comic2::decode_frdata_room_entry(bytes, std::numeric_limits<std::size_t>::max(), &entry);
+
+    expect(!ok, "decode should reject oversized offsets safely");
+}
+
 }  // namespace
 
 void run_subsystem_scaffold_tests() {
     test_entity_runtime_prunes_inactive_slots();
     test_projectile_updates_and_despawns_out_of_bounds();
     test_room_loader_decodes_frdata_entry();
+    test_room_loader_rejects_huge_offset();
 }
