@@ -131,7 +131,7 @@ call	install_interrupt_handlers		; install_interrupt_handlers
 ; Similar to Comic 1's wait_n_ticks(1)
 ; ============================================================================
 mov	ax, 1		; Wait for 1 tick
-call	sub_27A		; wait_n_ticks
+call	wait_n_ticks		; wait_n_ticks
 mov	cx, 0FFFFh
 
 loc_7C:
@@ -221,7 +221,7 @@ mov	cx, 19h
 
 loc_123:
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 cmp	cs:byte_61, 0
 jnz	short loc_136
 loop	loc_123
@@ -241,7 +241,7 @@ mov	dx, 2
 call	gfx_load_ega_palette_16_from_table
 call	gfx_present_and_flip_page
 mov	ax, 3
-call	sub_27A
+call	wait_n_ticks
 call	gfx_startup_graphics_and_menu_probe
 jmp	loc_5E52
 start endp
@@ -685,7 +685,7 @@ gfx_startup_graphics_and_menu_probe	endp
 
 input_wait_for_joystick_or_key_confirm	proc near
 mov	ax, 2
-call	sub_27A
+call	wait_n_ticks
 cmp	cs:byte_61, 0
 jnz	short locret_45B
 mov	ah, 84h	; '�'
@@ -1969,7 +1969,7 @@ mov	di, 2000h
 mov	si, 0
 call	gfx_copy_page_4plane
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 mov	ds, cs:seg_5E
 assume ds:seg003
 lea	si, unk_1F960
@@ -3324,7 +3324,7 @@ call	room_transition_reveal_sequence_a
 loc_21A9:
 mov	cs:byte_25A, 0
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 jmp	loc_2341
 
 loc_21B8:
@@ -3349,7 +3349,7 @@ loc_21F2:
 mov	ax, cs:word_9300
 call	room_transition_palette_wave
 mov	ax, 5
-call	sub_27A
+call	wait_n_ticks
 call	io_verify_game000_or_prompt_retry
 jmp	loc_185
 
@@ -4174,7 +4174,7 @@ mov	bx, 969Ah
 mov	cx, 0Ah
 int	3		; Trap to Debugger
 mov	ax, 14h
-call	sub_27A
+call	wait_n_ticks
 cmp	word_2526F, 0
 jnz	short loc_2A01
 jmp	loc_39EE
@@ -4185,7 +4185,7 @@ jmp	loc_227B
 
 loc_2A07:
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 jmp	loc_2341
 
 update_player_physics:
@@ -6392,7 +6392,7 @@ mov	ds, cs:seg_5C
 assume ds:seg005
 call	gfx_present_and_flip_page
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 call	gfx_render_viewport_4plane
 call	room_transition_present_frame
 retn
@@ -6436,7 +6436,7 @@ call	gfx_render_viewport_4plane
 call	ent_update_object_behaviors
 call	room_transition_present_frame
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 lea	bx, unk_2E71C
 mov	ax, 1
 mov	cx, 9
@@ -6617,7 +6617,7 @@ room_transition_present_frame proc near
 call	ent_update_entities_in_viewport
 call	gfx_present_and_flip_page
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 retn
 room_transition_present_frame endp
 
@@ -7830,7 +7830,7 @@ jnz	short loc_472C
 mov	ax, word_25870
 call	ent_draw_mapped_slot_or_placeholder
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 retn
 
 loc_475C:
@@ -7856,7 +7856,7 @@ or	di, di
 jnz	short loc_479A
 mov	cs:byte_25D, 0
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 retn
 
 loc_479A:
@@ -7935,7 +7935,7 @@ mov	cx, 4
 int	3		; Trap to Debugger
 mov	cs:byte_25D, 0
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 retn
 ent_activate_slot_into_runtime endp
 
@@ -10771,7 +10771,7 @@ call	ui_render_option_list
 call	gfx_present_and_flip_page
 mov	cs:byte_61, 0
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 
 loc_616E:
 cmp	cs:byte_61, 0
@@ -12889,7 +12889,7 @@ intro_draw_sprite_and_present endp
 wait_ticks_or_abort proc near
 push	ax
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 cmp	cs:byte_61, 0
 jnz	short loc_728C
 pop	ax

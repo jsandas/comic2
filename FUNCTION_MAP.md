@@ -215,7 +215,7 @@ game_loop (was sub_35DE)    → Main game loop (FRAGMENTED function)
                               - Fragment 7: 5872 - 6004 (Special Logic 2, Distance-based logic)
 
 Loop Structure:
-1. Wait for game tick: call sub_27A (wait_n_ticks)
+1. Wait for game tick: call wait_n_ticks
 2. Clear BIOS keyboard buffer: loc_2341 (clears 0040:001A)
 3. Dispatch state handlers: loc_275C, handle_airborne_movement, update_player_physics, handle_player_animation, handle_attack_animation, etc.
 4. Input handling: loc_2341 block (if no state active)
