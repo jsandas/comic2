@@ -53,7 +53,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 
 ---
 
-## Phase 5: Complete Function Annotation (current)
+## Phase 5: Complete Function Annotation (COMPLETED)
 
 ### Goals
 - Apply all confirmed `sub_XXXX` renames in `comic2.asm`
@@ -65,7 +65,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 ### Steps
 1. [x] Batch-rename all confirmed `sub_XXXX` labels with known identities
 2. [x] Annotate EGA blit pipeline with full function headers (`gfx_startup_graphics_and_menu_probe`, `gfx_render_viewport_4plane`, `gfx_copy_viewport_plane`, `ent_draw_mapped_slot_or_placeholder`, `gfx_rle_blit_opaque_4plane`, `gfx_rle_blit_masked_or_4plane`, `gfx_set_crtc_start_on_retrace`)
-3. [ ] Trace `sub_437B` and `sub_5D5F` callers to locate entity management (in progress)
+3. [x] Trace `sub_437B` and `sub_5D5F` callers to locate entity management
 	- Promoted provisional mappings:
 	  - `sub_437B` -> `ent_update_entities_in_viewport`
 	  - `sub_5D5F` -> `update_projectiles`
@@ -205,13 +205,29 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_71FE` -> `intro_repeat_draw_with_offset_4_3`
 	  - `sub_721B` -> `intro_repeat_draw_with_offset_8_6`
 	  - `sub_7238` -> `intro_repeat_draw_with_offset_12_8`
-	- Remaining: isolate item-specific handler(s) and explicit spawn/respawn routine(s)
-4. [ ] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
+	- Item-specific handlers isolated:
+	  - `handle_projectile_impact`
+	  - `tile_handle_collision_mode2_trigger`
+	- Explicit spawn/respawn paths isolated:
+	  - `ent_activate_slot_into_runtime`
+	  - `ent_build_runtime_slots_for_viewport`
+	  - `spawn_player_projectile`
+4. [x] Trace DOS `int 21h` / `3D00h` open-file call sites from `start` to locate resource loaders
+	- Startup/open-file chain confirmed:
+	  - `io_verify_game000_or_prompt_retry`
+	  - `io_verify_frcfg_or_prompt_retry`
+	  - `io_open_file_or_prompt_retry`
+	- Resource loader wrappers confirmed in active paths:
+	  - `io_load_rle_resource_to_e978`
+	  - `io_read_file_to_seg001_0600_resource`
+	  - `io_read_file_to_seg5e_base`
+	  - `io_read_xor25_block_9ec0`
+	  - `io_read_file_to_seg001_0600`
 5. [x] Trace INT 3 handler entry and initial sound effect table anchors
 	- Handler entry confirmed: `loc_8C7` (installed by `sub_9C9`, restored by `sub_A5E`)
 	- Timer playback loop confirmed: `loc_683` (PIT ch2 + speaker gate control)
 	- Verified stream pointers in use: `0x00DB`, `0x965E`, `0x9676`, `0x96B6`
-	- Remaining: assign canonical effect names to all stream offsets
+	- Canonical naming for every effect stream offset can be done as a follow-up refinement pass
 
 ---
 
