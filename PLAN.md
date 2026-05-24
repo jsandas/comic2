@@ -252,7 +252,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 
 ---
 
-## Phase 7: C++ Reimplementation
+## Phase 7: C++ Reimplementation (STARTED)
 
 ### Goals
 - Platform abstraction layer (EGA rendering → SDL2 or similar)
@@ -260,3 +260,12 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 - Reimplement game loop / dispatcher
 - Reimplement physics, movement, entity system
 - Behavioral verification against original via DOSBox oracle
+
+### Progress (Current)
+- [x] Created initial C++ scaffold under `reimpl/` with CMake build
+- [x] Ported confirmed Phase 6 data layouts to `reimpl/include/comic2/types.hpp`
+- [x] Implemented signed-RLE and 4-plane EGA packet decoders in `reimpl/src/resource_loader.cpp`
+- [x] Added FRPAK validator executable (`reimpl/src/main.cpp`)
+- [x] Verified build succeeds and FRPAK.001..FRPAK.007 decode with row span `0x1f40`
+- [ ] Add renderer abstraction and first SDL2-backed EGA surface implementation
+- [ ] Port dispatcher skeleton and player/runtime state containers

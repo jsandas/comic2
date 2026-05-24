@@ -4,13 +4,12 @@
 
 This project reverse-engineers **Captain Comic II: Fractured Reality** (1990) by Michael A. Denio with the goal of producing a clean C++ reimplementation. The annotated `comic2.asm` disassembly is the primary reference artifact; `unpacked.exe.test.c` (Ghidra pseudo-C output) serves as a secondary cross-reference. Neither file is intended to compile — they are documentation tools.
 
-### Project Status: **Active Development - Phase 2**
+### Project Status: **Active Development - Phase 7 Started**
 
-✅ Phase 1: Analysis & Mapping Complete  
-🔄 Phase 2: Function Annotation In Progress  
-⏸️ Phase 3: Data Structure & Resource Format Documentation  
-⏸️ Phase 4: C++ Reimplementation  
-⏸️ Phase 5: Behavioral Verification (DOSBox oracle testing)  
+✅ Phase 1-5: Analysis, mapping, and annotation complete  
+✅ Phase 6: Data Structure & Resource Format Documentation complete  
+🔄 Phase 7: C++ reimplementation scaffold started (`reimpl/`)  
+⏸️ Behavioral verification expansion (DOSBox oracle testing)  
 
 ## Source Files
 
@@ -158,30 +157,12 @@ word_26A-278 - Unknown purpose (interrupt handler state?)
 
 ## Next Steps
 
-### Phase 2: Remaining Annotation Targets (current)
-1. **Rename confirmed functions** - Apply known identities to `sub_XXXX` labels in `comic2.asm`
-2. **EGA blit pipeline** - Annotate `sub_2B4`, `sub_1D2C`, `sub_1DC0`, `sub_451C`, `sub_79C7`, `sub_7A13`, `sub_7A89`
-3. **Entity management** - Locate and annotate `handle_enemies`, `handle_fireballs`, `handle_item`, `spawn_enemy`
-4. **File I/O / resource loading** - Locate `load_level`, `load_fullscreen_graphic`, `load_shp_files`, `rle_decode`
-5. **Sound system** - Identify INT 3 handler, sound effect dispatch table, and effect addresses
-
-### Phase 3: Data Structure & Resource Format Documentation
-1. **Entity table** - Confirm full 12-byte enemy struct layout and all offsets
-2. **Level format** - Parse and document FR*.* file structures
-3. **Resource archives** - Document frpak.* format and extraction
-4. **Sprite/graphics format** - Document .SHP and .EGA layouts
-5. **C struct definitions** - Write equivalent `struct` definitions for all confirmed layouts
-
-### Phase 4: C++ Reimplementation
-1. **Platform abstraction layer** - EGA rendering → SDL2 or similar
-2. **Game state structures** - Port confirmed structs and globals to C++
-3. **Core loop** - Reimplement `game_loop` / dispatcher logic
-4. **Physics & movement** - Port grounded and airborne physics
-5. **Entity system** - Port enemy AI, projectile, and item logic
-
-### Phase 5: Behavioral Verification
-- Use DOSBox as an oracle: run both original and reimplementation, compare behavior
-- Focus on physics edge cases, collision response, and enemy AI parity
+### Phase 7: C++ Reimplementation (current)
+1. **Renderer abstraction** - Introduce a platform layer and first EGA surface backend (SDL2 or equivalent)
+2. **Core data port** - Move confirmed structs/globals into C++ state containers
+3. **Dispatcher skeleton** - Stand up a structured equivalent of `game_loop` stage ordering
+4. **Physics/entity migration** - Port grounded/airborne motion and runtime entity updates
+5. **Oracle checks** - Expand DOSBox parity checks per subsystem as each stage lands
 
 ## Tools & Resources
 
