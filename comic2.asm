@@ -3871,7 +3871,7 @@ cmp	cs:byte_255, al
 jnz	short loc_2741
 mov	cs:byte_61, 0
 mov	ax, 0FFFFh
-call	sub_327D
+call	player_cycle_mode_selection
 jmp	short loc_2754
 
 loc_2741:
@@ -3879,7 +3879,7 @@ cmp	cs:byte_256, al
 jnz	short loc_2754
 mov	cs:byte_61, 0
 mov	ax, 1
-call	sub_327D
+call	player_cycle_mode_selection
 
 loc_2754:
 cmp	cs:byte_25D, 1
@@ -5248,7 +5248,7 @@ ent_update_transient_slots endp
 
 
 
-sub_327D proc near
+player_cycle_mode_selection proc near
 cmp	byte_2587D, 1
 jz	short loc_3290
 cmp	byte_25904, 2
@@ -5308,7 +5308,7 @@ mov	comic_jump_counter, 0
 
 locret_330E:
 retn
-sub_327D endp
+player_cycle_mode_selection endp
 
 ; START	OF FUNCTION CHUNK FOR game_loop
 
