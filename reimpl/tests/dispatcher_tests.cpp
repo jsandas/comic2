@@ -130,6 +130,77 @@ void test_dispatcher_trace_log() {
     expect(dispatcher.trace_log().empty(), "clear_trace should empty recorded stages");
 }
 
+void test_default_stage_hook_coverage() {
+    comic2::GameDispatcher dispatcher;
+    comic2::install_default_stage_hooks(dispatcher);
+
+    const auto expect_stage = [&](comic2::RuntimeState state, comic2::DispatchStage expected_stage) {
+        const auto result = dispatcher.run_tick(state);
+        expect(result.stage == expected_stage, "stage selection mismatch while checking default hook coverage");
+        expect(result.hook_executed, "default hook should be installed for every dispatch stage");
+    };
+
+    {
+        comic2::RuntimeState state;
+        state.flags.level_transition_pending = true;
+        expect_stage(state, comic2::DispatchStage::LevelTransition);
+    }
+    {
+        comic2::RuntimeState state;
+        state.flags.special_logic1_active = true;
+        expect_stage(state, comic2::DispatchStage::SpecialLogic1);
+    }
+    {
+        comic2::RuntimeState state;
+        state.flags.special_logic2_active = true;
+        expect_stage(state, comic2::DispatchStage::SpecialLogic2);
+    }
+    {
+        comic2::RuntimeState state;
+        state.player.is_airborne = true;
+        expect_stage(state, comic2::DispatchStage::AirbornePhysics);
+    }
+    {
+        comic2::RuntimeState state;
+        state.flags.timed_overlay_pending = true;
+        expect_stage(state, comic2::DispatchStage::TimedOverlay);
+    }
+    {
+        comic2::RuntimeState state;
+        state.player.is_physics_active = true;
+        expect_stage(state, comic2::DispatchStage::GroundedPhysics);
+    }
+    {
+        comic2::RuntimeState state;
+        state.player.is_animation_active = true;
+        expect_stage(state, comic2::DispatchStage::PlayerAnimation);
+    }
+    {
+        comic2::RuntimeState state;
+        state.player.is_attack_active = true;
+        expect_stage(state, comic2::DispatchStage::AttackAnimation);
+    }
+    {
+        comic2::RuntimeState state;
+        state.flags.distance_interaction_active = true;
+        expect_stage(state, comic2::DispatchStage::DistanceInteraction);
+    }
+    {
+        comic2::RuntimeState state;
+        state.flags.tile_hazard_triggered = true;
+        expect_stage(state, comic2::DispatchStage::TileHazard);
+    }
+    {
+        comic2::RuntimeState state;
+        state.flags.player_special_state_active = true;
+        expect_stage(state, comic2::DispatchStage::PlayerSpecialState);
+    }
+    {
+        comic2::RuntimeState state;
+        expect_stage(state, comic2::DispatchStage::InputHandling);
+    }
+}
+
 }  // namespace
 
 void run_dispatcher_tests() {
@@ -139,4 +210,5 @@ void run_dispatcher_tests() {
     test_default_handlers_basic_movement_and_jump();
     test_deterministic_tick_replay();
     test_dispatcher_trace_log();
+    test_default_stage_hook_coverage();
 }
