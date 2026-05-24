@@ -44,6 +44,7 @@ DispatchStage GameDispatcher::choose_stage(const RuntimeState& state) const {
 
 DispatchResult GameDispatcher::run_tick(RuntimeState& state) const {
     const auto stage = choose_stage(state);
+    record_stage(stage);
     bool hook_executed = false;
 
     switch (stage) {
@@ -94,6 +95,13 @@ bool GameDispatcher::call_hook(const StageHook& hook, RuntimeState& state) {
     }
     hook(state);
     return true;
+}
+
+void GameDispatcher::record_stage(DispatchStage stage) const {
+    if (!trace_enabled_) {
+        return;
+    }
+    trace_log_.push_back(stage);
 }
 
 const char* to_string(DispatchStage stage) noexcept {

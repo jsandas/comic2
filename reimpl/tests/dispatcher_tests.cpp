@@ -103,6 +103,33 @@ void test_deterministic_tick_replay() {
     expect(a == b, "same input sequence should produce identical runtime state");
 }
 
+void test_dispatcher_trace_log() {
+    comic2::GameDispatcher dispatcher;
+    comic2::RuntimeState state;
+
+    dispatcher.set_trace_enabled(true);
+
+    state.flags.level_transition_pending = true;
+    dispatcher.run_tick(state);
+
+    state.flags.level_transition_pending = false;
+    state.player.is_physics_active = true;
+    dispatcher.run_tick(state);
+
+    state.player.is_physics_active = false;
+    dispatcher.run_tick(state);
+
+    const std::vector<comic2::DispatchStage> expected = {
+        comic2::DispatchStage::LevelTransition,
+        comic2::DispatchStage::GroundedPhysics,
+        comic2::DispatchStage::InputHandling,
+    };
+    expect(dispatcher.trace_log() == expected, "trace log should record selected stage per tick");
+
+    dispatcher.clear_trace();
+    expect(dispatcher.trace_log().empty(), "clear_trace should empty recorded stages");
+}
+
 }  // namespace
 
 void run_dispatcher_tests() {
@@ -111,4 +138,5 @@ void run_dispatcher_tests() {
     test_stage_hook_execution();
     test_default_handlers_basic_movement_and_jump();
     test_deterministic_tick_replay();
+    test_dispatcher_trace_log();
 }

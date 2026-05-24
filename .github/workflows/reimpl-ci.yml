@@ -1,0 +1,34 @@
+name: Reimpl CI
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  reimpl-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S reimpl -B reimpl/build
+
+      - name: Build
+        run: cmake --build reimpl/build
+
+      - name: Test
+        run: ctest --test-dir reimpl/build --output-on-failure

@@ -270,6 +270,8 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 - [x] Added renderer abstraction baseline (`reimpl/include/comic2/renderer.hpp`, `reimpl/src/renderer.cpp`) with tests
 - [x] Ported dispatcher skeleton and player/runtime state containers (`reimpl/include/comic2/dispatcher.hpp`, `reimpl/include/comic2/game_state.hpp`, `reimpl/src/dispatcher.cpp`) with tests
 - [x] Added default input + physics stage handlers and deterministic tick replay tests (`reimpl/include/comic2/default_handlers.hpp`, `reimpl/src/default_handlers.cpp`, `reimpl/tests/dispatcher_tests.cpp`)
+- [x] Started subsystem split with dedicated `player_controller` + `tile_collision` modules and tests (`reimpl/include/comic2/player_controller.hpp`, `reimpl/src/player_controller.cpp`, `reimpl/include/comic2/tile_collision.hpp`, `reimpl/src/tile_collision.cpp`, `reimpl/tests/player_controller_tests.cpp`)
+- [x] Added scaffold baselines for `entity_runtime`, `projectiles`, and `room_loader` modules with focused tests (`reimpl/include/comic2/entity_runtime.hpp`, `reimpl/src/entity_runtime.cpp`, `reimpl/include/comic2/projectiles.hpp`, `reimpl/src/projectiles.cpp`, `reimpl/include/comic2/room_loader.hpp`, `reimpl/src/room_loader.cpp`, `reimpl/tests/subsystem_scaffold_tests.cpp`)
 
 ### Detailed Reimplementation Roadmap
 
@@ -278,12 +280,12 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 - [x] `renderer` module baseline: planar surface abstraction + presenter interface
 - [x] `dispatcher` module baseline: stage priority selector + hookable tick execution
 - [x] `game_state` baseline: player/input/flags/runtime containers
-- [ ] Split runtime into explicit subsystem modules:
-	- `player_controller` (movement/jump/fall/state transitions)
-	- `tile_collision` (tile lookup + threshold checks)
-	- `entity_runtime` (activation/deactivation/runtime slot updates)
-	- `projectiles` (spawn/update/collision/despawn)
-	- `room_loader` (load_resource equivalent, room decode and setup)
+- [x] Split runtime into explicit subsystem modules:
+	- [x] `player_controller` (movement/jump/fall/state transitions)
+	- [x] `tile_collision` (tile lookup + threshold checks)
+	- [x] `entity_runtime` scaffold (activation/deactivation/runtime slot updates)
+	- [x] `projectiles` scaffold (spawn/update/collision/despawn)
+	- [x] `room_loader` scaffold (load_resource equivalent, room decode and setup)
 
 #### 7.2 Dispatcher Parity Plan (`loc_2341` Ordering)
 - [x] Encoded current stage order and priority chain in `GameDispatcher`
@@ -300,7 +302,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	10. `handle_tile_hazard`
 	11. `handle_player_special_state`
 	12. `handle_input_fallback`
-- [ ] Add a trace-mode dispatcher logger that records selected stage per tick for oracle comparison
+- [x] Add a trace-mode dispatcher logger that records selected stage per tick for oracle comparison
 
 #### 7.3 Player Movement and Physics Plan
 - [ ] Implement horizontal movement parity for known left/right paths (`sub_2BDC`, `sub_2C39`)
