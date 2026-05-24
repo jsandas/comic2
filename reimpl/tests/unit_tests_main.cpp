@@ -8,6 +8,7 @@
 #include "comic2/resource_formats.hpp"
 
 void run_dispatcher_tests();
+void run_player_controller_tests();
 void run_renderer_tests();
 
 namespace {
@@ -61,6 +62,7 @@ int main() {
         test_signed_rle_decode();
         test_ega_4plane_decode();
         run_dispatcher_tests();
+        run_player_controller_tests();
         run_renderer_tests();
         std::cout << "comic2_unit_tests: OK\n";
         return 0;

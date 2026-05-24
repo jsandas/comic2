@@ -10,8 +10,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(comic2_core
     src/default_handlers.cpp
     src/dispatcher.cpp
+    src/player_controller.cpp
     src/renderer.cpp
     src/resource_loader.cpp
+    src/tile_collision.cpp
 )
 
 target_include_directories(comic2_core
@@ -30,6 +32,7 @@ target_link_libraries(comic2_reimpl
 
 add_executable(comic2_unit_tests
     tests/dispatcher_tests.cpp
+    tests/player_controller_tests.cpp
     tests/renderer_tests.cpp
     tests/unit_tests_main.cpp
 )
