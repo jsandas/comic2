@@ -198,6 +198,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 	  - `sub_3468` -> `player_start_attack_animation`
 	  - `sub_3610` -> `player_start_timed_overlay_sprite`
 	  - `sub_362A` -> `check_comic_near_room_event_anchor`
+	  - `sub_36C0` -> `update_room_event_anchor_motion`
 	  - `sub_71FE` -> `intro_repeat_draw_with_offset_4_3`
 	  - `sub_721B` -> `intro_repeat_draw_with_offset_8_6`
 	  - `sub_7238` -> `intro_repeat_draw_with_offset_12_8`

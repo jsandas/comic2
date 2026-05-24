@@ -3795,7 +3795,7 @@ mov	cs:byte_61, 0
 loc_267F:
 cmp	byte ptr ds:924h, 0
 jz	short loc_2689
-call	sub_36C0
+call	update_room_event_anchor_motion
 
 loc_2689:
 cmp	byte ptr ds:897h, 1
@@ -5768,7 +5768,7 @@ jmp	loc_267F
 
 
 
-sub_36C0 proc near
+update_room_event_anchor_motion proc near
 mov	ax, word_25906
 add	ax, word_25908
 mov	word_25908, ax
@@ -5855,7 +5855,7 @@ mov	comic_state, 2
 
 locret_378D:
 retn
-sub_36C0 endp
+update_room_event_anchor_motion endp
 
 
 
