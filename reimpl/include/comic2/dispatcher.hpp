@@ -2,7 +2,6 @@
 
 #include <functional>
 #include <utility>
-#include <vector>
 
 #include "comic2/game_state.hpp"
 
