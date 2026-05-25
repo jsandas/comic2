@@ -12,12 +12,9 @@ namespace {
 constexpr PlayerMotionConfig kDefaultMotion{};
 constexpr TileCollisionConfig kDefaultCollision{
     .ground_y = 0,
-    .support_min_x = std::numeric_limits<std::int16_t>::min(),
-    .support_max_x = std::numeric_limits<std::int16_t>::max(),
     .solid_tile_threshold = 0x01,
     .hazard_tile_min = 0xF0,
     .hazard_tile_max = 0xFF,
-    .use_room_grid_support = true,
 };
 
 void apply_default_airborne_physics(RuntimeState& state) {

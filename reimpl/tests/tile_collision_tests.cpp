@@ -58,6 +58,28 @@ void test_get_tile_at_pixels_rejects_out_of_bounds() {
     expect(!comic2::get_tile_at_pixels(grid, 0, -1, &tile_id), "negative y should fail");
     expect(!comic2::get_tile_at_pixels(grid, 64, 0, &tile_id), "x at width boundary should fail");
     expect(!comic2::get_tile_at_pixels(grid, 0, 48, &tile_id), "y at height boundary should fail");
+    expect(!comic2::get_tile_at_pixels(grid, 63, 48, &tile_id), "bottom-right corner out of bounds should fail");
+}
+
+void test_has_floor_support_tile_grid_only() {
+    comic2::RuntimeState state;
+    state.room_grid = make_grid_fixture();
+    state.player.x = 0;
+    state.player.y = 0;
+    comic2::TileCollisionConfig config;
+    config.solid_tile_threshold = 2;
+    // tile at (0,1) is 5, meets threshold
+    state.player.y = 16 - 1;
+    expect(comic2::has_floor_support(state, config), "should have support on solid tile");
+    // tile at (0,2) is 9, meets threshold
+    state.player.y = 32 - 1;
+    expect(comic2::has_floor_support(state, config), "should have support on lower solid tile");
+    // tile at (0,0) is 1, below threshold
+    state.player.y = 0;
+    expect(!comic2::has_floor_support(state, config), "should not have support below threshold");
+    // out of bounds below grid
+    state.player.y = 48;
+    expect(!comic2::has_floor_support(state, config), "should not have support out of bounds");
 }
 
 void test_room_loader_builds_row_pointer_table() {
@@ -100,4 +122,5 @@ void run_tile_collision_tests() {
     test_get_tile_at_pixels_rejects_out_of_bounds();
     test_room_loader_builds_row_pointer_table();
     test_tile_threshold_and_hazard_checks();
+    test_has_floor_support_tile_grid_only();
 }

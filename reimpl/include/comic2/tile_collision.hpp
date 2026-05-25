@@ -9,12 +9,9 @@ namespace comic2 {
 
 struct TileCollisionConfig {
     std::int16_t ground_y = 0;
-    std::int16_t support_min_x = std::numeric_limits<std::int16_t>::min();
-    std::int16_t support_max_x = std::numeric_limits<std::int16_t>::max();
     std::uint8_t solid_tile_threshold = 0x01;
     std::uint8_t hazard_tile_min = 0xF0;
     std::uint8_t hazard_tile_max = 0xFF;
-    bool use_room_grid_support = false;
 };
 
 bool get_tile_at_pixels(const RoomTileGrid& grid,
