@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 namespace comic2 {
 
@@ -56,5 +57,14 @@ struct FrdataRoomEntry {
 };
 
 #pragma pack(pop)
+
+struct RoomTileGrid {
+    std::uint16_t tile_w = 0;
+    std::uint16_t tile_h = 0;
+    std::vector<std::uint16_t> row_pointers;
+    std::vector<std::uint8_t> tile_data;
+
+    bool operator==(const RoomTileGrid&) const = default;
+};
 
 }  // namespace comic2

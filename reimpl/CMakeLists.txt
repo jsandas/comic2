@@ -38,6 +38,7 @@ add_executable(comic2_unit_tests
     tests/player_controller_tests.cpp
     tests/renderer_tests.cpp
     tests/subsystem_scaffold_tests.cpp
+    tests/tile_collision_tests.cpp
     tests/unit_tests_main.cpp
 )
 
