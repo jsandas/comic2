@@ -7,10 +7,15 @@ namespace comic2 {
 
 namespace {
 
-void apply_default_physics(RuntimeState& state) {
-    static constexpr PlayerMotionConfig kDefaultMotion{};
-    static constexpr TileCollisionConfig kDefaultCollision{};
-    apply_physics_tick(state, kDefaultMotion, kDefaultCollision);
+constexpr PlayerMotionConfig kDefaultMotion{};
+constexpr TileCollisionConfig kDefaultCollision{};
+
+void apply_default_airborne_physics(RuntimeState& state) {
+    apply_airborne_physics_tick(state, kDefaultMotion, kDefaultCollision);
+}
+
+void apply_default_grounded_physics(RuntimeState& state) {
+    apply_grounded_physics_tick(state, kDefaultMotion, kDefaultCollision);
 }
 
 }  // namespace
@@ -28,7 +33,7 @@ void handle_special_logic2(RuntimeState& state) {
 }
 
 void handle_airborne_movement(RuntimeState& state) {
-    apply_default_physics(state);
+    apply_default_airborne_physics(state);
 }
 
 void handle_timed_overlay(RuntimeState& state) {
@@ -36,7 +41,7 @@ void handle_timed_overlay(RuntimeState& state) {
 }
 
 void handle_grounded_physics(RuntimeState& state) {
-    apply_default_physics(state);
+    apply_default_grounded_physics(state);
 }
 
 void handle_player_animation(RuntimeState& state) {
@@ -60,7 +65,6 @@ void handle_player_special_state(RuntimeState& state) {
 }
 
 void handle_input_fallback(RuntimeState& state) {
-    static constexpr PlayerMotionConfig kDefaultMotion{};
     apply_input_tick(state, kDefaultMotion);
 }
 

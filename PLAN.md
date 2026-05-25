@@ -305,14 +305,16 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 - [x] Add a trace-mode dispatcher logger that records selected stage per tick for oracle comparison
 
 #### 7.3 Player Movement and Physics Plan
-- [ ] Implement horizontal movement parity for known left/right paths (`sub_2BDC`, `sub_2C39`)
-- [ ] Implement grounded physics (`sub_2A10`) including jump counter consumption and fall start
-- [ ] Implement airborne path (`sub_2EDC`) including lateral drift checks and vertical velocity updates
-- [ ] Implement floor check trigger (`sub_2C9D`) to enter fall state when no support tile
-- [ ] Add deterministic fixtures for edge cases:
+- [x] Implement horizontal movement parity baseline for known left/right paths (`sub_2BDC`, `sub_2C39`)
+- [x] Implement grounded physics baseline (`sub_2A10`) including jump counter consumption and fall start
+- [x] Implement airborne path baseline (`sub_2EDC`) including lateral drift checks and vertical velocity updates
+- [x] Implement floor check trigger baseline (`sub_2C9D`) to enter fall state when no support tile
+- [x] Add deterministic fixtures for edge cases:
 	- jump while moving left/right
 	- short-hop vs full jump counter usage
 	- ledge walk-off transitioning into fall
+
+Status note: current Phase 7.3 implementation is parity-oriented and deterministic for dispatcher/runtime tests, with tile support probing currently modeled via configurable support bounds until full tile-grid probing from Phase 7.4 is integrated.
 
 #### 7.4 Tile Collision and Room Grid Plan
 - [ ] Implement tile query service equivalent to `get_tile_at_pixels` (`sub_1CFE`)
