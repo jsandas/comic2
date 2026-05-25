@@ -23,6 +23,7 @@ bool get_tile_at_pixels(const RoomTileGrid& grid,
                         std::uint8_t* out_tile_id);
 bool tile_meets_threshold(std::uint8_t tile_id, std::uint8_t threshold);
 bool is_hazard_tile(std::uint8_t tile_id, const TileCollisionConfig& config);
+bool update_player_hazard_state(RuntimeState& state, const TileCollisionConfig& config);
 
 bool has_floor_support(const RuntimeState& state, const TileCollisionConfig& config);
 bool resolve_ground_contact(RuntimeState& state, const TileCollisionConfig& config);

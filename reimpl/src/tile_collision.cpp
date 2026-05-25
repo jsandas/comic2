@@ -48,14 +48,28 @@ bool is_hazard_tile(std::uint8_t tile_id, const TileCollisionConfig& config) {
     return tile_id >= config.hazard_tile_min && tile_id <= config.hazard_tile_max;
 }
 
+bool update_player_hazard_state(RuntimeState& state, const TileCollisionConfig& config) {
+    if (!config.use_room_grid_support) {
+        return state.flags.tile_hazard_triggered;
+    }
+
+    std::uint8_t tile_id = 0;
+    if (!get_tile_at_pixels(state.room_grid, state.player.x, state.player.y, &tile_id)) {
+        state.flags.tile_hazard_triggered = false;
+        return false;
+    }
+
+    state.flags.tile_hazard_triggered = is_hazard_tile(tile_id, config);
+    return state.flags.tile_hazard_triggered;
+}
+
 bool has_floor_support(const RuntimeState& state, const TileCollisionConfig& config) {
     if (config.use_room_grid_support) {
         std::uint8_t tile_id = 0;
         const std::int16_t probe_y = static_cast<std::int16_t>(state.player.y + 1);
-        if (!get_tile_at_pixels(state.room_grid, state.player.x, probe_y, &tile_id)) {
-            return false;
+        if (get_tile_at_pixels(state.room_grid, state.player.x, probe_y, &tile_id)) {
+            return tile_meets_threshold(tile_id, config.solid_tile_threshold);
         }
-        return tile_meets_threshold(tile_id, config.solid_tile_threshold);
     }
 
     const std::int16_t x = state.player.x;
