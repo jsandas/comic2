@@ -289,7 +289,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 
 #### 7.2 Dispatcher Parity Plan (`loc_2341` Ordering)
 - [x] Encoded current stage order and priority chain in `GameDispatcher`
-- [ ] Add dedicated stage handlers matching known flow order:
+- [x] Add dedicated stage handlers matching known flow order:
 	1. `handle_level_transition`
 	2. `handle_special_logic_1`
 	3. `handle_special_logic_2`
