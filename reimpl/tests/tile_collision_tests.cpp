@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <optional>
 #include <vector>
 
 #include "comic2/room_loader.hpp"
@@ -38,27 +39,28 @@ comic2::RoomTileGrid make_grid_fixture() {
 
 void test_get_tile_at_pixels_maps_to_expected_tile_id() {
     const comic2::RoomTileGrid grid = make_grid_fixture();
-    std::uint8_t tile_id = 0;
+    std::optional<std::uint8_t> tile_id = comic2::get_tile_at_pixels(grid, 0, 0);
 
-    expect(comic2::get_tile_at_pixels(grid, 0, 0, &tile_id), "query at origin should succeed");
-    expect(tile_id == 1, "origin pixel should map to first tile");
+    expect(tile_id.has_value(), "query at origin should succeed");
+    expect(*tile_id == 1, "origin pixel should map to first tile");
 
-    expect(comic2::get_tile_at_pixels(grid, 16, 0, &tile_id), "query at next tile x should succeed");
-    expect(tile_id == 2, "x=16 should map to tile_x=1");
+    tile_id = comic2::get_tile_at_pixels(grid, 16, 0);
+    expect(tile_id.has_value(), "query at next tile x should succeed");
+    expect(*tile_id == 2, "x=16 should map to tile_x=1");
 
-    expect(comic2::get_tile_at_pixels(grid, 63, 47, &tile_id), "bottom-right in bounds should succeed");
-    expect(tile_id == 12, "bottom-right pixel should map to final tile");
+    tile_id = comic2::get_tile_at_pixels(grid, 63, 47);
+    expect(tile_id.has_value(), "bottom-right in bounds should succeed");
+    expect(*tile_id == 12, "bottom-right pixel should map to final tile");
 }
 
 void test_get_tile_at_pixels_rejects_out_of_bounds() {
     const comic2::RoomTileGrid grid = make_grid_fixture();
-    std::uint8_t tile_id = 0;
 
-    expect(!comic2::get_tile_at_pixels(grid, -1, 0, &tile_id), "negative x should fail");
-    expect(!comic2::get_tile_at_pixels(grid, 0, -1, &tile_id), "negative y should fail");
-    expect(!comic2::get_tile_at_pixels(grid, 64, 0, &tile_id), "x at width boundary should fail");
-    expect(!comic2::get_tile_at_pixels(grid, 0, 48, &tile_id), "y at height boundary should fail");
-    expect(!comic2::get_tile_at_pixels(grid, 63, 48, &tile_id), "bottom-right corner out of bounds should fail");
+    expect(!comic2::get_tile_at_pixels(grid, -1, 0).has_value(), "negative x should fail");
+    expect(!comic2::get_tile_at_pixels(grid, 0, -1).has_value(), "negative y should fail");
+    expect(!comic2::get_tile_at_pixels(grid, 64, 0).has_value(), "x at width boundary should fail");
+    expect(!comic2::get_tile_at_pixels(grid, 0, 48).has_value(), "y at height boundary should fail");
+    expect(!comic2::get_tile_at_pixels(grid, 63, 48).has_value(), "bottom-right corner out of bounds should fail");
 }
 
 void test_has_floor_support_tile_grid_only() {
@@ -90,13 +92,13 @@ void test_room_loader_builds_row_pointer_table() {
     bytes[0x2A2] = 0xC0;
     bytes[0x2A3] = 0x02;
 
-    std::vector<std::uint16_t> row_pointers;
-    const bool ok = comic2::build_room_row_pointer_table(bytes, 2, &row_pointers);
+    const std::optional<std::vector<std::uint16_t>> row_pointers =
+        comic2::build_room_row_pointer_table(bytes, 2);
 
-    expect(ok, "row pointer table build should succeed");
-    expect(row_pointers.size() == 2, "row pointer count should match tile_h");
-    expect(row_pointers[0] == 0x02B0, "first row pointer mismatch");
-    expect(row_pointers[1] == 0x02C0, "second row pointer mismatch");
+    expect(row_pointers.has_value(), "row pointer table build should succeed");
+    expect(row_pointers->size() == 2, "row pointer count should match tile_h");
+    expect((*row_pointers)[0] == 0x02B0, "first row pointer mismatch");
+    expect((*row_pointers)[1] == 0x02C0, "second row pointer mismatch");
 }
 
 void test_tile_threshold_and_hazard_checks() {

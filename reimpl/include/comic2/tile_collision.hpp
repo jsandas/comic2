@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <optional>
 
 #include "comic2/game_state.hpp"
 
@@ -14,10 +15,9 @@ struct TileCollisionConfig {
     std::uint8_t hazard_tile_max = 0xFF;
 };
 
-bool get_tile_at_pixels(const RoomTileGrid& grid,
-                        std::int16_t pixel_x,
-                        std::int16_t pixel_y,
-                        std::uint8_t* out_tile_id);
+std::optional<std::uint8_t> get_tile_at_pixels(const RoomTileGrid& grid,
+                                               std::int16_t pixel_x,
+                                               std::int16_t pixel_y);
 bool tile_meets_threshold(std::uint8_t tile_id, std::uint8_t threshold);
 bool is_hazard_tile(std::uint8_t tile_id, const TileCollisionConfig& config);
 bool update_player_hazard_state(RuntimeState& state, const TileCollisionConfig& config);

@@ -42,22 +42,19 @@ void test_room_loader_decodes_frdata_entry() {
         0x34, 0x12,  // rle_data_off = 0x1234
     };
 
-    comic2::FrdataRoomEntry entry{};
-    const bool ok = comic2::decode_frdata_room_entry(bytes, 0, &entry);
-
-    expect(ok, "decode should succeed on full room entry payload");
-    expect(entry.tile_w == 40, "tile_w decode mismatch");
-    expect(entry.tile_h == 24, "tile_h decode mismatch");
-    expect(entry.rle_data_off == 0x1234, "rle_data_off decode mismatch");
+    const std::optional<comic2::FrdataRoomEntry> entry = comic2::decode_frdata_room_entry(bytes, 0);
+    expect(entry.has_value(), "decode should succeed on full room entry payload");
+    expect(entry->tile_w == 40, "tile_w decode mismatch");
+    expect(entry->tile_h == 24, "tile_h decode mismatch");
+    expect(entry->rle_data_off == 0x1234, "rle_data_off decode mismatch");
 }
 
 void test_room_loader_rejects_huge_offset() {
     const std::vector<std::uint8_t> bytes = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-    comic2::FrdataRoomEntry entry{};
-    const bool ok = comic2::decode_frdata_room_entry(bytes, std::numeric_limits<std::size_t>::max(), &entry);
-
-    expect(!ok, "decode should reject oversized offsets safely");
+    const std::optional<comic2::FrdataRoomEntry> entry =
+        comic2::decode_frdata_room_entry(bytes, std::numeric_limits<std::size_t>::max());
+    expect(!entry.has_value(), "decode should reject oversized offsets safely");
 }
 
 }  // namespace
