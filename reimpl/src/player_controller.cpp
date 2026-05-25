@@ -79,8 +79,12 @@ void apply_airborne_physics_tick(RuntimeState& state,
 
     if (move_left && !move_right) {
         state.player.x -= motion.air_drift_step;
+        state.player.x_vel = static_cast<std::int16_t>(-motion.air_drift_step);
     } else if (move_right && !move_left) {
         state.player.x += motion.air_drift_step;
+        state.player.x_vel = motion.air_drift_step;
+    } else {
+        state.player.x_vel = 0;
     }
 
     state.player.y += state.player.y_vel;
