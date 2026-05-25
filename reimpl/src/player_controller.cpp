@@ -4,6 +4,8 @@
 
 namespace comic2 {
 
+namespace detail {
+
 void apply_horizontal_movement(RuntimeState& state, const PlayerMotionConfig& motion) {
     const bool move_left = state.input.left_pressed;
     const bool move_right = state.input.right_pressed;
@@ -34,8 +36,10 @@ bool trigger_fall_if_no_support(RuntimeState& state,
     return true;
 }
 
+}  // namespace detail
+
 void apply_input_tick(RuntimeState& state, const PlayerMotionConfig& motion) {
-    apply_horizontal_movement(state, motion);
+    detail::apply_horizontal_movement(state, motion);
 
     if (state.input.jump_pressed && state.player.jump_counter > 0) {
         state.player.is_airborne = true;
@@ -56,7 +60,7 @@ void apply_grounded_physics_tick(RuntimeState& state,
         return;
     }
 
-    if (trigger_fall_if_no_support(state, collision, motion)) {
+    if (detail::trigger_fall_if_no_support(state, collision, motion)) {
         return;
     }
 

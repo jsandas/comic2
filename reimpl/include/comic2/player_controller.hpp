@@ -16,9 +16,6 @@ struct PlayerMotionConfig {
     std::int16_t fall_start_velocity = 1;
 };
 
-void apply_horizontal_movement(RuntimeState& state, const PlayerMotionConfig& motion);
-bool trigger_fall_if_no_support(RuntimeState& state, const TileCollisionConfig& collision, const PlayerMotionConfig& motion);
-
 void apply_input_tick(RuntimeState& state, const PlayerMotionConfig& motion);
 void apply_grounded_physics_tick(RuntimeState& state,
                                  const PlayerMotionConfig& motion,
