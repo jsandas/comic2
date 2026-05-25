@@ -93,7 +93,7 @@ void test_room_loader_builds_row_pointer_table() {
     bytes[0x2A3] = 0x02;
 
     const std::optional<std::vector<std::uint16_t>> row_pointers =
-        comic2::build_room_row_pointer_table(bytes, 2);
+        comic2::build_room_row_pointer_table(std::span<const std::uint8_t>(bytes), 2);
 
     expect(row_pointers.has_value(), "row pointer table build should succeed");
     expect(row_pointers->size() == 2, "row pointer count should match tile_h");
