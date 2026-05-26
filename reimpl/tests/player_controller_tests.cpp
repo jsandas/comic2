@@ -109,8 +109,6 @@ void test_ledge_walk_off_transitions_into_fall() {
 
     const comic2::TileCollisionConfig collision{
         .ground_y = 0,
-        .support_min_x = -100,
-        .support_max_x = 4,
     };
 
     comic2::apply_input_tick(state, comic2::PlayerMotionConfig{});

@@ -49,6 +49,8 @@ struct RuntimeState {
     std::uint16_t current_level = 0;
     std::uint16_t current_room = 0;
 
+    RoomTileGrid room_grid;
+
     PlayerState player;
     InputState input;
     DispatcherFlags flags;

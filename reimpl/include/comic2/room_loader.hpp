@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
+#include <span>
 #include <vector>
 
 #include "comic2/types.hpp"
@@ -16,8 +18,16 @@ struct RoomLoadSpec {
     bool operator==(const RoomLoadSpec&) const = default;
 };
 
-bool decode_frdata_room_entry(const std::vector<std::uint8_t>& bytes,
-                              std::size_t offset,
-                              FrdataRoomEntry* out_entry);
+std::optional<FrdataRoomEntry> decode_frdata_room_entry(
+    std::span<const std::uint8_t> bytes,
+    std::size_t offset);
+
+std::optional<std::vector<std::uint16_t>> build_room_row_pointer_table(
+    std::span<const std::uint8_t> decoded_room_bytes,
+    std::uint16_t tile_h);
+
+std::optional<RoomTileGrid> build_room_tile_grid(
+    std::span<const std::uint8_t> decoded_room_bytes,
+    const FrdataRoomEntry& room_entry);
 
 }  // namespace comic2

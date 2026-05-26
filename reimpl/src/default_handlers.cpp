@@ -1,5 +1,7 @@
 #include "comic2/default_handlers.hpp"
 
+#include <limits>
+
 #include "comic2/player_controller.hpp"
 #include "comic2/tile_collision.hpp"
 
@@ -8,14 +10,21 @@ namespace comic2 {
 namespace {
 
 constexpr PlayerMotionConfig kDefaultMotion{};
-constexpr TileCollisionConfig kDefaultCollision{};
+constexpr TileCollisionConfig kDefaultCollision{
+    .ground_y = 0,
+    .solid_tile_threshold = 0x01,
+    .hazard_tile_min = 0xF0,
+    .hazard_tile_max = 0xFF,
+};
 
 void apply_default_airborne_physics(RuntimeState& state) {
     apply_airborne_physics_tick(state, kDefaultMotion, kDefaultCollision);
+    update_player_hazard_state(state, kDefaultCollision);
 }
 
 void apply_default_grounded_physics(RuntimeState& state) {
     apply_grounded_physics_tick(state, kDefaultMotion, kDefaultCollision);
+    update_player_hazard_state(state, kDefaultCollision);
 }
 
 }  // namespace
@@ -57,7 +66,10 @@ void handle_distance_interaction(RuntimeState& state) {
 }
 
 void handle_tile_hazard(RuntimeState& state) {
-    (void)state;
+    if (state.player.hp > 0) {
+        --state.player.hp;
+    }
+    state.flags.tile_hazard_triggered = false;
 }
 
 void handle_player_special_state(RuntimeState& state) {

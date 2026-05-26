@@ -317,11 +317,13 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 Status note: current Phase 7.3 implementation is parity-oriented and deterministic for dispatcher/runtime tests, with tile support probing currently modeled via configurable support bounds until full tile-grid probing from Phase 7.4 is integrated.
 
 #### 7.4 Tile Collision and Room Grid Plan
-- [ ] Implement tile query service equivalent to `get_tile_at_pixels` (`sub_1CFE`)
-- [ ] Port documented FRDATA room entry interpretation (`tile_w`, `tile_h`, `rle_data_off`)
-- [ ] Build room row-pointer table equivalent (`0x2A0` pointer map behavior)
-- [ ] Implement collision thresholds and hazard band checks used by dispatcher/hazard path
-- [ ] Add tests for pixel->tile mapping and threshold comparisons at room bounds
+- [x] Implement tile query service equivalent to `get_tile_at_pixels` (`sub_1CFE`) (baseline API + bounds-safe lookup)
+- [x] Port documented FRDATA room entry interpretation (`tile_w`, `tile_h`, `rle_data_off`)
+- [x] Build room row-pointer table equivalent (`0x2A0` pointer map behavior) (baseline pointer-table builder)
+- [x] Implement collision thresholds and hazard band checks used by dispatcher/hazard path (baseline tile hazard routing)
+- [x] Add tests for pixel->tile mapping and threshold comparisons at room bounds
+
+Status note: Phase 7.4 baseline is now implemented with room-grid tile lookup, threshold/hazard helpers, dispatcher hazard-stage integration, and deterministic unit coverage. Follow-up parity refinements can tighten exact tile probe points and hazard semantics against oracle traces.
 
 #### 7.5 Entity and Projectile Plan
 - [ ] Implement mapped-object activation pipeline:
