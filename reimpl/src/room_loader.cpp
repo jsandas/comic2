@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <optional>
+#include <span>
 
 namespace comic2 {
 

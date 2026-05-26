@@ -201,32 +201,32 @@ void test_default_stage_hook_coverage() {
     }
 }
 
-    void test_tile_hazard_stage_consumes_hp() {
-        comic2::GameDispatcher dispatcher;
-        comic2::install_default_stage_hooks(dispatcher);
+void test_tile_hazard_stage_consumes_hp() {
+    comic2::GameDispatcher dispatcher;
+    comic2::install_default_stage_hooks(dispatcher);
 
-        comic2::RuntimeState state;
-        state.player.hp = 3;
-        state.player.is_physics_active = true;
+    comic2::RuntimeState state;
+    state.player.hp = 3;
+    state.player.is_physics_active = true;
 
-        state.room_grid.tile_w = 1;
-        state.room_grid.tile_h = 1;
-        state.room_grid.row_pointers = {0};
-        state.room_grid.tile_data = {0xF4};
+    state.room_grid.tile_w = 1;
+    state.room_grid.tile_h = 1;
+    state.room_grid.row_pointers = {0};
+    state.room_grid.tile_data = {0xF4};
 
-        const auto first = dispatcher.run_tick(state);
-        expect(first.stage == comic2::DispatchStage::GroundedPhysics,
-            "physics stage should run before hazard stage is selected");
-        expect(state.flags.tile_hazard_triggered,
-            "grounded physics hook should set tile hazard when on a hazard tile");
+    const auto first = dispatcher.run_tick(state);
+    expect(first.stage == comic2::DispatchStage::GroundedPhysics,
+        "physics stage should run before hazard stage is selected");
+    expect(state.flags.tile_hazard_triggered,
+        "grounded physics hook should set tile hazard when on a hazard tile");
 
-        const auto second = dispatcher.run_tick(state);
-        expect(second.stage == comic2::DispatchStage::TileHazard,
-            "hazard flag should route dispatcher to tile hazard stage");
-        expect(state.player.hp == 2, "tile hazard handler should decrement hp once");
-        expect(!state.flags.tile_hazard_triggered,
-            "tile hazard handler should clear hazard flag after handling");
-    }
+    const auto second = dispatcher.run_tick(state);
+    expect(second.stage == comic2::DispatchStage::TileHazard,
+        "hazard flag should route dispatcher to tile hazard stage");
+    expect(state.player.hp == 2, "tile hazard handler should decrement hp once");
+    expect(!state.flags.tile_hazard_triggered,
+        "tile hazard handler should clear hazard flag after handling");
+}
 
 }  // namespace
 
