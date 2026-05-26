@@ -49,7 +49,7 @@ std::optional<std::vector<std::uint16_t>> build_room_row_pointer_table(
 std::optional<RoomTileGrid> build_room_tile_grid(
     std::span<const std::uint8_t> decoded_room_bytes,
     const FrdataRoomEntry& room_entry) {
-    const std::optional<std::vector<std::uint16_t>> row_pointers =
+    std::optional<std::vector<std::uint16_t>> row_pointers =
         build_room_row_pointer_table(decoded_room_bytes, room_entry.tile_h);
     if (!row_pointers.has_value()) {
         return std::nullopt;
