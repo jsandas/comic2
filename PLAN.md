@@ -325,14 +325,24 @@ Status note: current Phase 7.3 implementation is parity-oriented and determinist
 
 Status note: Phase 7.4 baseline is now implemented with room-grid tile lookup, threshold/hazard helpers, dispatcher hazard-stage integration, and deterministic unit coverage. Follow-up parity refinements can tighten exact tile probe points and hazard semantics against oracle traces.
 
-#### 7.5 Entity and Projectile Plan
-- [ ] Implement mapped-object activation pipeline:
-	- room list build (`ent_build_room_entity_list`)
-	- runtime slot build (`ent_build_runtime_slots_for_viewport`)
-	- slot copy/deactivate behavior (`ent_copy_descriptor_to_runtime_slot`, `ent_deactivate_runtime_slot`)
-- [ ] Implement projectile loop parity (`update_projectiles`) with viewport culling and tile collision
-- [ ] Implement player projectile spawn (`spawn_player_projectile`) and impact dispatch
-- [ ] Add table-driven tests for runtime slot state transitions and projectile despawn conditions
+#### 7.5 Entity and Projectile Plan (COMPLETED)
+- [x] Implement mapped-object activation pipeline:
+	- room list build (`ent_build_room_entity_list`) - filters mapped objects by room coordinates
+	- runtime slot build (`ent_build_runtime_slots_for_viewport`) - builds up to 6 runtime slots from viewport-intersecting entities
+	- slot copy/deactivate behavior (`ent_copy_descriptor_to_runtime_slot`, `deactivate_runtime_slot`) - initializes runtime state and clears slots
+- [x] Implement projectile loop parity (`update_projectiles`) with viewport culling and tile collision
+	- Viewport culling with 8-pixel margin (200x152 viewport)
+	- Tile collision detection via `check_projectile_tile_collision`
+	- Animation frame cycling (modulo 8)
+	- Bounds checking for world coordinates
+- [x] Implement player projectile spawn (`spawn_player_projectile`) and impact dispatch
+	- Facing-direction velocity calculation (±0x0010)
+	- Airborne adjustment for left-facing projectiles
+	- Y-position offset (+4 airborne, +8 grounded)
+	- Initial upward velocity (-0x000C)
+- [x] Add table-driven tests for runtime slot state transitions and projectile despawn conditions
+	- 13 comprehensive tests covering entity activation, runtime slot management, projectile spawning, collision, and culling
+	- All tests pass in CI (`ctest`)
 
 #### 7.6 Rendering Plan (EGA-Parity-Oriented)
 - [ ] Implement masked and opaque sprite blit adapters over `EgaPlanarSurface`
