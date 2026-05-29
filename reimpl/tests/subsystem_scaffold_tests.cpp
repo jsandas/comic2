@@ -65,8 +65,9 @@ void test_ent_build_runtime_slots_for_viewport_culls() {
     std::vector<comic2::RuntimeEntitySlot32> runtime_slots;
     comic2::EntityActivationState activation_state;
     comic2::EntityViewportBounds viewport{.min_x = 0, .max_x = 319, .min_y = 0, .max_y = 199};
+    std::uint16_t activation_toggle = 1;
 
-    comic2::ent_build_runtime_slots_for_viewport(active_entities, mapped_objects, runtime_slots, viewport, activation_state);
+    comic2::ent_build_runtime_slots_for_viewport(active_entities, mapped_objects, runtime_slots, viewport, activation_state, activation_toggle);
 
     expect_eq(runtime_slots.size(), 6, "should have 6 runtime slots");
     expect(activation_state.active_count <= 2, "should activate at most 2 slots (entities in viewport)");
@@ -91,15 +92,16 @@ void test_ent_copy_descriptor_to_runtime_slot_initializes() {
     };
 
     comic2::RuntimeEntitySlot32 slot = {};
-    std::uint16_t activation_toggle = 0;
+    std::uint16_t activation_toggle = 1;
 
     comic2::ent_copy_descriptor_to_runtime_slot(descriptor, slot, 0x42, activation_toggle);
 
     expect(slot.mapped_object_ptr == 0x42, "mapped_object_ptr should be set to behavior_ptr");
     expect(slot.x == 100 && slot.y == 50, "position should be copied from descriptor");
     expect(slot.hitbox_w == 16 && slot.hitbox_h == 16, "hitbox should be copied from descriptor");
-    expect(slot.behavior_state == 0, "behavior_state should be initialized to 0 (activation_toggle & 3)");
-    expect(activation_toggle == 3, "activation_toggle should be XORed with 3");
+    expect(slot.behavior_state == 1, "behavior_state should be copied from state_flags");
+    expect(slot.dir_toggle == 1, "dir_toggle should be initialized to 1 (activation_toggle & 3)");
+    expect(activation_toggle == 2, "activation_toggle should be XORed with 3 (1 ^ 3 = 2)");
 }
 
 void test_deactivate_runtime_slot_clears() {
@@ -224,6 +226,33 @@ void test_projectile_anim_frame_cycles() {
     expect(projectiles[0].anim_frame == 2, "anim_frame should cycle modulo 8");
 }
 
+void test_ent_activation_pipeline_integration() {
+    std::vector<comic2::MappedObject12> mapped_objects = {
+        {.room_x = 10, .room_y = 20, .descriptor_ptr = 0x100, .state_flags = 0, .world_x = 50, .world_y = 50},
+        {.room_x = 10, .room_y = 20, .descriptor_ptr = 0x200, .state_flags = 0, .world_x = 150, .world_y = 50},
+        {.room_x = 0, .room_y = 0, .descriptor_ptr = 0x300, .state_flags = 0, .world_x = 10, .world_y = 10},
+    };
+
+    std::vector<comic2::ActiveEntity8> active_entities;
+    comic2::EntityActivationState activation_state;
+    comic2::ent_build_room_entity_list(mapped_objects, 10, 20, active_entities, activation_state);
+
+    expect_eq(active_entities.size(), 2, "should find 2 entities in room (10,20)");
+    expect(active_entities[0].sprite_or_obj == 0, "first active entity should point to mapped_objects[0]");
+    expect(active_entities[1].sprite_or_obj == 1, "second active entity should point to mapped_objects[1]");
+
+    std::vector<comic2::RuntimeEntitySlot32> runtime_slots;
+    comic2::EntityViewportBounds viewport{.min_x = 0, .max_x = 319, .min_y = 0, .max_y = 199};
+    std::uint16_t activation_toggle = 1;
+
+    comic2::ent_build_runtime_slots_for_viewport(active_entities, mapped_objects, runtime_slots, viewport, activation_state, activation_toggle);
+
+    expect(runtime_slots[0].mapped_object_ptr == 0, "first runtime slot should point to mapped_objects[0]");
+    expect(runtime_slots[1].mapped_object_ptr == 1, "second runtime slot should point to mapped_objects[1]");
+    expect(runtime_slots[0].type_flags == 0x100, "first runtime slot type_flags mismatch");
+    expect(runtime_slots[1].type_flags == 0x200, "second runtime slot type_flags mismatch");
+}
+
 void test_room_loader_decodes_frdata_entry() {
     const std::vector<std::uint8_t> bytes = {
         0x28, 0x00,  // tile_w = 40
@@ -260,6 +289,7 @@ void run_subsystem_scaffold_tests() {
     test_projectile_tile_collision_detection();
     test_projectile_viewport_culling();
     test_projectile_anim_frame_cycles();
+    test_ent_activation_pipeline_integration();
     test_room_loader_decodes_frdata_entry();
     test_room_loader_rejects_huge_offset();
 }

@@ -52,9 +52,9 @@ const bool intersects_viewport =
 
 **Implementation**:
 - Copies hitbox, type flags, behavior state from descriptor
-- Initializes position, velocity, and animation fields to zero
-- Sets mapped_object_ptr to behavior pointer
-- Applies activation toggle XOR pattern (toggles between 0 and 3)
+- Initializes position to world coordinates from descriptor
+- Sets mapped_object_ptr to behavior index
+- Applies activation toggle XOR pattern to `dir_toggle` (toggles between 1 and 2, based on `word_2EA00`)
 
 **Key Assembly Pattern**:
 ```asm
@@ -141,6 +141,7 @@ const bool outside_viewport =
 - Added `firepower` field to `PlayerState`
 - Added `mapped_objects` vector to `RuntimeState`
 - Added `activation_state` to `RuntimeState`
+- Added `activation_toggle` (mapped to `word_2EA00`) to `RuntimeState`
 - Added `projectiles` vector to `RuntimeState`
 
 #### `EntityRuntime.hpp` Additions

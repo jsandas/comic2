@@ -63,6 +63,7 @@ struct RuntimeState {
     std::vector<ActiveEntity8> active_entities;
     std::vector<RuntimeEntitySlot32> runtime_slots;
     EntityActivationState activation_state;
+    std::uint16_t activation_toggle = 1;
 
     std::vector<ProjectileState> projectiles;
 

@@ -35,7 +35,8 @@ void ent_build_runtime_slots_for_viewport(const std::vector<ActiveEntity8>& acti
                                            const std::vector<MappedObject12>& mapped_objects,
                                            std::vector<RuntimeEntitySlot32>& runtime_slots,
                                            const EntityViewportBounds& viewport_bounds,
-                                           EntityActivationState& activation_state);
+                                           EntityActivationState& activation_state,
+                                           std::uint16_t& activation_toggle);
 
 void ent_copy_descriptor_to_runtime_slot(const MappedObject12& descriptor,
                                           RuntimeEntitySlot32& slot,

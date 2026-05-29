@@ -32,13 +32,14 @@ void ent_build_room_entity_list(const std::vector<MappedObject12>& mapped_object
     active_entities.clear();
     activation_state = EntityActivationState{};
 
-    for (const auto& obj : mapped_objects) {
+    for (std::size_t i = 0; i < mapped_objects.size(); ++i) {
+        const auto& obj = mapped_objects[i];
         if (obj.room_x == room_x && obj.room_y == room_y) {
             ActiveEntity8 entity;
             entity.x = static_cast<std::int16_t>(obj.world_x);
             entity.y = static_cast<std::int16_t>(obj.world_y);
             entity.flags_or_slot = obj.state_flags;
-            entity.sprite_or_obj = obj.descriptor_ptr;
+            entity.sprite_or_obj = static_cast<std::uint16_t>(i);
             active_entities.push_back(entity);
         }
     }
@@ -52,12 +53,12 @@ void ent_build_runtime_slots_for_viewport(const std::vector<ActiveEntity8>& acti
                                            const std::vector<MappedObject12>& mapped_objects,
                                            std::vector<RuntimeEntitySlot32>& runtime_slots,
                                            const EntityViewportBounds& viewport_bounds,
-                                           EntityActivationState& activation_state) {
+                                           EntityActivationState& activation_state,
+                                           std::uint16_t& activation_toggle) {
     runtime_slots.clear();
     runtime_slots.resize(6, RuntimeEntitySlot32{});
 
     std::uint8_t slot_index = 0;
-    std::uint16_t activation_toggle = 0;
 
     for (const auto& entity : active_entities) {
         if (slot_index >= 6) {
@@ -107,23 +108,15 @@ void ent_copy_descriptor_to_runtime_slot(const MappedObject12& descriptor,
     slot.anim_period = descriptor.world_y;
     slot.unknown_0c = 0;
     slot.unknown_0e = 0;
-    slot.x = 0;
-    slot.y = 0;
+    slot.x = static_cast<std::int16_t>(descriptor.world_x);
+    slot.y = static_cast<std::int16_t>(descriptor.world_y);
     slot.param_a = 0;
     slot.param_b = 0;
-    slot.dir_toggle = 0;
+    slot.dir_toggle = activation_toggle & 3;
     slot.anim_tick = 0;
     slot.unknown_1c = 0;
     slot.mapped_object_ptr = behavior_ptr;
 
-    slot.x = static_cast<std::int16_t>(descriptor.world_x);
-    slot.y = static_cast<std::int16_t>(descriptor.world_y);
-
-    slot.param_a = 0;
-    slot.param_b = 0;
-    slot.dir_toggle = 0;
-
-    slot.behavior_state = activation_toggle & 3;
     activation_toggle ^= 3;
 }
 
