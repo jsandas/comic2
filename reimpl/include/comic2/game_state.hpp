@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "comic2/entity_runtime.hpp"
+#include "comic2/projectiles.hpp"
 #include "comic2/types.hpp"
 
 namespace comic2 {
@@ -26,9 +28,11 @@ struct PlayerState {
     bool is_physics_active = false;
     bool is_animation_active = false;
     bool is_attack_active = false;
+    bool facing_right = true;
 
     std::uint8_t jump_counter = 0;
     std::uint8_t hp = 12;
+    std::uint8_t firepower = 1;
 
     bool operator==(const PlayerState&) const = default;
 };
@@ -55,8 +59,13 @@ struct RuntimeState {
     InputState input;
     DispatcherFlags flags;
 
+    std::vector<MappedObject12> mapped_objects;
     std::vector<ActiveEntity8> active_entities;
     std::vector<RuntimeEntitySlot32> runtime_slots;
+    EntityActivationState activation_state;
+    std::uint16_t activation_toggle = 1;
+
+    std::vector<ProjectileState> projectiles;
 
     bool operator==(const RuntimeState&) const = default;
 };
