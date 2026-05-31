@@ -345,7 +345,7 @@ Status note: Phase 7.4 baseline is now implemented with room-grid tile lookup, t
 	- All tests pass in CI (`ctest`)
 
 #### 7.6 Rendering Plan (EGA-Parity-Oriented)
-- [ ] Implement masked and opaque sprite blit adapters over `EgaPlanarSurface`
+- [x] Implement masked and opaque sprite blit adapters over `EgaPlanarSurface`
 - [ ] Implement page-flip abstraction compatible with current double-buffer assumptions
 - [ ] Add validation helpers that compare plane bytes for known decode/blit fixtures
 - [ ] Add optional SDL2 presenter behind `IFramePresenter` while keeping core logic headless-testable

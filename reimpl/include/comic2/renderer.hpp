@@ -6,6 +6,8 @@
 #include <span>
 #include <vector>
 
+#include "comic2/resource_formats.hpp"
+
 namespace comic2 {
 
 class EgaPlanarSurface {
@@ -51,5 +53,22 @@ private:
     bool has_frame_ = false;
     EgaPlanarSurface last_frame_{};
 };
+
+// Blit functions for EGA 4-plane sprites
+//
+// These functions implement the core blitting operations that mirror the
+// original Captain Comic II assembly implementations:
+// - gfx_rle_blit_opaque_4plane: Copies RLE-encoded 4-plane sprite data
+// - gfx_rle_blit_masked_or_4plane: ORs RLE-encoded 4-plane sprite data (masked blitting)
+//
+// Parameters:
+//   dest: The destination surface to blit to
+//   x_pixels: X coordinate in pixels where to start blitting
+//   y_rows: Y coordinate in rows where to start blitting
+//   image_data: The RLE-encoded 4-plane sprite data to blit
+void gfx_rle_blit_opaque_4plane(EgaPlanarSurface& dest, std::size_t x_pixels, std::size_t y_rows, 
+                               const Ega4PlaneImage& image_data);
+void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface& dest, std::size_t x_pixels, std::size_t y_rows, 
+                                      const Ega4PlaneImage& image_data);
 
 }  // namespace comic2
