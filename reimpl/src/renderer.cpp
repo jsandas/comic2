@@ -130,8 +130,21 @@ void EgaPlanarSurface::set_plane_byte(std::size_t plane_index, std::size_t x_byt
     planes_[plane_index][off] = value;
 }
 
+void EgaPageFlipper::init_double_buffering() {
+    // Initialize double buffering with page 0x2000 as the active page
+    // This matches the original assembly code behavior
+    active_page_ = 0x2000;
+}
+
+void EgaPageFlipper::present_and_flip_page() {
+    // Flip between pages by XORing with 0x2000
+    // This matches the original assembly code behavior:
+    // xor cs:word_773F, 2000h
+    active_page_ ^= 0x2000;
+}
+
 void gfx_rle_blit_opaque_4plane(EgaPlanarSurface& dest, std::size_t x_pixels, std::size_t y_rows, 
-                              const Ega4PlaneImage& image_data) {
+                               const Ega4PlaneImage& image_data) {
     // Validate destination coordinates
     if (x_pixels >= dest.width_pixels() || y_rows >= dest.height_rows()) {
         throw std::out_of_range("blit coordinates out of range");
@@ -170,7 +183,7 @@ void gfx_rle_blit_opaque_4plane(EgaPlanarSurface& dest, std::size_t x_pixels, st
 }
 
 void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface& dest, std::size_t x_pixels, std::size_t y_rows, 
-                                    const Ega4PlaneImage& image_data) {
+                                   const Ega4PlaneImage& image_data) {
     // Validate destination coordinates
     if (x_pixels >= dest.width_pixels() || y_rows >= dest.height_rows()) {
         throw std::out_of_range("blit coordinates out of range");

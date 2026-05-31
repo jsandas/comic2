@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <stdexcept>
+#include <gtest/gtest.h>
 
 #include "comic2/renderer.hpp"
 
@@ -42,3 +43,49 @@ void run_renderer_tests() {
     test_surface_plane_rw();
     test_presenter_copies_frame();
 }
+
+namespace comic2 {
+
+TEST(EgaPageFlipperTest, InitDoubleBuffering) {
+    EgaPageFlipper flipper;
+    flipper.init_double_buffering();
+    
+    // Should initialize with page 0x2000 as active
+    EXPECT_EQ(flipper.active_page(), 0x2000);
+}
+
+TEST(EgaPageFlipperTest, FlipPage) {
+    EgaPageFlipper flipper;
+    flipper.init_double_buffering();
+    
+    // Initial state should be page 0x2000
+    EXPECT_EQ(flipper.active_page(), 0x2000);
+    
+    // Flip once
+    flipper.present_and_flip_page();
+    EXPECT_EQ(flipper.active_page(), 0x0000);
+    
+    // Flip again
+    flipper.present_and_flip_page();
+    EXPECT_EQ(flipper.active_page(), 0x2000);
+    
+    // Flip again
+    flipper.present_and_flip_page();
+    EXPECT_EQ(flipper.active_page(), 0x0000);
+}
+
+TEST(EgaPageFlipperTest, OtherPage) {
+    EgaPageFlipper flipper;
+    flipper.init_double_buffering();
+    
+    // Should be able to get the other page
+    EXPECT_EQ(flipper.other_page(), 0x0000);
+    
+    flipper.present_and_flip_page();
+    EXPECT_EQ(flipper.other_page(), 0x2000);
+    
+    flipper.present_and_flip_page();
+    EXPECT_EQ(flipper.other_page(), 0x0000);
+}
+
+}  // namespace comic2

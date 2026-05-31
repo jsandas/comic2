@@ -13,6 +13,8 @@ namespace comic2 {
 class EgaPlanarSurface {
 public:
     static constexpr std::size_t kPlaneCount = 4;
+    static constexpr std::uint16_t kPage0 = 0x0000;
+    static constexpr std::uint16_t kPage1 = 0x2000;
 
     EgaPlanarSurface(std::uint16_t width_pixels = 320, std::uint16_t height_rows = 200);
 
@@ -52,6 +54,25 @@ public:
 private:
     bool has_frame_ = false;
     EgaPlanarSurface last_frame_{};
+};
+
+// Page flipping abstraction for EGA double buffering
+class EgaPageFlipper {
+public:
+    // Initialize double buffering with page 0x2000 as the active page
+    void init_double_buffering();
+    
+    // Present current draw page and flip to the other page
+    void present_and_flip_page();
+    
+    // Get the current active page address
+    std::uint16_t active_page() const noexcept { return active_page_; }
+    
+    // Get the other page address
+    std::uint16_t other_page() const noexcept { return active_page_ ^ 0x2000; }
+
+private:
+    std::uint16_t active_page_ = 0;
 };
 
 // Blit functions for EGA 4-plane sprites
