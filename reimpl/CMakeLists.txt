@@ -38,6 +38,10 @@ target_include_directories(comic2_core
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+if(ENABLE_SDL2 AND SDL2_FOUND)
+    target_link_libraries(comic2_core PRIVATE SDL2::SDL2)
+endif()
+
 add_executable(comic2_reimpl
     src/main.cpp
 )
@@ -47,16 +51,9 @@ target_link_libraries(comic2_reimpl
         comic2_core
 )
 
-if(ENABLE_SDL2 AND SDL2_FOUND)
-    target_link_libraries(comic2_reimpl PRIVATE SDL2::SDL2)
-endif()
-
 # Optional renderer demo executable
 add_executable(comic2_renderer_demo src/renderer_demo.cpp)
 target_link_libraries(comic2_renderer_demo PRIVATE comic2_core)
-if(ENABLE_SDL2 AND SDL2_FOUND)
-    target_link_libraries(comic2_renderer_demo PRIVATE SDL2::SDL2)
-endif()
 
 add_executable(comic2_unit_tests
     tests/dispatcher_tests.cpp
