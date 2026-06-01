@@ -75,7 +75,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo DEBIAN_FRONTEND=noninteractive apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y cmake g++ libsdl2-dev
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y cmake g++ libsdl2-dev pkg-config
 
       - name: Setup Sound Linux
         if: runner.os == 'Linux'
@@ -85,9 +85,6 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew install cmake sdl2 pkg-config
-          echo "/opt/homebrew/opt/sdl2" >> $GITHUB_PATH
-          echo "CMAKE_PREFIX_PATH=/opt/homebrew/opt/sdl2" >> $GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=/usr/local/opt/sdl2" >> $GITHUB_ENV
 
       - name: Install dependencies (Windows)
         if: runner.os == 'Windows'
@@ -102,11 +99,7 @@ jobs:
       - name: Configure CMake (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          if [ "${{ runner.os }}" == "macOS" ]; then
-            cmake -B reimpl/build -S reimpl -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_SDL2=ON -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/sdl2:/usr/local/opt/sdl2"
-          else
-            cmake -B reimpl/build -S reimpl -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_SDL2=ON
-          fi
+          cmake -B reimpl/build -S reimpl -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_SDL2=ON
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
