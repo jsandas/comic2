@@ -73,9 +73,11 @@ target_link_libraries(comic2_reimpl
         comic2_core
 )
 
-# Optional renderer demo executable
-add_executable(comic2_renderer_demo src/renderer_demo.cpp)
-target_link_libraries(comic2_renderer_demo PRIVATE comic2_core)
+# Optional renderer demo executable (only when SDL2 is enabled)
+if(ENABLE_SDL2 AND SDL2_TARGET)
+    add_executable(comic2_renderer_demo src/renderer_demo.cpp)
+    target_link_libraries(comic2_renderer_demo PRIVATE comic2_core)
+endif()
 
 add_executable(comic2_unit_tests
     tests/dispatcher_tests.cpp
