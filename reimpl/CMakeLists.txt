@@ -7,6 +7,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Ensure consistent runtime library on Windows
+if(MSVC)
+    # Use static runtime to match vcpkg's x64-windows-static triplet
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 # Optional SDL2 support for visual presentation
 option(ENABLE_SDL2 "Enable SDL2 presenter for visual output" OFF)
 
