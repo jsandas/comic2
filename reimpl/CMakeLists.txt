@@ -14,6 +14,7 @@ add_library(comic2_core
     src/player_controller.cpp
     src/projectiles.cpp
     src/renderer.cpp
+    src/renderer_validation.cpp
     src/room_loader.cpp
     src/resource_loader.cpp
     src/tile_collision.cpp
@@ -37,6 +38,7 @@ add_executable(comic2_unit_tests
     tests/dispatcher_tests.cpp
     tests/player_controller_tests.cpp
     tests/renderer_tests.cpp
+    tests/renderer_validation_tests.cpp
     tests/subsystem_scaffold_tests.cpp
     tests/tile_collision_tests.cpp
     tests/unit_tests_main.cpp
