@@ -17,18 +17,29 @@ endif()
 option(ENABLE_SDL2 "Enable SDL2 presenter for visual output" OFF)
 
 if(ENABLE_SDL2)
-    find_package(SDL2 REQUIRED)
-    if(SDL2_FOUND)
-        message(STATUS "SDL2 found - enabling visual presenter")
-        add_definitions(-DCOMIC2_USE_SDL2)
-        
-        # Add SDL2 include directories explicitly for all platforms
-        if(SDL2_INCLUDE_DIRS)
-            include_directories(${SDL2_INCLUDE_DIRS})
+    # Platform-aware SDL2 detection (matches captain-comic-refactor approach)
+    if(WIN32)
+        # Windows: Use CONFIG mode for vcpkg compatibility
+        find_package(SDL2 CONFIG REQUIRED)
+        if(TARGET SDL2::SDL2)
+            set(SDL2_TARGET SDL2::SDL2)
+        elseif(TARGET SDL2::SDL2-static)
+            set(SDL2_TARGET SDL2::SDL2-static)
+        else()
+            message(FATAL_ERROR "SDL2 was requested but neither SDL2::SDL2 nor SDL2::SDL2-static target found")
         endif()
     else()
-        message(FATAL_ERROR "SDL2 was requested but not found. Install SDL2-dev to enable.")
+        # Unix-like: Use CMake's find_package (works with Homebrew and system installs)
+        find_package(SDL2 REQUIRED)
+        if(TARGET SDL2::SDL2)
+            set(SDL2_TARGET SDL2::SDL2)
+        else()
+            message(FATAL_ERROR "SDL2 was requested but SDL2::SDL2 target not found")
+        endif()
     endif()
+    
+    message(STATUS "SDL2 found - enabling visual presenter (target: ${SDL2_TARGET})")
+    add_definitions(-DCOMIC2_USE_SDL2)
 endif()
 
 add_library(comic2_core
@@ -49,8 +60,8 @@ target_include_directories(comic2_core
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-if(ENABLE_SDL2 AND SDL2_FOUND)
-    target_link_libraries(comic2_core PRIVATE SDL2::SDL2)
+if(ENABLE_SDL2 AND SDL2_TARGET)
+    target_link_libraries(comic2_core PRIVATE ${SDL2_TARGET})
 endif()
 
 add_executable(comic2_reimpl
@@ -81,8 +92,8 @@ target_link_libraries(comic2_unit_tests
         comic2_core
 )
 
-if(ENABLE_SDL2 AND SDL2_FOUND)
-    target_link_libraries(comic2_unit_tests PRIVATE SDL2::SDL2)
+if(ENABLE_SDL2 AND SDL2_TARGET)
+    target_link_libraries(comic2_unit_tests PRIVATE ${SDL2_TARGET})
 endif()
 
 if(BUILD_TESTING)
