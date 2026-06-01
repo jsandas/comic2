@@ -61,7 +61,7 @@ target_include_directories(comic2_core
 )
 
 if(ENABLE_SDL2 AND SDL2_TARGET)
-    target_link_libraries(comic2_core PRIVATE ${SDL2_TARGET})
+    target_link_libraries(comic2_core PUBLIC ${SDL2_TARGET})
 endif()
 
 add_executable(comic2_reimpl
@@ -92,9 +92,7 @@ target_link_libraries(comic2_unit_tests
         comic2_core
 )
 
-if(ENABLE_SDL2 AND SDL2_TARGET)
-    target_link_libraries(comic2_unit_tests PRIVATE ${SDL2_TARGET})
-endif()
+# No need to link SDL2 again - inherited from comic2_core via PUBLIC
 
 if(BUILD_TESTING)
     add_test(NAME comic2_unit_tests COMMAND comic2_unit_tests)
