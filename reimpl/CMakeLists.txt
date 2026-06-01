@@ -15,6 +15,11 @@ if(ENABLE_SDL2)
     if(SDL2_FOUND)
         message(STATUS "SDL2 found - enabling visual presenter")
         add_definitions(-DCOMIC2_USE_SDL2)
+        
+        # Add SDL2 include directories explicitly for all platforms
+        if(SDL2_INCLUDE_DIRS)
+            include_directories(${SDL2_INCLUDE_DIRS})
+        endif()
     else()
         message(FATAL_ERROR "SDL2 was requested but not found. Install SDL2-dev to enable.")
     endif()
