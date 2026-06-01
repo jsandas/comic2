@@ -85,6 +85,9 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew install cmake sdl2 pkg-config
+          echo "/opt/homebrew/opt/sdl2" >> $GITHUB_PATH
+          echo "CMAKE_PREFIX_PATH=/opt/homebrew/opt/sdl2" >> $GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=/usr/local/opt/sdl2" >> $GITHUB_ENV
 
       - name: Install dependencies (Windows)
         if: runner.os == 'Windows'
@@ -99,7 +102,11 @@ jobs:
       - name: Configure CMake (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          cmake -B reimpl/build -S reimpl -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_SDL2=ON
+          if [ "${{ runner.os }}" == "macOS" ]; then
+            cmake -B reimpl/build -S reimpl -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_SDL2=ON -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/sdl2:/usr/local/opt/sdl2"
+          else
+            cmake -B reimpl/build -S reimpl -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_SDL2=ON
+          fi
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
