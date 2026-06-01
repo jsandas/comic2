@@ -2,9 +2,9 @@ name: Reimpl CI
 
 on:
   push:
-    branches: [ main, master, phase7.6 ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main, master, phase7.6 ]
+    branches: [ main, master ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
