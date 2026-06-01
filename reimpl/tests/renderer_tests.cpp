@@ -75,4 +75,19 @@ void run_renderer_tests() {
         flipper.present_and_flip_page();
         expect(flipper.other_page() == 0x0000, "after second flip other page should be 0x0000");
     }
+
+#ifdef COMIC2_USE_SDL2
+    // SDL2 presenter tests (only run when SDL2 is available)
+    {
+        comic2::EgaPlanarSurface src(320, 200);
+        src.set_plane_byte(0, 0, 0, 0xFF);
+        src.set_plane_byte(1, 0, 0, 0xFF);
+        
+        comic2::Sdl2FramePresenter presenter(640, 480);
+        presenter.present(src);
+        
+        // If we get here without exception, SDL2 presenter is working
+        expect(true, "Sdl2FramePresenter should present without error");
+    }
+#endif  // COMIC2_USE_SDL2
 }

@@ -3,6 +3,10 @@
 #include <algorithm>
 #include <stdexcept>
 
+#ifdef COMIC2_USE_SDL2
+#include <SDL2/SDL.h>
+#endif
+
 namespace comic2 {
 namespace {
 
@@ -232,5 +236,164 @@ const EgaPlanarSurface& MemoryFramePresenter::last_frame() const {
     }
     return last_frame_;
 }
+
+#ifdef COMIC2_USE_SDL2
+// ============================================================================
+// SDL2 Frame Presenter Implementation
+// ============================================================================
+
+struct Sdl2FramePresenter::Impl {
+    SDL_Window* window{};
+    SDL_Renderer* renderer{};
+    SDL_Texture* texture{};
+    std::uint16_t window_width{};
+    std::uint16_t window_height{};
+    std::uint8_t* frame_buffer{};
+    std::size_t frame_buffer_size{};
+
+    Impl(std::uint16_t ww, std::uint16_t hh)
+        : window_width(ww), window_height(hh) {
+        // Calculate frame buffer size (4 planes * 320/8 bytes * 200 rows)
+        frame_buffer_size = 4 * 40 * 200;
+        frame_buffer = new std::uint8_t[frame_buffer_size];
+    }
+
+    ~Impl() {
+        delete[] frame_buffer;
+        if (texture) {
+            SDL_DestroyTexture(texture);
+        }
+        if (renderer) {
+            SDL_DestroyRenderer(renderer);
+        }
+        if (window) {
+            SDL_DestroyWindow(window);
+        }
+        SDL_Quit();
+    }
+};
+
+Sdl2FramePresenter::Sdl2FramePresenter(std::uint16_t window_width, std::uint16_t window_height) {
+    // Initialize SDL
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        throw std::runtime_error("SDL_Init failed: " + std::string(SDL_GetError()));
+    }
+
+    impl_ = new Impl(window_width, window_height);
+
+    // Create window
+    impl_->window = SDL_CreateWindow(
+        "Captain Comic II: Fractured Reality (Reimplementation)",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        window_width,
+        window_height,
+        SDL_WINDOW_SHOWN
+    );
+
+    if (!impl_->window) {
+        throw std::runtime_error("SDL_CreateWindow failed: " + std::string(SDL_GetError()));
+    }
+
+    // Create renderer
+    impl_->renderer = SDL_CreateRenderer(
+        impl_->window,
+        -1,
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+    );
+
+    if (!impl_->renderer) {
+        throw std::runtime_error("SDL_CreateRenderer failed: " + std::string(SDL_GetError()));
+    }
+
+    // Create texture (32-bit RGBA format for display)
+    impl_->texture = SDL_CreateTexture(
+        impl_->renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_STREAMING,
+        320,  // EGA resolution width
+        200   // EGA resolution height
+    );
+
+    if (!impl_->texture) {
+        throw std::runtime_error("SDL_CreateTexture failed: " + std::string(SDL_GetError()));
+    }
+}
+
+Sdl2FramePresenter::~Sdl2FramePresenter() {
+    delete impl_;
+}
+
+void Sdl2FramePresenter::present(const EgaPlanarSurface& frame) {
+    if (!impl_ || !impl_->renderer || !impl_->texture) {
+        return;
+    }
+
+    // Convert 4-plane EGA data to 32-bit RGBA
+    // EGA uses 4 planes, each pixel is represented by 4 bits (one bit per plane)
+    // We'll use a simple palette mapping for now
+    static constexpr std::uint8_t kEgaPalette[16][4] = {
+        {  0,   0,   0, 255 },  // Black
+        {  0,   0, 200, 255 },  // Blue
+        {  0, 200,   0, 255 },  // Green
+        {  0, 200, 200, 255 },  // Cyan
+        { 200,   0,   0, 255 },  // Red
+        { 200,   0, 200, 255 },  // Magenta
+        { 200, 100,   0, 255 },  // Brown
+        { 200, 200, 200, 255 },  // Light gray
+        { 100, 100, 100, 255 },  // Dark gray
+        {  50,  50, 255, 255 },  // Light blue
+        {  50, 255,  50, 255 },  // Light green
+        {  50, 255, 255, 255 },  // Light cyan
+        { 255,  50,  50, 255 },  // Light red
+        { 255,  50, 255, 255 },  // Light magenta
+        { 255, 255,  50, 255 },  // Yellow
+        { 255, 255, 255, 255 },  // White
+    };
+
+    // Lock texture for updating
+    void* pixels = nullptr;
+    int pitch = 0;
+    if (SDL_LockTexture(impl_->texture, nullptr, &pixels, &pitch) != 0) {
+        return;
+    }
+
+    auto* dst = static_cast<std::uint8_t*>(pixels);
+
+    // Convert each pixel from 4-plane to RGBA
+    for (std::size_t y = 0; y < 200; ++y) {
+        for (std::size_t x = 0; x < 320; ++x) {
+            // Get the pixel value from 4 planes
+            const auto byte_x = x / 8;
+            const auto bit_x = 7 - (x % 8);
+
+            std::uint8_t color_index = 0;
+            for (std::size_t plane = 0; plane < 4; ++plane) {
+                const auto plane_data = frame.plane(plane).data();
+                const auto byte_value = plane_data[y * 40 + byte_x];
+                if (byte_value & (1 << bit_x)) {
+                    color_index |= (1 << plane);
+                }
+            }
+
+            // Map to RGBA using palette
+            const auto* palette_color = kEgaPalette[color_index];
+            const auto dst_offset = (y * pitch) + (x * 4);
+            dst[dst_offset + 0] = palette_color[0];  // R
+            dst[dst_offset + 1] = palette_color[1];  // G
+            dst[dst_offset + 2] = palette_color[2];  // B
+            dst[dst_offset + 3] = palette_color[3];  // A
+        }
+    }
+
+    // Unlock texture and update
+    SDL_UnlockTexture(impl_->texture);
+
+    // Copy texture to renderer
+    SDL_RenderClear(impl_->renderer);
+    SDL_RenderCopy(impl_->renderer, impl_->texture, nullptr, nullptr);
+    SDL_RenderPresent(impl_->renderer);
+}
+#endif  // COMIC2_USE_SDL2
 
 }  // namespace comic2

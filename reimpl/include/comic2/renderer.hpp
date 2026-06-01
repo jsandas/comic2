@@ -56,6 +56,24 @@ private:
     EgaPlanarSurface last_frame_{};
 };
 
+#ifdef COMIC2_USE_SDL2
+class Sdl2FramePresenter final : public IFramePresenter {
+public:
+    explicit Sdl2FramePresenter(std::uint16_t window_width = 640, std::uint16_t window_height = 480);
+    ~Sdl2FramePresenter() override;
+
+    void present(const EgaPlanarSurface& frame) override;
+
+    // Disable copying
+    Sdl2FramePresenter(const Sdl2FramePresenter&) = delete;
+    Sdl2FramePresenter& operator=(const Sdl2FramePresenter&) = delete;
+
+private:
+    struct Impl;
+    Impl* impl_{};
+};
+#endif  // COMIC2_USE_SDL2
+
 // Page flipping abstraction for EGA double buffering
 class EgaPageFlipper {
 public:

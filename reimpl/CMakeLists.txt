@@ -7,6 +7,19 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Optional SDL2 support for visual presentation
+option(ENABLE_SDL2 "Enable SDL2 presenter for visual output" OFF)
+
+if(ENABLE_SDL2)
+    find_package(SDL2 QUIET)
+    if(SDL2_FOUND)
+        message(STATUS "SDL2 found - enabling visual presenter")
+        add_definitions(-DCOMIC2_USE_SDL2)
+    else()
+        message(WARNING "SDL2 not found - visual presenter disabled. Install SDL2-dev to enable.")
+    endif()
+endif()
+
 add_library(comic2_core
     src/default_handlers.cpp
     src/dispatcher.cpp
@@ -34,6 +47,17 @@ target_link_libraries(comic2_reimpl
         comic2_core
 )
 
+if(ENABLE_SDL2 AND SDL2_FOUND)
+    target_link_libraries(comic2_reimpl PRIVATE SDL2::SDL2)
+endif()
+
+# Optional renderer demo executable
+add_executable(comic2_renderer_demo src/renderer_demo.cpp)
+target_link_libraries(comic2_renderer_demo PRIVATE comic2_core)
+if(ENABLE_SDL2 AND SDL2_FOUND)
+    target_link_libraries(comic2_renderer_demo PRIVATE SDL2::SDL2)
+endif()
+
 add_executable(comic2_unit_tests
     tests/dispatcher_tests.cpp
     tests/player_controller_tests.cpp
@@ -48,6 +72,10 @@ target_link_libraries(comic2_unit_tests
     PRIVATE
         comic2_core
 )
+
+if(ENABLE_SDL2 AND SDL2_FOUND)
+    target_link_libraries(comic2_unit_tests PRIVATE SDL2::SDL2)
+endif()
 
 if(BUILD_TESTING)
     add_test(NAME comic2_unit_tests COMMAND comic2_unit_tests)

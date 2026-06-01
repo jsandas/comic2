@@ -348,7 +348,12 @@ Status note: Phase 7.4 baseline is now implemented with room-grid tile lookup, t
 - [x] Implement masked and opaque sprite blit adapters over `EgaPlanarSurface`
 - [x] Implement page-flip abstraction compatible with current double-buffer assumptions
 - [x] Add validation helpers that compare plane bytes for known decode/blit fixtures
-- [ ] Add optional SDL2 presenter behind `IFramePresenter` while keeping core logic headless-testable
+- [x] Add optional SDL2 presenter behind `IFramePresenter` while keeping core logic headless-testable
+  - Implemented `Sdl2FramePresenter` class with 4-plane EGA to RGBA conversion
+  - Configurable via `-DENABLE_SDL2=ON/OFF` CMake option (default: OFF)
+  - Created `comic2_renderer_demo` executable for visual testing
+  - All tests pass in both SDL2 and headless modes
+  - EGA palette mapping implemented with standard 16-color palette
 
 #### 7.7 Integration Gates and Oracle Verification
 - [ ] Gate A (Unit): all module tests pass in CI (`ctest`) with deterministic replay checks
