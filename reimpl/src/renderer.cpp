@@ -301,12 +301,21 @@ Sdl2FramePresenter::Sdl2FramePresenter(std::uint16_t window_width, std::uint16_t
         throw std::runtime_error("SDL_CreateWindow failed: " + std::string(SDL_GetError()));
     }
 
-    // Create renderer
+    // Create renderer - try accelerated first, fall back to software for headless/CI
     impl_->renderer = SDL_CreateRenderer(
         impl_->window,
         -1,
         SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
     );
+
+    if (!impl_->renderer) {
+        // Acceleration not available (headless/dummy driver) - try software renderer
+        impl_->renderer = SDL_CreateRenderer(
+            impl_->window,
+            -1,
+            SDL_RENDERER_SOFTWARE
+        );
+    }
 
     if (!impl_->renderer) {
         throw std::runtime_error("SDL_CreateRenderer failed: " + std::string(SDL_GetError()));
