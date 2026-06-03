@@ -4,7 +4,13 @@
 #include <stdexcept>
 
 #ifdef COMIC2_USE_SDL2
+#if __has_include(<SDL2/SDL.h>)
 #include <SDL2/SDL.h>
+#elif __has_include(<SDL.h>)
+#include <SDL.h>
+#else
+#error "SDL2 headers not found"
+#endif
 #endif
 
 namespace comic2 {
