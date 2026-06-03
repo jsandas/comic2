@@ -76,10 +76,10 @@ target_link_libraries(comic2_reimpl
 # Optional renderer demo executable (only when SDL2 is enabled)
 if(ENABLE_SDL2 AND SDL2_TARGET)
     add_executable(comic2_renderer_demo src/renderer_demo.cpp)
-    # SDL2main must be linked before comic2_core on Windows so the SDL2 entry
-    # point wrapper (which calls SDL_main, the renamed 'main') resolves correctly.
     if(WIN32 AND TARGET SDL2::SDL2main)
         target_link_libraries(comic2_renderer_demo PRIVATE SDL2::SDL2main comic2_core)
+    elseif(WIN32 AND TARGET SDL2::SDL2main-static)
+        target_link_libraries(comic2_renderer_demo PRIVATE SDL2::SDL2main-static comic2_core)
     else()
         target_link_libraries(comic2_renderer_demo PRIVATE comic2_core)
     endif()

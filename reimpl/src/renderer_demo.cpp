@@ -7,6 +7,9 @@
 #include "comic2/resource_formats.hpp"
 
 #ifdef COMIC2_USE_SDL2
+#if defined(_WIN32)
+#define SDL_MAIN_HANDLED
+#endif
 #include <SDL2/SDL.h>
 #endif
 
