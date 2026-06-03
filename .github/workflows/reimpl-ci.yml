@@ -118,9 +118,19 @@ jobs:
         run: |
           ctest --output-on-failure --build-config ${{ matrix.build_type }}
 
-      - name: Run renderer demo (headless verification)
+      - name: Run renderer demo (headless verification) (Linux/macOS)
+        if: runner.os != 'Windows'
         working-directory: reimpl/build
         env:
           SDL_VIDEODRIVER: dummy
         run: |
           ./comic2_renderer_demo
+
+      - name: Run renderer demo (headless verification) (Windows)
+        if: runner.os == 'Windows'
+        working-directory: reimpl/build
+        env:
+          SDL_VIDEODRIVER: dummy
+        shell: pwsh
+        run: |
+          & ".\${{ matrix.build_type }}\comic2_renderer_demo.exe"
