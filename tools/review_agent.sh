@@ -3,7 +3,7 @@
 # C++ Code Review Agent Script
 # Usage: ./tools/review_agent.sh <source_dir>
 
-SOURCE_DIR=$1
+SOURCE_DIR=${1:-reimpl}
 
 if [ -z "$SOURCE_DIR" ]; then
     echo "Usage: $0 <source_dir>"
@@ -23,7 +23,11 @@ echo "" >> "$REPORT_FILE"
 if command -v cppcheck >/dev/null 2>&1; then
     echo "[+] Running cppcheck..."
     echo "## Static Analysis (cppcheck)" >> "$REPORT_FILE"
-    cppcheck --enable=all --inconclusive "$SOURCE_DIR" >> "$REPORT_FILE" 2>&1 || true
+    cppcheck --enable=all \
+        --inconclusive \
+        --suppress=missingIncludeSystem \
+        -I "$SOURCE_DIR/include" \
+        "$SOURCE_DIR/src" "$SOURCE_DIR/tests" >> "$REPORT_FILE" 2>&1 || true
 else
     echo "[!] cppcheck not found. Skipping."
 fi
