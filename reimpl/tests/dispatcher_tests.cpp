@@ -98,9 +98,14 @@ void test_deterministic_tick_replay() {
         comic2::InputState{},
     };
 
-    const auto a = run_sequence(sequence);
-    const auto b = run_sequence(sequence);
-    expect(a == b, "same input sequence should produce identical runtime state");
+    // Run the sequence and verify specific expected outcomes
+    const auto result = run_sequence(sequence);
+    expect(result.player.x != 0, "player should have moved horizontally after input sequence");
+    expect(result.player.y != 0, "player should have moved vertically after jump and physics");
+    
+    // Verify determinism: same inputs produce identical state
+    const auto replay = run_sequence(sequence);
+    expect(result == replay, "replaying identical input sequence must produce identical runtime state");
 }
 
 void test_dispatcher_trace_log() {
