@@ -2,9 +2,8 @@ name: Code Quality
 
 on:
   push:
-    branches: [ main, phase7.6 ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - '*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
