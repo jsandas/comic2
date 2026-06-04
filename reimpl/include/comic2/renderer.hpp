@@ -16,7 +16,7 @@ public:
     static constexpr std::uint16_t kPage0 = 0x0000;
     static constexpr std::uint16_t kPage1 = 0x2000;
 
-    EgaPlanarSurface(std::uint16_t width_pixels = 320, std::uint16_t height_rows = 200);
+    explicit EgaPlanarSurface(std::uint16_t width_pixels = 320, std::uint16_t height_rows = 200);
 
     std::uint16_t width_pixels() const noexcept { return width_pixels_; }
     std::uint16_t height_rows() const noexcept { return height_rows_; }

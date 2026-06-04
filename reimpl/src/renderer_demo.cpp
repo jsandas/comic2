@@ -75,7 +75,7 @@ int main() {
         
         presenter->present(surface);
         
-        auto* mem_presenter = dynamic_cast<comic2::MemoryFramePresenter*>(presenter.get());
+        const auto* mem_presenter = dynamic_cast<const comic2::MemoryFramePresenter*>(presenter.get());
         if (mem_presenter && mem_presenter->has_frame()) {
             const auto& captured = mem_presenter->last_frame();
             std::cout << "Frame captured successfully!\n";

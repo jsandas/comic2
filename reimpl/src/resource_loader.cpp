@@ -124,24 +124,4 @@ Ega4PlaneImage load_frpak_fullscreen_image(const std::filesystem::path& path) {
     return decode_ega_4plane_rle(bytes, true);
 }
 
-SignedRleResult load_signed_rle_blob(const std::filesystem::path& path) {
-    const auto bytes = load_file_bytes(path);
-    return decode_signed_rle(bytes);
-}
-
-FrdataRoomEntry read_frdata_room_entry(std::span<const std::uint8_t> frdata_bytes, std::uint16_t room_index) {
-    constexpr std::size_t kHeaderRoomTable = 0x0004;
-    constexpr std::size_t kRoomEntrySize = sizeof(FrdataRoomEntry);
-    const auto off = kHeaderRoomTable + static_cast<std::size_t>(room_index) * kRoomEntrySize;
-    if (off + kRoomEntrySize > frdata_bytes.size()) {
-        throw std::runtime_error("frdata room entry out of range");
-    }
-
-    FrdataRoomEntry e{};
-    e.tile_w = read_u16(frdata_bytes, off + 0);
-    e.tile_h = read_u16(frdata_bytes, off + 2);
-    e.rle_data_off = read_u16(frdata_bytes, off + 4);
-    return e;
-}
-
 }  // namespace comic2

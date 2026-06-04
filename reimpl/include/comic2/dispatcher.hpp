@@ -32,7 +32,7 @@ using StageHook = std::function<void(RuntimeState&)>;
 
 class GameDispatcher {
 public:
-    DispatchStage choose_stage(const RuntimeState& state) const;
+    static DispatchStage choose_stage(const RuntimeState& state);
     DispatchResult run_tick(RuntimeState& state) const;
 
     void set_trace_enabled(bool enabled) { trace_enabled_ = enabled; }

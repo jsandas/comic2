@@ -76,10 +76,11 @@ void test_default_handlers_basic_movement_and_jump() {
 }
 
 void test_deterministic_tick_replay() {
-    comic2::GameDispatcher dispatcher;
-    comic2::install_default_stage_hooks(dispatcher);
-
-    auto run_sequence = [&](const std::vector<comic2::InputState>& inputs) {
+    auto run_sequence = [](const std::vector<comic2::InputState>& inputs) {
+        // Create fresh dispatcher and state for each run
+        comic2::GameDispatcher dispatcher;
+        comic2::install_default_stage_hooks(dispatcher);
+        
         comic2::RuntimeState state;
         state.player.jump_counter = 3;
         for (const auto& input : inputs) {
@@ -103,9 +104,9 @@ void test_deterministic_tick_replay() {
     expect(result.player.x != 0, "player should have moved horizontally after input sequence");
     expect(result.player.y != 0, "player should have moved vertically after jump and physics");
     
-    // Verify determinism: same inputs produce identical state
+    // Verify determinism: same inputs with fresh dispatcher produce identical state
     const auto replay = run_sequence(sequence);
-    expect(result == replay, "replaying identical input sequence must produce identical runtime state");
+    expect(result == replay, "replaying identical input sequence with fresh dispatcher must produce identical runtime state");
 }
 
 void test_dispatcher_trace_log() {

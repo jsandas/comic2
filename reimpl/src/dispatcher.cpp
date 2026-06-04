@@ -2,7 +2,7 @@
 
 namespace comic2 {
 
-DispatchStage GameDispatcher::choose_stage(const RuntimeState& state) const {
+DispatchStage GameDispatcher::choose_stage(const RuntimeState& state) {
     const auto& flags = state.flags;
     const auto& player = state.player;
 
