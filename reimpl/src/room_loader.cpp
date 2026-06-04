@@ -17,7 +17,7 @@ std::optional<FrdataRoomEntry> decode_frdata_room_entry(
     std::size_t offset) {
     constexpr std::size_t kFrdataRoomEntrySize = 6;
 
-    if (offset + kFrdataRoomEntrySize > bytes.size()) {
+    if (bytes.size() < kFrdataRoomEntrySize || offset > bytes.size() - kFrdataRoomEntrySize) {
         return std::nullopt;
     }
 

@@ -26,68 +26,6 @@ std::size_t checked_offset(const EgaPlanarSurface& surface, std::size_t x_byte, 
     return y_row * surface.row_stride_bytes() + x_byte;
 }
 
-// Helper function to decode RLE data and copy to a single plane
-void decode_rle_copy_rowspan(std::span<std::uint8_t> dest_plane, std::size_t dest_offset, 
-                           std::span<const std::uint8_t> source_data, std::size_t& source_offset) {
-    while (source_offset < source_data.size()) {
-        const std::uint8_t packet = source_data[source_offset++];
-        if ((packet & 0x80U) == 0) {
-            // Literal packet
-            const auto count = static_cast<std::size_t>(packet);
-            if (source_offset + count > source_data.size()) {
-                throw std::runtime_error("RLE literal packet truncated");
-            }
-            std::copy(source_data.begin() + static_cast<std::ptrdiff_t>(source_offset),
-                       source_data.begin() + static_cast<std::ptrdiff_t>(source_offset + count),
-                       dest_plane.begin() + static_cast<std::ptrdiff_t>(dest_offset));
-            source_offset += count;
-            dest_offset += count;
-        } else {
-            // Run packet
-            const auto count = static_cast<std::size_t>(packet & 0x7FU);
-            if (source_offset >= source_data.size()) {
-                throw std::runtime_error("RLE run packet truncated");
-            }
-            const auto value = source_data[source_offset++];
-            std::fill(dest_plane.begin() + static_cast<std::ptrdiff_t>(dest_offset),
-                       dest_plane.begin() + static_cast<std::ptrdiff_t>(dest_offset + count),
-                       value);
-            dest_offset += count;
-        }
-    }
-}
-
-// Helper function to decode RLE data and OR with a single plane
-void decode_rle_or_rowspan(std::span<std::uint8_t> dest_plane, std::size_t dest_offset, 
-                           std::span<const std::uint8_t> source_data, std::size_t& source_offset) {
-    while (source_offset < source_data.size()) {
-        const std::uint8_t packet = source_data[source_offset++];
-        if ((packet & 0x80U) == 0) {
-            // Literal packet - OR with destination
-            const auto count = static_cast<std::size_t>(packet);
-            if (source_offset + count > source_data.size()) {
-                throw std::runtime_error("RLE literal packet truncated");
-            }
-            for (std::size_t i = 0; i < count; ++i) {
-                const auto value = source_data[source_offset++];
-                dest_plane[dest_offset + i] |= value;
-            }
-            dest_offset += count;
-        } else {
-            // Run packet - OR with destination
-            const auto count = static_cast<std::size_t>(packet & 0x7FU);
-            if (source_offset >= source_data.size()) {
-                throw std::runtime_error("RLE run packet truncated");
-            }
-            const auto value = source_data[source_offset++];
-            for (std::size_t i = 0; i < count; ++i) {
-                dest_plane[dest_offset + i] |= value;
-            }
-            dest_offset += count;
-        }
-    }
-}
-
 }  // namespace
 
 EgaPlanarSurface::EgaPlanarSurface(std::uint16_t width_pixels, std::uint16_t height_rows)
