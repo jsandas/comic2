@@ -18,11 +18,11 @@ jobs:
       - uses: actions/checkout@v6
       
       - name: Install cppcheck
-        run: sudo apt-get update && sudo apt-get install -y cppcheck
+        run: docker build -t cppcheck:latest -f .github/workflows/cppcheck.Dockerfile .
       
       - name: Run cppcheck
         run: |
-          cppcheck --version
+          docker run --rm -v ${{ github.workspace }}:/workspace cppcheck:latest \
           cppcheck --enable=all \
             --inconclusive \
             --suppress=missingIncludeSystem \
