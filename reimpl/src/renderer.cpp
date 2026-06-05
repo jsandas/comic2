@@ -48,6 +48,7 @@ void EgaPlanarSurface::clear(std::uint8_t value) {
     }
 }
 
+// cppcheck-suppress functionConst
 std::span<std::uint8_t> EgaPlanarSurface::plane(std::size_t index) {
     if (index >= kPlaneCount) {
         throw std::out_of_range("plane index out of range");
