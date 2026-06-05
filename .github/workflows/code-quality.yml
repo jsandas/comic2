@@ -22,7 +22,9 @@ jobs:
       
       - name: Run cppcheck
         run: |
-          docker run --rm -v ${{ github.workspace }}:/workspace cppcheck:latest \
+          docker run --rm -v ${{ github.workspace }}:/workspace \
+          --workdir /workspace \
+          cppcheck:latest \
           cppcheck --enable=all \
             --inconclusive \
             --suppress=missingIncludeSystem \
