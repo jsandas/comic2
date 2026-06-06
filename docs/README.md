@@ -76,7 +76,7 @@ ctest
 All tests pass in both headless and SDL2 modes:
 
 ```bash
-cd reimpl/build
+cd build
 ctest --output-on-failure
 ```
 

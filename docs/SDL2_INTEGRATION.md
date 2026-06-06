@@ -132,7 +132,7 @@ The presenter uses the standard EGA palette:
 All existing unit tests work in both SDL2 and headless modes:
 
 ```bash
-cd reimpl/build
+cd build
 ctest --output-on-failure
 ```
 
@@ -143,7 +143,7 @@ When SDL2 is enabled, additional tests verify the `Sdl2FramePresenter` can prese
 Run the renderer demo to visually verify the presenter:
 
 ```bash
-cd reimpl/build
+cd build
 ./comic2_renderer_demo
 ```
 

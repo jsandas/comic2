@@ -12,10 +12,10 @@ This guide defines a code review agent for the Captain Comic II reverse engineer
 
 Primary review focus:
 
-- `comic2.asm` and its annotations
-- `unpacked.exe.test.c`
-- `FUNCTION_MAP.md`, `ANNOTATION_GUIDE.md`, `REVERSE_ENGINEERING_GUIDE.md`
-- `reimpl/src/` and related reimplementation tests
+- `reference/comic2/comic2.asm` and its annotations
+- `reference/comic2unpacked.exe.test.c`
+- `reference/comic2FUNCTION_MAP.md`, `reference/comic2ANNOTATION_GUIDE.md`, `reference/comic2 REVERSE_ENGINEERING_GUIDE.md`
+- `src/` and related reimplementation tests
 
 ## Review checklist
 

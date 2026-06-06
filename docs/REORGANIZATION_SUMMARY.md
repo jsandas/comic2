@@ -3,7 +3,7 @@
 ## Changes Made
 
 ### Created Documentation Folder
-- **Location**: `reimpl/docs/`
+- **Location**: `docs/`
 - **Purpose**: Central location for all reimplementation documentation
 
 ### Moved Files
@@ -30,7 +30,7 @@
 
 ### Updated Files
 
-1. **reimpl/README.md**
+1. **README.md**
    - Updated title from "Starter" to main reimplementation
    - Added documentation section with links to `docs/`
    - Enhanced build instructions (headless + SDL2)
@@ -39,7 +39,7 @@
 ## Documentation Structure
 
 ```
-reimpl/
+./
 ├── README.md                    # Main entry point
 └── docs/
     ├── README.md               # Documentation index
@@ -51,7 +51,7 @@ reimpl/
 ## Cross-References Updated
 
 All documentation now properly references the new locations:
-- `reimpl/README.md` → links to `docs/` folder
+- `README.md` → links to `docs/` folder
 - `docs/README.md` → links to all docs and root files
 - `docs/SDL2_*.md` → self-contained with absolute paths
 
@@ -85,4 +85,4 @@ Recommended locations for future docs:
 If adding more documentation:
 1. Place in appropriate `docs/` subfolder
 2. Update `docs/README.md` with link
-3. Consider adding to `reimpl/README.md` if user-facing
+3. Consider adding to `README.md` if user-facing
