@@ -262,16 +262,16 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 - Behavioral verification against original via DOSBox oracle
 
 ### Progress (Current)
-- [x] Created initial C++ scaffold under `reimpl/` with CMake build
-- [x] Ported confirmed Phase 6 data layouts to `reimpl/include/comic2/types.hpp`
-- [x] Implemented signed-RLE and 4-plane EGA packet decoders in `reimpl/src/resource_loader.cpp`
-- [x] Added FRPAK validator executable (`reimpl/src/main.cpp`)
+- [x] Created initial C++ scaffold with CMake build
+- [x] Ported confirmed Phase 6 data layouts to `include/comic2/types.hpp`
+- [x] Implemented signed-RLE and 4-plane EGA packet decoders in `src/resource_loader.cpp`
+- [x] Added FRPAK validator executable (`src/main.cpp`)
 - [x] Verified build succeeds and FRPAK.001..FRPAK.007 decode with row span `0x1f40`
-- [x] Added renderer abstraction baseline (`reimpl/include/comic2/renderer.hpp`, `reimpl/src/renderer.cpp`) with tests
-- [x] Ported dispatcher skeleton and player/runtime state containers (`reimpl/include/comic2/dispatcher.hpp`, `reimpl/include/comic2/game_state.hpp`, `reimpl/src/dispatcher.cpp`) with tests
-- [x] Added default input + physics stage handlers and deterministic tick replay tests (`reimpl/include/comic2/default_handlers.hpp`, `reimpl/src/default_handlers.cpp`, `reimpl/tests/dispatcher_tests.cpp`)
-- [x] Started subsystem split with dedicated `player_controller` + `tile_collision` modules and tests (`reimpl/include/comic2/player_controller.hpp`, `reimpl/src/player_controller.cpp`, `reimpl/include/comic2/tile_collision.hpp`, `reimpl/src/tile_collision.cpp`, `reimpl/tests/player_controller_tests.cpp`)
-- [x] Added scaffold baselines for `entity_runtime`, `projectiles`, and `room_loader` modules with focused tests (`reimpl/include/comic2/entity_runtime.hpp`, `reimpl/src/entity_runtime.cpp`, `reimpl/include/comic2/projectiles.hpp`, `reimpl/src/projectiles.cpp`, `reimpl/include/comic2/room_loader.hpp`, `reimpl/src/room_loader.cpp`, `reimpl/tests/subsystem_scaffold_tests.cpp`)
+- [x] Added renderer abstraction baseline (`include/comic2/renderer.hpp`, `src/renderer.cpp`) with tests
+- [x] Ported dispatcher skeleton and player/runtime state containers (`include/comic2/dispatcher.hpp`, `include/comic2/game_state.hpp`, `src/dispatcher.cpp`) with tests
+- [x] Added default input + physics stage handlers and deterministic tick replay tests (`include/comic2/default_handlers.hpp`, `src/default_handlers.cpp`, `tests/dispatcher_tests.cpp`)
+- [x] Started subsystem split with dedicated `player_controller` + `tile_collision` modules and tests (`include/comic2/player_controller.hpp`, `src/player_controller.cpp`, `include/comic2/tile_collision.hpp`, `src/tile_collision.cpp`, `tests/player_controller_tests.cpp`)
+- [x] Added scaffold baselines for `entity_runtime`, `projectiles`, and `room_loader` modules with focused tests (`include/comic2/entity_runtime.hpp`, `src/entity_runtime.cpp`, `include/comic2/projectiles.hpp`, `src/projectiles.cpp`, `include/comic2/room_loader.hpp`, `src/room_loader.cpp`, `tests/subsystem_scaffold_tests.cpp`)
 
 ### Detailed Reimplementation Roadmap
 
