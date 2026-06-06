@@ -113,8 +113,8 @@ std::uint64_t hash_plane_region(const EgaPlanarSurface& surface,
 Ega4PlaneImage make_8x8_solid_image(std::uint8_t plane0_byte, std::uint8_t plane1_byte,
                                     std::uint8_t plane2_byte, std::uint8_t plane3_byte) {
     Ega4PlaneImage img;
-    img.row_span_bytes = 1;  // 8 pixels = 1 byte per row
-    // 8 rows, 1 byte per row = 1 byte per plane
+    img.width_bytes = 1;   // 8 pixels = 1 byte per row
+    img.height_rows = 8;
     img.planes[0].assign(8, plane0_byte);
     img.planes[1].assign(8, plane1_byte);
     img.planes[2].assign(8, plane2_byte);
@@ -124,7 +124,8 @@ Ega4PlaneImage make_8x8_solid_image(std::uint8_t plane0_byte, std::uint8_t plane
 
 Ega4PlaneImage make_16x16_patterned_image() {
     Ega4PlaneImage img;
-    img.row_span_bytes = 2;  // 16 pixels = 2 bytes per row
+    img.width_bytes = 2;   // 16 pixels = 2 bytes per row
+    img.height_rows = 16;
     // 16 rows, 2 bytes per row = 32 bytes per plane
     for (std::size_t p = 0; p < 4; ++p) {
         img.planes[p].resize(32);
@@ -220,11 +221,10 @@ std::string validate_opaque_blit(const EgaPlanarSurface& dest,
     }
 
     const auto x_byte = x_pixels / 8;
-    const auto row_count = image.planes[0].size() / image.row_span_bytes;
 
     for (std::size_t p = 0; p < EgaPlanarSurface::kPlaneCount; ++p) {
         auto result = compare_plane_region(dest, p, x_byte, y_rows,
-                                           image.row_span_bytes, row_count,
+                                           image.width_bytes, image.height_rows,
                                            expected_planes[p]);
         if (!result.empty()) {
             return "Plane " + std::to_string(p) + " blit mismatch: " + result;
@@ -242,11 +242,10 @@ std::string validate_masked_blit(const EgaPlanarSurface& dest,
     }
 
     const auto x_byte = x_pixels / 8;
-    const auto row_count = image.planes[0].size() / image.row_span_bytes;
 
     for (std::size_t p = 0; p < EgaPlanarSurface::kPlaneCount; ++p) {
         auto result = compare_plane_region(dest, p, x_byte, y_rows,
-                                           image.row_span_bytes, row_count,
+                                           image.width_bytes, image.height_rows,
                                            expected_planes[p]);
         if (!result.empty()) {
             return "Plane " + std::to_string(p) + " masked blit mismatch: " + result;

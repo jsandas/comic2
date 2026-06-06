@@ -28,7 +28,9 @@ struct MaskedSpriteRecordHeader {
 #pragma pack(pop)
 
 struct Ega4PlaneImage {
-    std::uint16_t row_span_bytes = 0;
+    std::uint16_t row_span_bytes = 0;  // total decoded bytes per plane (from file header)
+    std::uint16_t width_bytes = 0;     // row stride in bytes (must be set by caller for blitting)
+    std::uint16_t height_rows = 0;     // image height in rows (must be set by caller for blitting)
     std::array<std::vector<std::uint8_t>, 4> planes;
 };
 

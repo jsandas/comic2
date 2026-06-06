@@ -99,33 +99,27 @@ void gfx_rle_blit_opaque_4plane(EgaPlanarSurface& dest, std::size_t x_pixels, st
         throw std::out_of_range("blit coordinates out of range");
     }
     
-    // Validate image data
-    if (image_data.row_span_bytes == 0) {
-        throw std::invalid_argument("image row span cannot be zero");
+    // Validate image dimensions
+    if (image_data.width_bytes == 0 || image_data.height_rows == 0) {
+        throw std::invalid_argument("image width_bytes and height_rows must be non-zero for blitting");
     }
     
     // Calculate destination row stride in bytes
     const auto dest_row_stride = dest.row_stride_bytes();
+    const auto dest_byte_offset = x_pixels / 8;
     
-    // For each plane, decode and copy the RLE data
+    // For each plane, copy row-by-row using explicit image dimensions
     for (std::size_t plane_index = 0; plane_index < 4; ++plane_index) {
         const auto& source_plane = image_data.planes[plane_index];
         auto dest_plane_span = dest.plane(plane_index);
         auto dest_plane = dest_plane_span.data();
         
-        // For each row in the image
-        for (std::size_t row = 0; row < image_data.planes[0].size() / image_data.row_span_bytes; ++row) {
-            // Calculate destination offset for this row
-            const auto dest_row_offset = (y_rows + row) * dest_row_stride;
-            const auto dest_byte_offset = x_pixels / 8;
+        for (std::size_t row = 0; row < image_data.height_rows; ++row) {
+            const auto source_offset = row * image_data.width_bytes;
+            const auto dest_offset = (y_rows + row) * dest_row_stride + dest_byte_offset;
             
-            // Copy the row data to the destination plane
-            std::size_t source_offset = row * image_data.row_span_bytes;
-            std::size_t dest_offset = dest_row_offset + dest_byte_offset;
-            
-            // Copy the data
             std::copy(source_plane.begin() + static_cast<std::ptrdiff_t>(source_offset),
-                      source_plane.begin() + static_cast<std::ptrdiff_t>(source_offset + image_data.row_span_bytes),
+                      source_plane.begin() + static_cast<std::ptrdiff_t>(source_offset + image_data.width_bytes),
                       dest_plane + static_cast<std::ptrdiff_t>(dest_offset));
         }
     }
@@ -138,32 +132,26 @@ void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface& dest, std::size_t x_pixels,
         throw std::out_of_range("blit coordinates out of range");
     }
     
-    // Validate image data
-    if (image_data.row_span_bytes == 0) {
-        throw std::invalid_argument("image row span cannot be zero");
+    // Validate image dimensions
+    if (image_data.width_bytes == 0 || image_data.height_rows == 0) {
+        throw std::invalid_argument("image width_bytes and height_rows must be non-zero for blitting");
     }
     
     // Calculate destination row stride in bytes
     const auto dest_row_stride = dest.row_stride_bytes();
+    const auto dest_byte_offset = x_pixels / 8;
     
-    // For each plane, decode and OR the RLE data
+    // For each plane, OR row-by-row using explicit image dimensions
     for (std::size_t plane_index = 0; plane_index < 4; ++plane_index) {
         const auto& source_plane = image_data.planes[plane_index];
         auto dest_plane_span = dest.plane(plane_index);
         auto dest_plane = dest_plane_span.data();
         
-        // For each row in the image
-        for (std::size_t row = 0; row < image_data.planes[0].size() / image_data.row_span_bytes; ++row) {
-            // Calculate destination offset for this row
-            const auto dest_row_offset = (y_rows + row) * dest_row_stride;
-            const auto dest_byte_offset = x_pixels / 8;
+        for (std::size_t row = 0; row < image_data.height_rows; ++row) {
+            const auto source_offset = row * image_data.width_bytes;
+            const auto dest_offset = (y_rows + row) * dest_row_stride + dest_byte_offset;
             
-            // OR the row data with the destination plane
-            std::size_t source_offset = row * image_data.row_span_bytes;
-            std::size_t dest_offset = dest_row_offset + dest_byte_offset;
-            
-            // OR the data
-            for (std::size_t i = 0; i < image_data.row_span_bytes; ++i) {
+            for (std::size_t i = 0; i < image_data.width_bytes; ++i) {
                 dest_plane[dest_offset + i] |= source_plane[source_offset + i];
             }
         }
