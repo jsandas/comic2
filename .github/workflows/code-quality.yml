@@ -29,8 +29,8 @@ jobs:
             --error-exitcode=1 \
             --inline-suppr \
             --check-level=exhaustive \
-            -I reimpl/include \
-            reimpl/src reimpl/tests"
+            -I include \
+            src tests"
 
   clang-format:
     name: Format Check (clang-format)
@@ -45,7 +45,7 @@ jobs:
       - name: Check code formatting
         run: |
           # Find all C++ files and check if they match clang-format style
-          find reimpl/src reimpl/include reimpl/tests \
+          find src include tests \
             \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cc" -o -name "*.h" \) \
             -print0 | xargs -0 clang-format --dry-run --Werror
 
@@ -61,10 +61,10 @@ jobs:
       
       - name: Configure CMake with strict warnings
         run: |
-          cmake -B reimpl/build -S reimpl \
+          cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
             -DENABLE_SDL2=OFF
       
       - name: Build with strict warnings
-        run: cmake --build reimpl/build --config Debug
+        run: cmake --build build --config Debug

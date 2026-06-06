@@ -32,6 +32,24 @@ endm
 seg000 segment byte public 'CODE' use16
 assume cs:seg000
 assume es:nothing, ss:nothing, ds:nothing, fs:nothing, gs:nothing
+
+; ============================================================================
+; COPYRIGHT BANNER STRING - plain ASCII, not encrypted
+; Decodes to:
+;   "\r\n\r\nCaptain Comic II - Fractured Reality, Version 1.5\r\n
+;    Copyright 1990 by Michael A. Deno\r\n\x1A"
+; The \x1A (1Ah) is a DOS EOF marker (Ctrl+Z) ending the embedded string.
+; Equivalent: STARTUP_NOTICE_TEXT in Comic 1 (R5sw1991.asm), which uses
+;   XOR_ENCRYPTION_KEY xor-encoding; Comic 2's banner is stored in plaintext.
+;
+; NOTE: word_C, word_E, word_20, word_22, word_24, word_26, word_54, word_56
+;   are IDA artifacts. install_interrupt_handlers (install_interrupt_handlers) runs with ds=0
+;   (IVT segment) and accesses those numeric offsets in the IVT -- it does NOT
+;   reference these bytes in seg000. IDA incorrectly applied the seg000 labels
+;   because of its "assume ds:seg000" annotation. These bytes are string data
+;   only and are never used as vector storage slots.
+; Confidence: High
+; ============================================================================
 db 0Ah,	0Dh, 0Ah, 0Dh, 43h, 61h, 70h, 74h
 db 61h,	69h, 6Eh, 20h
 word_C dw 6F43h
@@ -51,11 +69,16 @@ db 20h,	41h, 2Eh, 20h
 word_54	dw 6544h
 word_56	dw 696Eh
 db 6Fh,	0Ah, 0Dh, 1Ah
-seg_5C dw seg seg005
-seg_5E dw seg seg003
-byte_60	db 0
-byte_61	db 0
-word_62	dw 0
+; ----------------------------------------------------------------------------
+; Segment relocations and early runtime state variables
+; ----------------------------------------------------------------------------
+seg_5C dw seg seg005		; segment of seg005 (graphics/data)
+seg_5E dw seg seg003		; segment of seg003
+byte_60	db 0			; reserved / unused flag
+byte_61	db 0			; last keyboard scancode (written by INT 09h ISR,
+				;   read throughout for menu and input polling)
+word_62	dw 0			; joystick/timer calibration value
+				;   (set at startup in the tick-counting loop)
 assume ss:seg002, ds:nothing
 
 
@@ -101,14 +124,14 @@ out	61h, al		; PC/XT	PPI port B bits:
 ; Similar to Comic 1's install_interrupt_handlers()
 ; Hooks INT 08h (timer), INT 09h (keyboard), etc.
 ; ============================================================================
-call	sub_9C9		; install_interrupt_handlers
+call	install_interrupt_handlers		; install_interrupt_handlers
 
 ; ============================================================================
 ; WAIT FOR GAME TICK
 ; Similar to Comic 1's wait_n_ticks(1)
 ; ============================================================================
 mov	ax, 1		; Wait for 1 tick
-call	sub_27A		; wait_n_ticks
+call	wait_n_ticks		; wait_n_ticks
 mov	cx, 0FFFFh
 
 loc_7C:
@@ -175,34 +198,34 @@ loc_E6:
 mov	ax, 0A000h
 mov	es, ax
 assume es:nothing
-call	sub_7741
+call	gfx_init_double_buffer_pages
 push	ds
 mov	ax, seg	seg004
 mov	ds, ax
 assume ds:seg004
 mov	si, 1CD0h
 mov	di, cs:word_773F
-call	sub_79C7
+call	gfx_rle_blit_opaque_4plane
 mov	si, 0
 mov	di, cs:word_773F
-call	sub_7A13
+call	gfx_rle_blit_masked_or_4plane
 pop	ds
 assume ds:nothing
 mov	dx, 2
-call	sub_15D
-call	sub_774E
+call	gfx_load_ega_palette_16_from_table
+call	gfx_present_and_flip_page
 mov	dx, 13h
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 mov	cs:byte_61, 0
 mov	cx, 19h
 
 loc_123:
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 cmp	cs:byte_61, 0
 jnz	short loc_136
 loop	loc_123
-call	sub_7164
+call	play_intro_cinematic
 
 loc_136:
 push	ds
@@ -211,22 +234,22 @@ mov	ds, ax
 assume ds:seg004
 mov	si, 1CD0h
 mov	di, cs:word_773F
-call	sub_79C7
+call	gfx_rle_blit_opaque_4plane
 pop	ds
 assume ds:nothing
 mov	dx, 2
-call	sub_15D
-call	sub_774E
+call	gfx_load_ega_palette_16_from_table
+call	gfx_present_and_flip_page
 mov	ax, 3
-call	sub_27A
-call	sub_2B4
+call	wait_n_ticks
+call	gfx_startup_graphics_and_menu_probe
 jmp	loc_5E52
 start endp
 
 
 
 
-sub_15D	proc near
+gfx_load_ega_palette_16_from_table	proc near
 push	si
 mov	si, dx
 mov	dx, 3DAh
@@ -277,64 +300,64 @@ out	dx, al		; EGA: palette register: select	colors for attribute AL:
 pop	si
 sti
 retn
-sub_15D	endp
+gfx_load_ega_palette_16_from_table	endp
 
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_185:
-call	sub_22B
+call	gfx_disable_retrace_palette_script
 mov	ax, 0Dh
 int	10h		; - VIDEO - SET	VIDEO MODE
 			; AL = mode
-call	sub_7741
+call	gfx_init_double_buffer_pages
 push	ds
 mov	ax, seg	seg004
 mov	ds, ax
 assume ds:seg004
 mov	si, 1CD0h
 mov	di, cs:word_773F
-call	sub_79C7
+call	gfx_rle_blit_opaque_4plane
 pop	ds
 assume ds:nothing
 mov	dx, 1EBh
 mov	di, cs:word_773F
-call	sub_7999
+call	gfx_load_and_blit_masked_file
 mov	dx, 24h	; '$'
-call	sub_15D
-call	sub_774E
+call	gfx_load_ega_palette_16_from_table
+call	gfx_present_and_flip_page
 mov	ax, 1
 mov	bx, 0DBh ; '�'
 mov	cx, 1
 int	3		; Trap to Debugger
-call	sub_599
+call	input_wait_for_scancode_event
 push	ds
 mov	ax, seg	seg004
 mov	ds, ax
 assume ds:seg004
 mov	si, 1CD0h
 mov	di, cs:word_773F
-call	sub_79C7
+call	gfx_rle_blit_opaque_4plane
 pop	ds
 assume ds:nothing
 mov	dx, 1F5h
 mov	di, cs:word_773F
-call	sub_7999
+call	gfx_load_and_blit_masked_file
 mov	dx, 24h	; '$'
-call	sub_15D
-call	sub_774E
+call	gfx_load_ega_palette_16_from_table
+call	gfx_present_and_flip_page
 mov	ax, 1
 mov	bx, 96B6h
 mov	cx, 1
 int	3		; Trap to Debugger
-call	sub_599
+call	input_wait_for_scancode_event
 mov	ax, 0Dh
 int	10h		; - VIDEO - SET	VIDEO MODE
 			; AL = mode
-call	sub_7741
+call	gfx_init_double_buffer_pages
 jmp	loc_63AB
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 retn
-; START	OF FUNCTION CHUNK FOR sub_636F
+; START	OF FUNCTION CHUNK FOR savegame_read_snapshot
 
 loc_202:
 mov	ax, ds:0
@@ -343,16 +366,16 @@ mov	ah, 9
 lea	dx, ds:46h
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_599
+call	input_wait_for_scancode_event
 jmp	short loc_215
-; END OF FUNCTION CHUNK	FOR sub_636F
+; END OF FUNCTION CHUNK	FOR savegame_read_snapshot
 db 90h
 ; START	OF FUNCTION CHUNK FOR start
 
 loc_215:
 mov	ax, 2
 int	3		; Trap to Debugger
-call	sub_A5E
+call	restore_interrupt_handlers
 mov	ax, ds:0
 int	10h		; - VIDEO -
 lea	bx, ds:35h
@@ -367,11 +390,11 @@ byte_22A db 0
 ; ============================================================================
 ; Game state flag setter (possibly unmute sound or enable input)
 ; ============================================================================
-sub_22B	proc near		; UNMUTE or ENABLE function
+gfx_disable_retrace_palette_script	proc near		; UNMUTE or ENABLE function
 mov	cs:byte_22A, 0
 mov	cs:byte_229, 0
 retn
-sub_22B	endp
+gfx_disable_retrace_palette_script	endp
 
 
 
@@ -379,35 +402,23 @@ sub_22B	endp
 ; ============================================================================
 ; Game state flag setter (possibly mute sound or disable something)
 ; ============================================================================
-sub_238	proc near		; MUTE or DISABLE function
+gfx_enable_retrace_palette_script	proc near		; MUTE or DISABLE function
 mov	cs:byte_22A, 0
 mov	cs:byte_229, 1
 retn
-sub_238	endp
+gfx_enable_retrace_palette_script	endp
 
 ; ============================================================================
 ; GAME STATE FLAGS AND KEY MAPPINGS
 ; Based on Captain Comic 1 patterns
 ; ============================================================================
-game_tick_flag	db 0		; byte_245: Set by INT 08h when a game tick occurs
-byte_246 db 0
-byte_247 db 0
-byte_248 db 1, 7 dup(0)
-byte_250 db 1
-
-; Function key scancodes (F1-F4)
-function_keys	db 3Bh, 3Ch, 3Dh, 3Eh	; byte_251: F1, F2, F3, F4
-
-; Game control key scancodes (default mappings)
-key_inventory	db 49h		; byte_255: 'I' key
-key_quit	db 51h		; byte_256: 'Q' key  
-key_game_menu	db 47h		; byte_257: 'G' key
-byte_258 db 0
-byte_259 db 0
-byte_25A db 0
-byte_25B db 0
-byte_25C db 0
-byte_25D db 0
+game_tick_flag db 0		; byte_245
+key_state_left db 0		; byte_258
+key_state_right db 0		; byte_259
+key_state_up db 0		; byte_25A
+key_state_down db 0		; byte_25B
+key_state_jump db 0		; byte_25C
+key_state_fire db 0		; byte_25D
 ; Arrow keys and action keys
 scancode_left	db 4Bh		; byte_25E: Left arrow
 scancode_right	db 4Dh		; byte_25F: Right arrow
@@ -442,6 +453,15 @@ wait_n_ticks	proc near	; sub_27A
 	retn
 wait_n_ticks	endp		; sub_27A
 
+; ============================================================================
+; POSSIBLE INLINE CODE BYTES (DISASSEMBLER UNCERTAINTY)
+; Purpose: Likely small helper/inlined stub bytes misclassified as db by IDA.
+; Evidence: Contains valid opcode runs (e.g., B4 0E CD 10 ... C3) matching
+;           teletype INT 10h print/return style instruction sequences.
+; Guidance: Treat as code-boundary candidate; avoid semantic renames until
+;           control-flow recovery confirms entry points.
+; Confidence: Medium
+; ============================================================================
 aKCTS db '�',7,'C',0Ah
 db '�t',0Bh,'S�',7,0
 db 0B4h, 0Eh, 0CDh, 10h, 5Bh, 0EBh, 0EEh
@@ -451,7 +471,18 @@ db 0CDh, 10h, 5Bh, 0EBh, 0ECh, 0C3h
 
 
 
-sub_2B4	proc near
+; ============================================================================
+; gfx_startup_graphics_and_menu_probe - Startup/title-screen graphics prep plus resource/config probe
+; Input:  Uses seg004 graphic data and word_773F screen offset state
+; Output: Copies two EGA assets, probes a small config/resource file, and
+;         branches into the startup/menu flow based on byte_61
+; Calls:  gfx_rle_blit_opaque_4plane, gfx_rle_blit_masked_or_4plane, gfx_load_ega_palette_16_from_table, gfx_present_and_flip_page, input_wait_for_scancode_event, gfx_init_double_buffer_pages
+; Evidence: First two calls are plane blits from seg004; later INT 21h open/
+;           read/close sequence touches a 6-byte buffer at 25Eh; byte_61 gates
+;           exit/menu paths immediately afterward
+; Confidence: Medium
+; ============================================================================
+gfx_startup_graphics_and_menu_probe	proc near
 
 ; FUNCTION CHUNK AT 045C SIZE 000000EF BYTES
 
@@ -461,17 +492,17 @@ mov	ds, ax
 assume ds:seg004
 mov	si, 1CD0h
 mov	di, cs:word_773F
-call	sub_79C7
+call	gfx_rle_blit_opaque_4plane
 mov	si, 0CDCh
 mov	di, cs:word_773F
-call	sub_7A13
+call	gfx_rle_blit_masked_or_4plane
 pop	ds
 assume ds:nothing
 mov	dx, 2
-call	sub_15D
-call	sub_774E
+call	gfx_load_ega_palette_16_from_table
+call	gfx_present_and_flip_page
 mov	dx, 24h	; '$'
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 mov	ax, 1
 mov	bx, 0DBh ; '�'
 mov	cx, 1
@@ -501,7 +532,7 @@ pop	ds
 assume ds:nothing
 
 loc_30D:
-call	sub_599
+call	input_wait_for_scancode_event
 cmp	cs:byte_61, 25h	; '%'
 jnz	short loc_31B
 jmp	loc_45C
@@ -521,7 +552,7 @@ int	10h		; - VIDEO - SET	VIDEO MODE
 			; AL = mode
 mov	ax, 0A000h
 mov	es, ax
-call	sub_7741
+call	gfx_init_double_buffer_pages
 retn
 
 loc_33C:
@@ -537,7 +568,7 @@ lea	dx, aCalibrateJoyst ; "\n\n\n\n\n\n\r				    C"...
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_424
+call	input_wait_for_joystick_or_key_confirm
 or	ax, ax
 jnz	short loc_35F
 jmp	loc_416
@@ -554,7 +585,7 @@ lea	dx, aCalibrateJoyst+0A8h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_424
+call	input_wait_for_joystick_or_key_confirm
 or	ax, ax
 jnz	short loc_381
 jmp	loc_416
@@ -573,7 +604,7 @@ lea	dx, aCalibrateJoyst+0E6h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_424
+call	input_wait_for_joystick_or_key_confirm
 or	ax, ax
 jnz	short loc_3A8
 jmp	short loc_416
@@ -594,7 +625,7 @@ lea	dx, aCalibrateJoyst+125h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_424
+call	input_wait_for_joystick_or_key_confirm
 or	ax, ax
 jnz	short loc_3D1
 jmp	short loc_416
@@ -614,7 +645,7 @@ lea	dx, aCalibrateJoyst+162h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_424
+call	input_wait_for_joystick_or_key_confirm
 or	ax, ax
 jnz	short loc_3F6
 jmp	short loc_416
@@ -646,15 +677,15 @@ int	10h		; AL = mode
 loc_41C:
 mov	ax, 0A000h
 mov	es, ax
-jmp	sub_2B4
-sub_2B4	endp
+jmp	gfx_startup_graphics_and_menu_probe
+gfx_startup_graphics_and_menu_probe	endp
 
 
 
 
-sub_424	proc near
+input_wait_for_joystick_or_key_confirm	proc near
 mov	ax, 2
-call	sub_27A
+call	wait_n_ticks
 cmp	cs:byte_61, 0
 jnz	short locret_45B
 mov	ah, 84h	; '�'
@@ -663,9 +694,9 @@ int	15h		; SYSTEM - READ	JOYSTICK (AT,XT2,XT286,PS)
 			; DX = 0000h get switch	settings
 			; Return: AL = switch settings
 test	al, 10h
-jz	short sub_424
+jz	short input_wait_for_joystick_or_key_confirm
 test	al, 20h
-jz	short sub_424
+jz	short input_wait_for_joystick_or_key_confirm
 
 loc_440:
 xor	ax, ax
@@ -686,9 +717,9 @@ mov	ax, 1
 
 locret_45B:
 retn
-sub_424	endp
+input_wait_for_joystick_or_key_confirm	endp
 
-; START	OF FUNCTION CHUNK FOR sub_2B4
+; START	OF FUNCTION CHUNK FOR gfx_startup_graphics_and_menu_probe
 
 loc_45C:
 mov	ax, 2
@@ -712,51 +743,51 @@ lea	dx, aCalibrateJoyst+1D6h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_54B
+call	input_capture_unique_key_binding_and_echo
 mov	cs:byte_25E, al
 lea	dx, aCalibrateJoyst+205h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_54B
+call	input_capture_unique_key_binding_and_echo
 mov	cs:byte_25F, al
 lea	dx, aCalibrateJoyst+234h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_54B
+call	input_capture_unique_key_binding_and_echo
 mov	cs:byte_260, al
 lea	dx, aCalibrateJoyst+263h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_54B
+call	input_capture_unique_key_binding_and_echo
 mov	cs:byte_261, al
 lea	dx, aCalibrateJoyst+292h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_54B
+call	input_capture_unique_key_binding_and_echo
 mov	cs:byte_262, al
 lea	dx, aCalibrateJoyst+2C1h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_54B
+call	input_capture_unique_key_binding_and_echo
 mov	cs:byte_263, al
 lea	dx, aCalibrateJoyst+2F0h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
 xor	ax, ax
-call	sub_599
+call	input_wait_for_scancode_event
 cmp	cs:byte_61, 31h	; '1'
 jz	short loc_519
 lea	dx, aCalibrateJoyst+327h
 mov	ah, 9
 int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
-call	sub_599
+call	input_wait_for_scancode_event
 cmp	cs:byte_61, 15h
 jz	short loc_51D
 pop	ds
@@ -795,31 +826,31 @@ jmp	loc_32E
 
 loc_548:
 jmp	loc_215
-; END OF FUNCTION CHUNK	FOR sub_2B4
+; END OF FUNCTION CHUNK	FOR gfx_startup_graphics_and_menu_probe
 
 
 
-sub_54B	proc near
-call	sub_599
+input_capture_unique_key_binding_and_echo	proc near
+call	input_wait_for_scancode_event
 mov	bl, al
 xor	bh, bh
 mov	si, bx
 cmp	bl, cs:byte_262
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 cmp	bl, cs:byte_25E
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 cmp	bl, cs:byte_25F
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 cmp	bl, cs:byte_263
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 cmp	bl, cs:byte_260
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 cmp	bl, cs:byte_261
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 dec	bx
-jz	short sub_54B
+jz	short input_capture_unique_key_binding_and_echo
 cmp	bx, 52h	; 'R'
-jg	short sub_54B
+jg	short input_capture_unique_key_binding_and_echo
 shl	bx, 1
 shl	bx, 1
 shl	bx, 1
@@ -830,12 +861,12 @@ int	21h		; DOS -	PRINT STRING
 			; DS:DX	-> string terminated by	"$"
 mov	ax, si
 retn
-sub_54B	endp
+input_capture_unique_key_binding_and_echo	endp
 
 
 
 
-sub_599	proc near
+input_wait_for_scancode_event	proc near
 mov	cs:byte_61, 0
 
 loc_59F:
@@ -853,8 +884,20 @@ sti
 pop	es
 assume es:nothing
 retn
-sub_599	endp
+input_wait_for_scancode_event	endp
 
+; ============================================================================
+; INTERRUPT VECTOR SAVE SLOTS (db far pointers)
+; Purpose: Preserve original ISR vectors before hook and restore on exit.
+; Layout: Each slot is 4 bytes (offset:word, segment:word).
+; Callers:
+;   - install_interrupt_handlers install_interrupt_handlers (writes old vectors)
+;   - restore_interrupt_handlers restore_interrupt_handlers (restores vectors)
+; Runtime use:
+;   - call dword ptr cs:byte_5BE (chains original handler)
+;   - jmp  dword ptr cs:byte_67F (chains timer handler)
+; Confidence: High
+; ============================================================================
 byte_5BE db 4 dup(0)
 aPsqrfP_a db 'PSQR�`P.�>`',0
 add	[di+8],	si
@@ -1370,16 +1413,16 @@ align 2
 
 loc_952:
 mov	bl, 1
-call	sub_96F
+call	read_joystick_axis
 push	cx
 shl	bl, 1
-call	sub_96F
+call	read_joystick_axis
 push	cx
 shl	bl, 1
-call	sub_96F
+call	read_joystick_axis
 push	cx
 shl	bl, 1
-call	sub_96F
+call	read_joystick_axis
 mov	dx, cx
 pop	cx
 pop	bx
@@ -1390,9 +1433,9 @@ iret
 
 
 
-sub_96F	proc near
+read_joystick_axis	proc near
 cli
-call	sub_9AF
+call	pit_count
 push	ax
 out	dx, al
 mov	cx, cs:word_62
@@ -1407,7 +1450,7 @@ pop	ax
 jmp	short loc_9A2
 
 loc_986:
-call	sub_9AF
+call	pit_count
 pop	cx
 cmp	cx, ax
 jg	short loc_994
@@ -1436,12 +1479,12 @@ test	al, 0Fh
 loopne	loc_9A8
 pop	cx
 retn
-sub_96F	endp
+read_joystick_axis	endp
 
 
 
 
-sub_9AF	proc near
+pit_count	proc near
 mov	al, 0
 out	43h, al		; Timer	8253-5 (AT: 8254.2).
 jmp	short $+2
@@ -1453,7 +1496,7 @@ jmp	short $+2
 in	al, 40h		; Timer	8253-5 (AT: 8254.2).
 xchg	al, ah
 retn
-sub_9AF	endp
+pit_count	endp
 
 
 loc_9C4:
@@ -1461,7 +1504,7 @@ jmp	dword ptr cs:byte_936
 
 
 
-sub_9C9	proc near
+install_interrupt_handlers	proc near
 push	ds
 xor	ax, ax
 mov	ds, ax
@@ -1511,12 +1554,12 @@ sti
 pop	ds
 assume ds:nothing
 retn
-sub_9C9	endp
+install_interrupt_handlers	endp
 
 
 
 
-sub_A5E	proc near
+restore_interrupt_handlers	proc near
 push	ds
 xor	ax, ax
 mov	ds, ax
@@ -1551,7 +1594,7 @@ sti
 pop	ds
 assume ds:nothing
 retn
-sub_A5E	endp
+restore_interrupt_handlers	endp
 
 pushf
 xor	ax, ax
@@ -1921,19 +1964,19 @@ mov	es, ax
 assume es:nothing
 mov	dx, 93C2h
 mov	di, 0
-call	sub_7990
+call	gfx_load_and_blit_opaque_file
 mov	di, 2000h
 mov	si, 0
-call	sub_7765
+call	gfx_copy_page_4plane
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 mov	ds, cs:seg_5E
 assume ds:seg003
 lea	si, unk_1F960
 mov	si, [si]
 mov	ax, 100h
 mov	bx, 5Eh	; '^'
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	ds, cs:seg_5E
@@ -1943,19 +1986,19 @@ mov	si, [si+2]
 mov	ax, 100h
 mov	bx, 77h	; 'w'
 push	si
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 pop	si
 mov	ax, 100h
 mov	bx, 90h	; '�'
 push	si
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 pop	si
 mov	ax, 100h
 mov	bx, 0A9h ; '�'
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_65FD
+call	io_verify_frcfg_or_prompt_retry
 mov	ax, word_251F4
 mov	bx, word_251F6
 cmp	byte_25200, 6
@@ -1992,7 +2035,7 @@ loc_17BC:
 mov	word_256DA, 0FFFFh
 mov	word_256DC, bx
 mov	bx, 0FFFFh
-call	sub_1B8D
+call	load_resource
 cmp	byte_25200, 3
 jl	short loc_17F1
 mov	cs:word_7ED5, 4
@@ -2028,19 +2071,19 @@ mov	ax, 120h
 mov	bx, 5Eh	; '^'
 xor	ch, ch
 mov	cl, byte_251FC
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 mov	ax, 120h
 mov	bx, 77h	; 'w'
 mov	cx, word_25204
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 mov	ax, 120h
 mov	bx, 90h	; '�'
 mov	cx, word_25202
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 mov	ax, 120h
 mov	bx, 0A9h ; '�'
 mov	cx, word_2526F
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 cmp	byte_251FE, 1
 jnz	short loc_188F
 mov	ax, 0F0h ; '�'
@@ -2048,7 +2091,7 @@ mov	bx, 90h	; '�'
 lea	si, unk_2EF30
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
@@ -2060,7 +2103,7 @@ mov	bx, 0A9h ; '�'
 lea	si, unk_2EFD6
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
@@ -2072,7 +2115,7 @@ mov	bx, 77h	; 'w'
 lea	si, aData_0	; "data.0"
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
@@ -2081,7 +2124,7 @@ xor	ax, ax
 
 loc_18CD:
 push	ax
-call	sub_451C
+call	ent_draw_mapped_slot_or_placeholder
 pop	ax
 inc	ax
 cmp	ax, 0Dh
@@ -2092,12 +2135,12 @@ jmp	loc_227B
 
 
 
-sub_18E0 proc near
-mov	al, byte_2588D
+setup_render_viewport proc near
+mov	al, comic_facing
 mov	byte_251F8, al
 mov	al, byte_2587D
 mov	byte_251F9, al
-mov	ax, word_256A6
+mov	ax, comic_x
 mov	word_251F0, ax
 sub	ax, 60h	; '`'
 jnb	short loc_18F9
@@ -2112,7 +2155,7 @@ mov	ax, bx
 
 loc_1907:
 mov	word_256A2, ax
-mov	ax, word_256A8
+mov	ax, comic_y
 mov	word_251F2, ax
 sub	ax, 40h	; '@'
 jnb	short loc_1917
@@ -2131,7 +2174,7 @@ cmp	word_256DA, 2
 jnz	short loc_1959
 cmp	word_256DC, 1
 jnz	short loc_1959
-cmp	word_256A6, 0
+cmp	comic_x, 0
 jnz	short loc_1959
 mov	byte_25904, 2
 mov	word_25908, 0
@@ -2144,7 +2187,7 @@ cmp	word_256DA, 9
 jnz	short loc_198A
 cmp	word_256DC, 1
 jnz	short loc_198A
-cmp	word_256A6, 0
+cmp	comic_x, 0
 jnz	short loc_198A
 mov	byte_2590C, 2
 mov	word_25910, 0
@@ -2153,14 +2196,14 @@ mov	byte_2590D, 0
 mov	word_2590E, 0
 
 loc_198A:
-call	sub_49AD
+call	ent_build_runtime_slots_for_viewport
 retn
-sub_18E0 endp
+setup_render_viewport endp
 
 
 
 
-sub_198E proc near
+load_room_effect_script_and_trigger_ranges proc near
 lea	si, unk_26688
 mov	ax, word_256DA
 shl	ax, 1
@@ -2239,12 +2282,12 @@ mov	byte_2591A, 1
 
 locret_1A62:
 retn
-sub_198E endp
+load_room_effect_script_and_trigger_ranges endp
 
 
 
 
-sub_1A63 proc near
+ent_build_room_entity_list proc near
 lea	si, unk_26688
 mov	ax, word_256DA
 shl	ax, 1
@@ -2345,16 +2388,16 @@ mov	word_25912, 20h	; ' '
 loc_1B87:
 mov	byte_25888, 0
 retn
-sub_1A63 endp
+ent_build_room_entity_list endp
 
 
 
 
-sub_1B8D proc near
+load_resource proc near
 cmp	word_256DA, ax
 jz	short loc_1BE2
-call	sub_1C0B
-call	sub_22B
+call	update_level5_memory_signature
+call	gfx_disable_retrace_palette_script
 cmp	bx, 0FFFFh
 jz	short loc_1BA4
 mov	word_256DC, 0FFFFh
@@ -2367,29 +2410,32 @@ lea	bx, unk_2E3CC
 shl	ax, 1
 add	bx, ax
 mov	bx, [bx]
+; unk_2E3CC -> pointer table to per-level 8-byte file tuples:
+; [rle_stream, room_table, seg5e_blob, optional_xor_block].
+; Tuple fields are word pointers to ASCIIZ filenames (fr000.* / frdata.* family).
 mov	dx, [bx]
 add	bx, 2
 push	bx
-call	sub_1FA4
+call	io_load_rle_resource_to_e978
 pop	bx
 mov	dx, [bx]
 add	bx, 2
 push	bx
-call	sub_1FFE
+call	io_read_file_to_seg001_0600_resource
 pop	bx
 mov	dx, [bx]
 add	bx, 2
 push	bx
-call	sub_2022
+call	io_read_file_to_seg5e_base
 pop	bx
 mov	dx, [bx]
 or	dx, dx
 jz	short loc_1BDA
-call	sub_2049
+call	io_read_xor25_block_9ec0
 
 loc_1BDA:
-call	sub_198E
-call	sub_238
+call	load_room_effect_script_and_trigger_ranges
+call	gfx_enable_retrace_palette_script
 pop	bx
 pop	ax
 
@@ -2399,18 +2445,18 @@ jz	short locret_1BFA
 cmp	bx, 0FFFFh
 jz	short locret_1BFA
 mov	word_256DC, bx
-call	sub_2072
-call	sub_1E86
-call	sub_1A63
+call	load_room_tilemap_from_resource_buffer
+call	gfx_render_room_tilemap_to_active_buffers
+call	ent_build_room_entity_list
 
 locret_1BFA:
 retn
-sub_1B8D endp
+load_resource endp
 
 
 
 
-sub_1BFB proc near
+check_word_is_ffff_or_0005 proc near
 cmp	word ptr cs:[bx], 0FFFFh
 jz	short loc_1C07
 cmp	word ptr cs:[bx], 5
@@ -2423,13 +2469,13 @@ retn
 loc_1C09:
 stc
 retn
-sub_1BFB endp
+check_word_is_ffff_or_0005 endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_1C0B proc near
+update_level5_memory_signature proc near
 
 var_2= word ptr	-2
 
@@ -2450,22 +2496,22 @@ retn
 
 loc_1C1E:
 mov	bx, 10B4h
-call	sub_1BFB
+call	check_word_is_ffff_or_0005
 jb	short loc_1C63
 mov	bx, 11E0h
-call	sub_1BFB
+call	check_word_is_ffff_or_0005
 jb	short loc_1C63
 mov	bx, 12A0h
-call	sub_1BFB
+call	check_word_is_ffff_or_0005
 jb	short loc_1C63
 mov	bx, 1324h
-call	sub_1BFB
+call	check_word_is_ffff_or_0005
 jb	short loc_1C63
 mov	bx, 14F8h
-call	sub_1BFB
+call	check_word_is_ffff_or_0005
 jb	short loc_1C63
 mov	bx, 1558h
-call	sub_1BFB
+call	check_word_is_ffff_or_0005
 jb	short loc_1C63
 cmp	byte_25200, 5
 jge	short loc_1C18
@@ -2548,12 +2594,12 @@ mov	cx, ax
 loc_1CF7:
 mov	word_2E388, cx
 jmp	loc_1C18
-sub_1C0B endp
+update_level5_memory_signature endp
 
 
 
 
-sub_1CFE proc near
+get_tile_at_pixels proc near
 shr	ax, 1
 shr	ax, 1
 shr	ax, 1
@@ -2578,13 +2624,22 @@ add	bx, ax
 mov	al, [bx]
 xor	ah, ah
 retn
-sub_1CFE endp
+get_tile_at_pixels endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_1D2C proc near
+; ============================================================================
+; gfx_render_viewport_4plane - Build viewport row pointers and dispatch 4-plane blit
+; Input:  word_256A2/word_256A4 camera pixel origin, word_256A0 height limit
+; Output: Draws viewport into backbuffer via gfx_copy_viewport_plane for planes 0..3
+; Calls:  gfx_copy_viewport_plane (4x, cl=0..3 with seg007/seg006/seg008/seg009)
+; Evidence: 16-pixel alignment shifts, row table use (unk_25480/unk_25680),
+;           viewport clip against 0A0h scanlines before per-plane copies
+; Confidence: High
+; ============================================================================
+gfx_render_viewport_4plane proc near
 
 var_6= word ptr	-6
 var_4= word ptr	-4
@@ -2637,29 +2692,38 @@ add	cx, 0A0h ; '�'
 mov	[bp+var_4], cx
 mov	cl, 0
 mov	ax, seg	seg007
-call	sub_1DC0
+call	gfx_copy_viewport_plane
 mov	cl, 1
 mov	ax, seg	seg006
-call	sub_1DC0
+call	gfx_copy_viewport_plane
 mov	cl, 2
 mov	ax, seg	seg008
-call	sub_1DC0
+call	gfx_copy_viewport_plane
 mov	cl, 3
 mov	ax, seg	seg009
-call	sub_1DC0
+call	gfx_copy_viewport_plane
 mov	sp, bp
 pop	bp
 retn
-sub_1D2C endp
+gfx_render_viewport_4plane endp
 
 
 
 
-sub_1DC0 proc near
+; ============================================================================
+; gfx_copy_viewport_plane - Copy one EGA plane for viewport strip
+; Input:  cl=plane index, ax=source segment for plane data, bp frame from gfx_render_viewport_4plane
+; Output: Plane data copied to A000h using map mask/read-map set by ega_select_plane_read_write
+; Calls:  ega_select_plane_read_write
+; Evidence: Port setup helper ega_select_plane_read_write (3C4h/3CEh), rep movsw loops with
+;           source stride (word_25278) and destination stride (0Eh)
+; Confidence: High
+; ============================================================================
+gfx_copy_viewport_plane proc near
 push	si
 push	di
 push	ax
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	dx, word_25278
 shl	dx, 1
 sub	dx, 1Ah
@@ -2703,12 +2767,12 @@ loc_1E06:
 pop	di
 pop	si
 retn
-sub_1DC0 endp
+gfx_copy_viewport_plane endp
 
 
 
 
-sub_1E09 proc near
+gfx_draw_tile_id_at_pixel_xy proc near
 shr	bx, 1
 shr	bx, 1
 shr	bx, 1
@@ -2740,37 +2804,37 @@ cmp	ax, ds:6C0h
 jl	short loc_1E6D
 mov	cx, 0
 mov	ax, seg	seg007
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 mov	cx, 1
 mov	ax, seg	seg006
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 mov	cx, 2
 mov	ax, seg	seg008
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 mov	cx, 3
 mov	ax, seg	seg009
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 jmp	short locret_1E85
 
 loc_1E6D:
 mov	cx, 0
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 mov	cx, 1
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 mov	cx, 2
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 mov	cx, 3
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 
 locret_1E85:
 retn
-sub_1E09 endp
+gfx_draw_tile_id_at_pixel_xy endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_1E86 proc near
+gfx_render_room_tilemap_to_active_buffers proc near
 
 var_2= word ptr	-2
 
@@ -2844,16 +2908,16 @@ jl	short loc_1F3F
 push	cx
 mov	cx, 0
 mov	ax, seg	seg007
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 mov	cx, 1
 mov	ax, seg	seg006
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 mov	cx, 2
 mov	ax, seg	seg008
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 mov	cx, 3
 mov	ax, seg	seg009
-call	sub_1F89
+call	gfx_copy_16x16_tile_plane_to_segment
 pop	cx
 jmp	short loc_1F59
 db 90h
@@ -2861,13 +2925,13 @@ db 90h
 loc_1F3F:
 push	cx
 mov	cx, 0
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 mov	cx, 1
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 mov	cx, 2
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 mov	cx, 3
-call	sub_1F72
+call	gfx_copy_16x16_tile_plane_to_active_page
 pop	cx
 
 loc_1F59:
@@ -2884,13 +2948,13 @@ loc_1F6E:
 mov	sp, bp
 pop	bp
 retn
-sub_1E86 endp
+gfx_render_room_tilemap_to_active_buffers endp
 
 
 
 
-sub_1F72 proc near
-call	sub_7A68
+gfx_copy_16x16_tile_plane_to_active_page proc near
+call	ega_select_plane_read_write
 mov	cx, 10h
 mov	dx, ds:298h
 shl	dx, 1
@@ -2903,15 +2967,15 @@ add	di, dx
 loop	loc_1F82
 pop	di
 retn
-sub_1F72 endp
+gfx_copy_16x16_tile_plane_to_active_page endp
 
 
 
 
-sub_1F89 proc near
+gfx_copy_16x16_tile_plane_to_segment proc near
 push	es
 mov	es, ax
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	cx, 10h
 mov	dx, ds:298h
 shl	dx, 1
@@ -2925,12 +2989,12 @@ loop	loc_1F9C
 pop	di
 pop	es
 retn
-sub_1F89 endp
+gfx_copy_16x16_tile_plane_to_segment endp
 
 
 
 
-sub_1FA4 proc near
+io_load_rle_resource_to_e978 proc near
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
 			; DS:DX	-> ASCIZ filename
@@ -2992,12 +3056,12 @@ pop	es
 pop	ds
 assume ds:nothing
 retn
-sub_1FA4 endp
+io_load_rle_resource_to_e978 endp
 
 
 
 
-sub_1FFE proc near
+io_read_file_to_seg001_0600_resource proc near
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
 			; DS:DX	-> ASCIZ filename
@@ -3024,12 +3088,12 @@ mov	ax, 3E00h
 int	21h		; DOS -	2+ - CLOSE A FILE WITH HANDLE
 			; BX = file handle
 retn
-sub_1FFE endp
+io_read_file_to_seg001_0600_resource endp
 
 
 
 
-sub_2022 proc near
+io_read_file_to_seg5e_base proc near
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
 			; DS:DX	-> ASCIZ filename
@@ -3054,12 +3118,12 @@ mov	ax, 3E00h
 int	21h		; DOS -	2+ - CLOSE A FILE WITH HANDLE
 			; BX = file handle
 retn
-sub_2022 endp
+io_read_file_to_seg5e_base endp
 
 
 
 
-sub_2049 proc near
+io_read_xor25_block_9ec0 proc near
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
 			; DS:DX	-> ASCIZ filename
@@ -3087,12 +3151,12 @@ xor	byte ptr [bx], 25h
 inc	bx
 loop	loc_206B
 retn
-sub_2049 endp
+io_read_xor25_block_9ec0 endp
 
 
 
 
-sub_2072 proc near
+load_room_tilemap_from_resource_buffer proc near
 push	ds
 push	es
 mov	cx, ds
@@ -3174,9 +3238,9 @@ shl	ax, 1
 shl	ax, 1
 mov	ds:29Eh, ax
 retn
-sub_2072 endp
+load_room_tilemap_from_resource_buffer endp
 
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_20FE:
 mov	word ptr ds:892h, 0
@@ -3190,13 +3254,13 @@ cmp	byte ptr cs:[si+6], 0
 jz	short loc_214C
 cmp	byte ptr cs:[si+6], 0FFh
 jz	short loc_213F
-call	sub_3CB1
+call	room_transition_reveal_sequence_b
 cmp	si, 0B8A4h
 jnz	short loc_214F
 cmp	byte ptr ds:221h, 1
 jnz	short loc_213A
 mov	ax, cs:word_B97A
-call	sub_3F0A
+call	room_transition_palette_wave
 jmp	short loc_214F
 
 loc_213A:
@@ -3211,7 +3275,7 @@ int	3		; Trap to Debugger
 jmp	short loc_214F
 
 loc_214C:
-call	sub_3BC6
+call	room_transition_draw_header
 
 loc_214F:
 pop	ax
@@ -3225,7 +3289,7 @@ jmp	loc_21F2
 
 loc_215F:
 push	cx
-call	sub_1B8D
+call	load_resource
 pop	cx
 
 loc_2164:
@@ -3246,39 +3310,39 @@ mov	ds:6C6h, ax
 mov	ax, cs:[si+2]
 mov	ds:6C8h, ax
 push	si
-call	sub_18E0
+call	setup_render_viewport
 pop	si
 cmp	si, 0B8A4h
 jnz	short loc_2198
 mov	ax, cs:word_B97A
-call	sub_3F0A
+call	room_transition_palette_wave
 
 loc_2198:
 cmp	byte ptr cs:[si+6], 0
 jz	short loc_21A9
 cmp	byte ptr cs:[si+6], 0FFh
 jz	short loc_21A9
-call	sub_3C13
+call	room_transition_reveal_sequence_a
 
 loc_21A9:
 mov	cs:byte_25A, 0
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 jmp	loc_2341
 
 loc_21B8:
 mov	byte ptr ds:8ADh, 1
-call	sub_3E98
+call	room_transition_player_exit_sequence
 
 loc_21C0:
 mov	ax, 5
 mov	bx, 3
-call	sub_1B8D
+call	load_resource
 mov	word ptr ds:6C6h, 28h ;	'('
 mov	word ptr ds:6C8h, 60h ;	'`'
 mov	byte ptr ds:8ADh, 1
-call	sub_18E0
-call	sub_3E1F
+call	setup_render_viewport
+call	room_transition_player_entry_sequence
 mov	byte ptr ds:897h, 0
 mov	byte ptr ds:291h, 1
 mov	byte ptr ds:89Ch, 0
@@ -3286,10 +3350,10 @@ jmp	loc_2341
 
 loc_21F2:
 mov	ax, cs:word_9300
-call	sub_3F0A
+call	room_transition_palette_wave
 mov	ax, 5
-call	sub_27A
-call	sub_65EF
+call	wait_n_ticks
+call	io_verify_game000_or_prompt_retry
 jmp	loc_185
 
 loc_2205:
@@ -3303,7 +3367,7 @@ jz	short loc_21C0
 mov	bx, cs:[si+8]
 mov	cx, cs:[si+0Ah]
 push	cx
-call	sub_1B8D
+call	load_resource
 pop	cx
 mov	si, ds:6F4h
 or	cx, cx
@@ -3319,7 +3383,7 @@ mov	ax, cs:[si]
 mov	ds:6C6h, ax
 mov	ax, cs:[si+4]
 mov	ds:6C8h, ax
-call	sub_18E0
+call	setup_render_viewport
 mov	byte ptr ds:897h, 0
 mov	word ptr ds:894h, 0
 jmp	loc_2341
@@ -3327,20 +3391,20 @@ jmp	loc_2341
 loc_2253:
 mov	byte ptr ds:8ADh, 1
 mov	word ptr ds:6C6h, 28h ;	'('
-call	sub_3E98
+call	room_transition_player_exit_sequence
 mov	bx, ds:21Ah
 shl	bx, 1
 shl	bx, 1
 add	bx, ds:93A8h
 mov	ax, [bx]
 mov	bx, [bx+2]
-call	sub_1B8D
+call	load_resource
 mov	cx, 0
 jmp	loc_2164
 
 loc_227B:
-call	sub_3AA0
-call	sub_3A92
+call	hud_star_meter_reset
+call	hud_c_meter_reset
 mov	byte ptr ds:8EDh, 0Ch
 cmp	word ptr ds:222h, 205h
 jge	short loc_2294
@@ -3350,7 +3414,7 @@ loc_2294:
 mov	ax, 120h
 mov	bx, 90h	; '�'
 mov	cx, ds:222h
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 mov	ax, ds:210h
 mov	ds:6C6h, ax
 mov	ax, ds:212h
@@ -3380,16 +3444,16 @@ mov	byte ptr ds:89Bh, 1
 mov	ax, ds:6FAh
 mov	bx, ds:6FCh
 mov	word ptr ds:6FCh, 0FFFFh
-call	sub_1B8D
-call	sub_18E0
+call	load_resource
+call	setup_render_viewport
 mov	bl, ds:896h
 xor	bh, bh
 mov	byte ptr ds:896h, 0
-call	sub_3A17
+call	hud_update_mode_icons
 cmp	byte ptr ds:220h, 0FFh
 jnz	short loc_2320
 mov	byte ptr ds:220h, 0
-call	sub_3E1F
+call	room_transition_player_entry_sequence
 
 loc_2320:
 jmp	loc_2341
@@ -3398,7 +3462,7 @@ loc_2323:
 mov	ax, ds:6FAh
 mov	bx, 0FFFFh
 mov	word ptr ds:6FAh, 0FFFFh
-call	sub_1B8D
+call	load_resource
 mov	word ptr ds:210h, 288h
 mov	word ptr ds:212h, 70h ;	'p'
 jmp	loc_227B
@@ -3450,7 +3514,7 @@ jmp	loc_386F
 loc_23A2:
 cmp	byte ptr ds:89Dh, 0
 jz	short loc_23AC
-jmp	loc_2EDC
+jmp	handle_airborne_movement
 
 loc_23AC:
 cmp	byte ptr ds:896h, 2
@@ -3469,23 +3533,23 @@ cmp	cs:byte_25D, 1
 jnz	short loc_23E0
 
 loc_23D7:
-call	sub_3610
+call	player_start_timed_overlay_sprite
 mov	cs:byte_25A, 0
 
 loc_23E0:
 cmp	byte ptr ds:897h, 0
 jz	short loc_23EA
-jmp	loc_2A10
+jmp	update_player_physics
 
 loc_23EA:
 cmp	byte ptr ds:8A3h, 0
 jz	short loc_23F4
-jmp	loc_3107
+jmp	handle_player_animation
 
 loc_23F4:
 cmp	byte ptr ds:8A7h, 0
 jz	short loc_23FE
-jmp	loc_34A9
+jmp	handle_attack_animation
 
 loc_23FE:
 cmp	byte ptr ds:92Ch, 1
@@ -3502,7 +3566,7 @@ mov	ax, ds:6C6h
 add	ax, 8
 mov	bx, ds:6C8h
 add	bx, 1Fh
-call	sub_1CFE
+call	get_tile_at_pixels
 cmp	ax, ds:294h
 jle	short loc_2435
 cmp	ax, ds:296h
@@ -3534,7 +3598,7 @@ mov	ax, 1
 lea	bx, ds:96DEh
 mov	cx, 0
 int	3		; Trap to Debugger
-jmp	loc_2A10
+jmp	update_player_physics
 
 loc_247A:
 mov	byte ptr ds:897h, 1
@@ -3546,7 +3610,7 @@ mov	ax, 1
 lea	bx, ds:96F6h
 mov	cx, 0
 int	3		; Trap to Debugger
-jmp	loc_2A10
+jmp	update_player_physics
 
 loc_24A3:
 cmp	byte ptr ds:962Ah, 0
@@ -3601,7 +3665,7 @@ cmp	word ptr cs:[bx], 0FFFFh
 jz	short loc_252D
 
 loc_2528:
-call	sub_3610
+call	player_start_timed_overlay_sprite
 jmp	short loc_2548
 
 loc_252D:
@@ -3623,20 +3687,20 @@ mov	word ptr ds:892h, 0
 cmp	cs:byte_258, 1
 jnz	short loc_255F
 mov	word ptr ds:892h, 0FFFBh
-call	sub_2BDC
+call	move_player_left
 
 loc_255F:
 cmp	cs:byte_259, 1
 jnz	short loc_2570
 mov	word ptr ds:892h, 5
-call	sub_2C39
+call	move_player_right
 
 loc_2570:
 mov	ax, ds:6C6h
 mov	bx, ds:6C8h
 add	bx, 20h	; ' '
 mov	di, ds:294h
-call	sub_2C9D
+call	check_floor_collision
 jb	short loc_25AC
 mov	byte ptr ds:897h, 1
 mov	byte ptr ds:898h, 0
@@ -3668,7 +3732,7 @@ jz	short loc_2621
 mov	ax, ds:6C6h
 mov	bx, ds:6C8h
 add	bx, 20h	; ' '
-call	sub_1CFE
+call	get_tile_at_pixels
 cmp	ax, 1Ch
 jl	short loc_25EC
 cmp	ax, 1Eh
@@ -3690,13 +3754,13 @@ mov	al, ds:8AEh
 push	ax
 cmp	byte ptr ds:9629h, 0
 jl	short loc_261A
-call	sub_2C54
+call	move_right_step_grounded
 pop	ax
 mov	ds:8AEh, al
 jmp	short loc_2621
 
 loc_261A:
-call	sub_2BF7
+call	move_left_step_grounded
 pop	ax
 mov	ds:8AEh, al
 
@@ -3728,13 +3792,13 @@ jnz	short loc_267F
 mov	cs:byte_61, 0
 cmp	byte ptr ds:897h, 0
 jnz	short loc_267F
-call	sub_46E6
+call	ent_activate_slot_into_runtime
 mov	cs:byte_61, 0
 
 loc_267F:
 cmp	byte ptr ds:924h, 0
 jz	short loc_2689
-call	sub_36C0
+call	update_room_event_anchor_motion
 
 loc_2689:
 cmp	byte ptr ds:897h, 1
@@ -3754,13 +3818,13 @@ mov	ds:898h, al
 loc_26B1:
 cmp	cs:byte_25D, 1
 jz	short loc_26BE
-call	sub_3ACE
+call	hud_star_meter_step_up
 jmp	short loc_2714
 
 loc_26BE:
 cmp	byte ptr ds:896h, 0
 jz	short loc_26D8
-call	sub_3ACE
+call	hud_star_meter_step_up
 cmp	byte ptr ds:896h, 3
 jz	short loc_2708
 cmp	byte ptr ds:896h, 1
@@ -3773,14 +3837,14 @@ jz	short loc_2714
 cmp	byte ptr ds:21Ch, 0
 jnz	short loc_26EE
 mov	ax, 0A09Ch
-call	sub_3610
+call	player_start_timed_overlay_sprite
 jmp	short loc_26F1
 
 loc_26EE:
-call	sub_5CEB
+call	spawn_player_projectile
 
 loc_26F1:
-call	sub_3B12
+call	hud_star_meter_step_down
 jmp	short loc_2714
 
 loc_26F6:
@@ -3788,21 +3852,21 @@ mov	al, ds:897h
 or	al, ds:89Dh
 or	al, ds:8A3h
 jnz	short loc_2714
-call	sub_30C6
+call	player_start_state4_action_animation
 jmp	short loc_2714
 
 loc_2708:
 mov	al, ds:897h
 or	al, ds:89Dh
 jnz	short loc_2714
-call	sub_3468
+call	player_start_attack_animation
 
 loc_2714:
 mov	al, cs:byte_61
 cmp	cs:byte_250, al
 jnz	short loc_2728
 mov	cs:byte_61, 0
-call	sub_39AD
+call	ui_show_modal_prompt_wait_key
 
 loc_2728:
 mov	al, cs:byte_61
@@ -3810,7 +3874,7 @@ cmp	cs:byte_255, al
 jnz	short loc_2741
 mov	cs:byte_61, 0
 mov	ax, 0FFFFh
-call	sub_327D
+call	player_cycle_mode_selection
 jmp	short loc_2754
 
 loc_2741:
@@ -3818,7 +3882,7 @@ cmp	cs:byte_256, al
 jnz	short loc_2754
 mov	cs:byte_61, 0
 mov	ax, 1
-call	sub_327D
+call	player_cycle_mode_selection
 
 loc_2754:
 cmp	cs:byte_25D, 1
@@ -3849,10 +3913,10 @@ jnb	short loc_2794
 add	word ptr ds:6C4h, 2
 
 loc_2794:
-call	sub_1D2C
-call	sub_437B
-call	sub_5D5F
-call	sub_4B25
+call	gfx_render_viewport_4plane
+call	ent_update_entities_in_viewport
+call	update_projectiles
+call	ent_update_object_behaviors
 cmp	byte ptr ds:8ECh, 0
 jz	short loc_27F7
 dec	byte ptr ds:8ECh
@@ -3888,7 +3952,7 @@ assume ds:seg003
 mov	si, [si]
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_7DBB
+call	draw_sprite
 jmp	loc_2902
 
 loc_27F7:
@@ -3905,14 +3969,14 @@ loc_2816:
 mov	ax, word_25908
 mov	bx, word_2590A
 add	bx, 6
-call	sub_7DBB
+call	draw_sprite
 jmp	loc_2902
 
 loc_2826:
 mov	si, cs:word_8DC0
 mov	ax, word_25908
 mov	bx, word_2590A
-call	sub_7DBB
+call	draw_sprite
 jmp	loc_2902
 
 loc_2838:
@@ -3928,24 +3992,24 @@ loc_2852:
 mov	ax, word_25910
 mov	bx, word_25912
 add	bx, 3
-call	sub_7DBB
+call	draw_sprite
 jmp	loc_2902
 
 loc_2862:
 mov	si, cs:word_A98C
 mov	ax, word_25910
 mov	bx, word_25912
-call	sub_7DBB
+call	draw_sprite
 jmp	loc_2902
 
 loc_2874:
 mov	si, 4882h
-cmp	byte_2588D, 1
+cmp	comic_facing, 1
 jz	short loc_2881
 mov	si, 4860h
 
 loc_2881:
-mov	al, byte_2588E
+mov	al, comic_state
 or	al, al
 jz	short loc_28EC
 dec	al
@@ -3994,7 +4058,7 @@ shl	ax, 1
 add	si, ax
 cmp	byte_25885, 1
 jz	short loc_28EC
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 8
 jmp	short loc_28EF
 
@@ -4007,16 +4071,16 @@ add	si, ax
 jmp	short $+2
 
 loc_28EC:
-mov	ax, word_256A6
+mov	ax, comic_x
 
 loc_28EF:
-mov	bx, word_256A8
+mov	bx, comic_y
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	si, [si]
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_7DBB
+call	draw_sprite
 
 loc_2902:
 cmp	byte_2587E, 0
@@ -4025,12 +4089,12 @@ dec	byte_2587E
 mov	si, 48D6h
 mov	ax, word_2587F
 mov	bx, word_25881
-call	sub_7DBB
+call	draw_sprite
 
 loc_291A:
 cmp	byte_25891, 0
 jz	short loc_2924
-call	sub_31EB
+call	ent_update_transient_slots
 
 loc_2924:
 cmp	byte_25888, 0
@@ -4043,7 +4107,7 @@ mov	bx, word_2588B
 mov	si, [bx+6]
 mov	ax, word_25889
 mov	bx, [bx+2]
-call	sub_7DBB
+call	draw_sprite
 jmp	short loc_2953
 
 loc_294A:
@@ -4061,15 +4125,15 @@ jz	short loc_297F
 test	byte_2E60B, 1
 jz	short loc_297F
 mov	si, word_258FF
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 sub	bx, 10h
-call	sub_7DBB
+call	draw_sprite
 
 loc_297F:
 cmp	byte_25904, 1
 jnz	short loc_2989
-call	sub_378E
+call	update_room_event_anchor_sprite
 
 loc_2989:
 cmp	byte_2590C, 1
@@ -4082,27 +4146,27 @@ loc_2999:
 mov	ax, word_25910
 mov	bx, word_25912
 mov	si, cs:word_A98A
-call	sub_7DBB
+call	draw_sprite
 
 loc_29A8:
 cmp	byte_25901, 0
 jz	short loc_29C9
 mov	si, word_25902
-call	sub_4206
+call	ui_draw_framed_message_from_stream
 cmp	cs:byte_61, 1Ch
 jnz	short loc_29C9
 mov	cs:byte_61, 0
 mov	byte_25901, 0
 
 loc_29C9:
-cmp	byte_258CD, 0
+cmp	comic_hp, 0
 jz	short loc_29D7
-dec	byte_258CD
-call	sub_3B51
+dec	comic_hp
+call	hud_c_meter_step_up
 
 loc_29D7:
-call	sub_774E
-mov	ax, word_256A8
+call	gfx_present_and_flip_page
+mov	ax, comic_y
 cmp	ax, word_2527E
 jle	short loc_2A07
 
@@ -4113,42 +4177,42 @@ mov	bx, 969Ah
 mov	cx, 0Ah
 int	3		; Trap to Debugger
 mov	ax, 14h
-call	sub_27A
+call	wait_n_ticks
 cmp	word_2526F, 0
 jnz	short loc_2A01
 jmp	loc_39EE
 
 loc_2A01:
-call	sub_48BF
+call	hud_decrement_lives_bcd
 jmp	loc_227B
 
 loc_2A07:
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 jmp	loc_2341
 
-loc_2A10:
-cmp	byte_25878, 0
+update_player_physics:
+cmp	comic_jump_counter, 0
 jz	short loc_2A31
-dec	byte_25878
+dec	comic_jump_counter
 jz	short loc_2A31
 cmp	cs:byte_25C, 1
 jnz	short loc_2A2C
-sub	word_25874, 7
+sub	comic_y_vel, 7
 jmp	short loc_2A31
 
 loc_2A2C:
-mov	byte_25878, 0
+mov	comic_jump_counter, 0
 
 loc_2A31:
-mov	ax, word_25874
+mov	ax, comic_y_vel
 mov	cx, ax
-add	ax, word_256A8
+add	ax, comic_y
 jge	short loc_2A3E
 xor	ax, ax
 
 loc_2A3E:
-mov	word_256A8, ax
+mov	comic_y, ax
 mov	word_2E600, cx
 add	cx, 5
 cmp	cx, 17h
@@ -4156,11 +4220,11 @@ jle	short loc_2A50
 mov	cx, 17h
 
 loc_2A50:
-mov	word_25874, cx
-mov	cx, word_25872
+mov	comic_y_vel, cx
+mov	cx, comic_x_vel
 cmp	cs:byte_258, 1
 jnz	short loc_2A6E
-mov	byte_2588D, 2
+mov	comic_facing, 2
 dec	cx
 cmp	cx, 0FFFBh
 jge	short loc_2A6E
@@ -4169,49 +4233,49 @@ mov	cx, 0FFFBh
 loc_2A6E:
 cmp	cs:byte_259, 1
 jnz	short loc_2A84
-mov	byte_2588D, 1
+mov	comic_facing, 1
 inc	cx
 cmp	cx, 5
 jle	short loc_2A84
 mov	cx, 5
 
 loc_2A84:
-mov	word_25872, cx
+mov	comic_x_vel, cx
 or	cx, cx
 jz	short loc_2A9E
 jg	short loc_2A97
-inc	word_25872
-call	sub_2BF7
+inc	comic_x_vel
+call	move_left_step_grounded
 jmp	short loc_2A9E
 
 loc_2A97:
-dec	word_25872
-call	sub_2C54
+dec	comic_x_vel
+call	move_right_step_grounded
 
 loc_2A9E:
-cmp	word_25874, 0
+cmp	comic_y_vel, 0
 jg	short loc_2AD2
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	di, word_25272
 mov	byte_25890, 2
-call	sub_2C9D
+call	check_floor_collision
 mov	byte_25890, 0
 jnb	short loc_2AD2
-mov	word_25874, 0
-and	word_256A8, 0FFF0h
-add	word_256A8, 0Ah
+mov	comic_y_vel, 0
+and	comic_y, 0FFF0h
+add	comic_y, 0Ah
 jmp	short loc_2B4C
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 align 2
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_2AD2:
 cmp	word_2E600, 0
 jle	short loc_2B4C
 cmp	byte_25904, 1
 jnz	short loc_2AE8
-call	sub_362A
+call	check_comic_near_room_event_anchor
 jnb	short loc_2AE8
 jmp	loc_2B73
 
@@ -4223,11 +4287,11 @@ dec	byte_2587A
 mov	di, word_25272
 
 loc_2AFB:
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 add	bx, 20h	; ' '
 mov	byte_25890, 1
-call	sub_2C9D
+call	check_floor_collision
 mov	byte_25890, 0
 jb	short loc_2B23
 cmp	ax, word_25276
@@ -4245,21 +4309,21 @@ loc_2B2C:
 mov	byte_2587B, 1
 
 loc_2B31:
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 add	bx, 28h	; '('
 mov	byte_25890, 1
-call	sub_2C9D
+call	check_floor_collision
 mov	byte_25890, 0
 jb	short loc_2B73
 jmp	short loc_2B6B
 
 loc_2B4C:
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 add	bx, 20h	; ' '
 mov	di, word_25274
-call	sub_2C9D
+call	check_floor_collision
 jnb	short loc_2B66
 mov	byte_2587B, 0
 jmp	short loc_2B6B
@@ -4268,29 +4332,29 @@ loc_2B66:
 mov	byte_2587B, 1
 
 loc_2B6B:
-mov	byte_2588E, 2
+mov	comic_state, 2
 jmp	short loc_2B88
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 db 90h
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_2B73:
-add	word_256A8, 8
+add	comic_y, 8
 
 loc_2B78:
-and	word_256A8, 0FFF0h
-mov	byte_25877, 0
-mov	word_25874, 0
+and	comic_y, 0FFF0h
+mov	comic_is_physics_active, 0
+mov	comic_y_vel, 0
 
 loc_2B88:
-call	sub_2B8E
+call	camera_update_y_follow_comic_clamped
 jmp	loc_267F
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 
 
 
-sub_2B8E proc near
-mov	ax, word_256A8
+camera_update_y_follow_comic_clamped proc near
+mov	ax, comic_y
 mov	bx, word_256A4
 sub	ax, bx
 cmp	ax, 30h	; '0'
@@ -4329,44 +4393,44 @@ jmp	short locret_2BA1
 loc_2BD6:
 mov	word_256A4, cx
 jmp	short locret_2BA1
-sub_2B8E endp
+camera_update_y_follow_comic_clamped endp
 
 
 
 
-sub_2BDC proc near
-cmp	byte_2588D, 2
+move_player_left proc near
+cmp	comic_facing, 2
 jz	short loc_2BEA
-mov	byte_2588D, 2
+mov	comic_facing, 2
 jmp	short locret_2C38
 
 loc_2BEA:
 cmp	byte_2E608, 1
-jnz	short sub_2BF7
-mov	byte_2588E, 1
+jnz	short move_left_step_grounded
+mov	comic_state, 1
 retn
-sub_2BDC endp
+move_player_left endp
 
 
 
 
-sub_2BF7 proc near
+move_left_step_grounded proc near
 mov	byte_2E609, 0FFh
-mov	ax, word_256A6
+mov	ax, comic_x
 or	ax, ax
 jnz	short loc_2C09
-call	sub_35DE
+call	game_loop
 jmp	short loc_2C32
 db 90h
 
 loc_2C09:
 sub	ax, 8
 push	ax
-call	sub_2D61
+call	tile_check_horizontal_step_clear
 pop	ax
 jb	short loc_2C32
-mov	word_256A6, ax
-mov	byte_2588E, 1
+mov	comic_x, ax
+mov	comic_state, 1
 sub	ax, word_256A2
 cmp	ax, 50h	; 'P'
 jge	short locret_2C38
@@ -4376,50 +4440,50 @@ sub	word_256A2, 8
 jmp	short locret_2C38
 
 loc_2C32:
-mov	word_25872, 0
+mov	comic_x_vel, 0
 
 locret_2C38:
 retn
-sub_2BF7 endp
+move_left_step_grounded endp
 
 
 
 
-sub_2C39 proc near
-cmp	byte_2588D, 1
+move_player_right proc near
+cmp	comic_facing, 1
 jz	short loc_2C47
-mov	byte_2588D, 1
+mov	comic_facing, 1
 jmp	short locret_2C38
 
 loc_2C47:
 cmp	byte_2E608, 1
-jnz	short sub_2C54
-mov	byte_2588E, 1
+jnz	short move_right_step_grounded
+mov	comic_state, 1
 retn
-sub_2C39 endp
+move_player_right endp
 
 
 
 
-sub_2C54 proc near
+move_right_step_grounded proc near
 mov	byte_2E609, 1
-mov	ax, word_256A6
+mov	ax, comic_x
 mov	bx, ax
 add	bx, 10h
 cmp	bx, word_2527C
 jl	short loc_2C6C
-call	sub_35DE
+call	game_loop
 jmp	short loc_2C32
 
 loc_2C6C:
 add	ax, 8
 push	ax
 add	ax, 0Fh
-call	sub_2D61
+call	tile_check_horizontal_step_clear
 pop	ax
 jb	short loc_2C32
-mov	word_256A6, ax
-mov	byte_2588E, 1
+mov	comic_x, ax
+mov	comic_state, 1
 sub	ax, word_256A2
 cmp	ax, 70h	; 'p'
 jle	short locret_2C38
@@ -4429,13 +4493,13 @@ cmp	ax, word_2527C
 jz	short locret_2C38
 add	word_256A2, 8
 jmp	short locret_2C38
-sub_2C54 endp
+move_right_step_grounded endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_2C9D proc near
+check_floor_collision proc near
 
 var_2= word ptr	-2
 
@@ -4445,7 +4509,7 @@ sub	sp, 2
 mov	[bp+var_2], 0
 push	ax
 push	bx
-call	sub_1CFE
+call	get_tile_at_pixels
 pop	dx
 pop	cx
 cmp	ax, 100h
@@ -4455,12 +4519,12 @@ jg	short loc_2CC7
 mov	[bp+var_2], 1
 cmp	byte_25890, 1
 jl	short loc_2CD1
-call	sub_2D06
+call	handle_projectile_impact
 
 loc_2CC7:
 cmp	byte_25890, 2
 jl	short loc_2CD1
-call	sub_2D31
+call	tile_handle_collision_mode2_trigger
 
 loc_2CD1:
 test	cx, 0Ch
@@ -4473,12 +4537,12 @@ jg	short loc_2CF0
 mov	[bp+var_2], 1
 cmp	byte_25890, 1
 jl	short loc_2CFA
-call	sub_2D06
+call	handle_projectile_impact
 
 loc_2CF0:
 cmp	byte_25890, 2
 jl	short loc_2CFA
-call	sub_2D31
+call	tile_handle_collision_mode2_trigger
 
 loc_2CFA:
 clc
@@ -4490,12 +4554,12 @@ loc_2D02:
 mov	sp, bp
 pop	bp
 retn
-sub_2C9D endp
+check_floor_collision endp
 
 
 
 
-sub_2D06 proc near
+handle_projectile_impact proc near
 push	ax
 cmp	al, byte_256B6
 jl	short loc_2D2F
@@ -4511,7 +4575,7 @@ push	dx
 push	di
 and	cx, 0FFF0h
 and	dx, 0FFF0h
-call	sub_3181
+call	ent_spawn_transient_slot
 pop	di
 pop	dx
 pop	cx
@@ -4520,12 +4584,12 @@ pop	bx
 loc_2D2F:
 pop	ax
 retn
-sub_2D06 endp
+handle_projectile_impact endp
 
 
 
 
-sub_2D31 proc near
+tile_handle_collision_mode2_trigger proc near
 push	ax
 cmp	al, byte_256C2
 jl	short loc_2D5F
@@ -4542,7 +4606,7 @@ push	dx
 push	di
 and	cx, 0FFF0h
 and	dx, 0FFF0h
-call	sub_3181
+call	ent_spawn_transient_slot
 pop	di
 pop	dx
 pop	cx
@@ -4551,16 +4615,16 @@ pop	bx
 loc_2D5F:
 pop	ax
 retn
-sub_2D31 endp
+tile_handle_collision_mode2_trigger endp
 
 
 
 
-sub_2D61 proc near
-mov	bx, word_256A8
+tile_check_horizontal_step_clear proc near
+mov	bx, comic_y
 add	bx, 0Dh
 push	ax
-call	sub_1CFE
+call	get_tile_at_pixels
 pop	cx
 shr	cx, 1
 shr	cx, 1
@@ -4573,7 +4637,7 @@ mov	al, [bx]
 cmp	ax, word_25272
 jg	short loc_2DA1
 sub	bx, cx
-mov	cx, word_256A6
+mov	cx, comic_x
 shr	cx, 1
 shr	cx, 1
 shr	cx, 1
@@ -4591,7 +4655,7 @@ loc_2DA1:
 cmp	ax, word_25274
 jg	short loc_2DC4
 sub	bx, cx
-mov	cx, word_256A6
+mov	cx, comic_x
 shr	cx, 1
 shr	cx, 1
 shr	cx, 1
@@ -4605,57 +4669,57 @@ mov	byte_2587B, 0
 loc_2DC4:
 clc
 retn
-sub_2D61 endp
+tile_check_horizontal_step_clear endp
 
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_2DC6:
 mov	ax, 1
 mov	bx, 965Eh
 mov	cx, 5
 int	3		; Trap to Debugger
-add	word_256A8, 10h
-sub	word_256A6, 8
+add	comic_y, 10h
+sub	comic_x, 8
 jnb	short loc_2DE2
-mov	word_256A6, 0
+mov	comic_x, 0
 
 loc_2DE2:
-mov	ax, word_256A8
+mov	ax, comic_y
 sub	ax, 14h
 mov	word_25881, ax
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 4
 jnb	short loc_2DF5
 xor	ax, ax
 
 loc_2DF5:
 mov	word_2587F, ax
-mov	ax, word_256A6
-mov	bx, word_256A8
-call	sub_1CFE
+mov	ax, comic_x
+mov	bx, comic_y
+call	get_tile_at_pixels
 cmp	ax, word_25274
 jg	short loc_2E0D
-add	word_256A6, 8
+add	comic_x, 8
 
 loc_2E0D:
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 1Fh
-mov	bx, word_256A8
-call	sub_1CFE
+mov	bx, comic_y
+call	get_tile_at_pixels
 cmp	ax, word_25274
 jg	short loc_2E25
-sub	word_256A6, 8
+sub	comic_x, 8
 
 loc_2E25:
 mov	byte_2587E, 2
-mov	byte_25877, 0
+mov	comic_is_physics_active, 0
 mov	byte_25886, 0
 mov	byte_2587D, 1
 xor	bh, bh
 mov	bl, byte_25876
 mov	byte_25876, 0
-call	sub_3A17
-mov	byte_2588E, 3
+call	hud_update_mode_icons
+mov	comic_state, 3
 jmp	loc_2B88
 
 loc_2E4F:
@@ -4663,12 +4727,12 @@ mov	ax, 1
 mov	bx, 9676h
 mov	cx, 5
 int	3		; Trap to Debugger
-sub	word_256A8, 10h
-add	word_256A6, 8
-mov	ax, word_256A8
+sub	comic_y, 10h
+add	comic_x, 8
+mov	ax, comic_y
 sub	ax, 6
 mov	word_25881, ax
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 0Ch
 jnb	short loc_2E76
 xor	ax, ax
@@ -4677,10 +4741,10 @@ loc_2E76:
 mov	word_2587F, ax
 mov	byte_2587E, 2
 mov	al, byte_25879
-mov	byte_25878, al
+mov	comic_jump_counter, al
 mov	byte_2587D, 0
-mov	byte_25877, 1
-mov	byte_2588E, 2
+mov	comic_is_physics_active, 1
+mov	comic_state, 2
 jmp	loc_2B88
 
 loc_2E96:
@@ -4688,12 +4752,12 @@ mov	ax, 1
 mov	bx, 9676h
 mov	cx, 5
 int	3		; Trap to Debugger
-sub	word_256A8, 10h
-add	word_256A6, 8
-mov	ax, word_256A8
+sub	comic_y, 10h
+add	comic_x, 8
+mov	ax, comic_y
 sub	ax, 6
 mov	word_25881, ax
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 0Ch
 jnb	short loc_2EBD
 xor	ax, ax
@@ -4701,16 +4765,16 @@ xor	ax, ax
 loc_2EBD:
 mov	word_2587F, ax
 mov	byte_2587E, 2
-mov	byte_25878, 0
+mov	comic_jump_counter, 0
 mov	byte_2587D, 0
-mov	byte_25877, 1
-mov	byte_2588E, 2
+mov	comic_is_physics_active, 1
+mov	comic_state, 2
 jmp	loc_2B88
 
-loc_2EDC:
-mov	ax, word_25874
+handle_airborne_movement:
+mov	ax, comic_y_vel
 mov	cx, ax
-add	ax, word_256A8
+add	ax, comic_y
 cmp	cs:byte_25A, 1
 jnz	short loc_2EF0
 sub	ax, 2
@@ -4723,51 +4787,51 @@ xor	ax, ax
 loc_2EF6:
 push	ax
 mov	bx, ax
-mov	ax, word_256A6
+mov	ax, comic_x
 mov	di, word_25272
-cmp	word_25874, 0
+cmp	comic_y_vel, 0
 jz	short loc_2F2D
 jl	short loc_2F1B
 add	bx, 0Fh
-call	sub_2FEE
+call	check_airborne_path_clear
 jnb	short loc_2F2D
 pop	ax
 and	ax, 0FFF0h
-mov	word_256A8, ax
+mov	comic_y, ax
 jmp	short loc_2F31
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 db 90h
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_2F1B:
-call	sub_2FEE
+call	check_airborne_path_clear
 jnb	short loc_2F2D
 pop	ax
 and	ax, 0FFF0h
 add	ax, 10h
-mov	word_256A8, ax
+mov	comic_y, ax
 jmp	short loc_2F31
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 db 90h
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_2F2D:
 pop	ax
-mov	word_256A8, ax
+mov	comic_y, ax
 
 loc_2F31:
-mov	cx, word_25874
+mov	cx, comic_y_vel
 sub	cx, 5
 cmp	cx, 0FFFCh
 jge	short loc_2F40
 mov	cx, 0FFFCh
 
 loc_2F40:
-mov	word_25874, cx
-mov	cx, word_25872
+mov	comic_y_vel, cx
+mov	cx, comic_x_vel
 cmp	cs:byte_258, 1
 jnz	short loc_2F5E
-mov	byte_2588D, 2
+mov	comic_facing, 2
 dec	cx
 cmp	cx, 0FFFBh
 jge	short loc_2F5E
@@ -4776,71 +4840,71 @@ mov	cx, 0FFFBh
 loc_2F5E:
 cmp	cs:byte_259, 1
 jnz	short loc_2F74
-mov	byte_2588D, 1
+mov	comic_facing, 1
 inc	cx
 cmp	cx, 5
 jle	short loc_2F74
 mov	cx, 5
 
 loc_2F74:
-mov	word_25872, cx
+mov	comic_x_vel, cx
 or	cx, cx
 jz	short loc_2F8E
 jg	short loc_2F87
-inc	word_25872
-call	sub_3026
+inc	comic_x_vel
+call	move_left_step_airborne
 jmp	short loc_2F8E
 
 loc_2F87:
-dec	word_25872
-call	sub_305E
+dec	comic_x_vel
+call	move_right_step_airborne
 
 loc_2F8E:
 cmp	cs:byte_25B, 1
 jnz	short loc_2FA9
-mov	cx, word_25874
+mov	cx, comic_y_vel
 add	cx, 7
 cmp	cx, 4
 jle	short loc_2FA5
 mov	cx, 4
 
 loc_2FA5:
-mov	word_25874, cx
+mov	comic_y_vel, cx
 
 loc_2FA9:
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 10h
-mov	bx, word_256A8
-call	sub_1CFE
+mov	bx, comic_y
+call	get_tile_at_pixels
 cmp	ax, word_25276
 jle	short loc_2FD1
-and	word_256A8, 0FFF0h
-add	word_256A8, 0Ch
+and	comic_y, 0FFF0h
+add	comic_y, 0Ch
 cmp	cs:byte_25C, 1
 jnz	short loc_2FD1
 jmp	loc_2E4F
 
 loc_2FD1:
-mov	bx, word_256A8
-mov	ax, word_256A6
+mov	bx, comic_y
+mov	ax, comic_x
 add	ax, 10h
 add	bx, 8
-call	sub_3019
+call	check_airborne_tile_threshold
 jb	short loc_2FE6
 jmp	loc_2E96
 
 loc_2FE6:
-mov	byte_2588E, 3
+mov	comic_state, 3
 jmp	loc_2B88
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 
 
 
-sub_2FEE proc near
+check_airborne_path_clear proc near
 cmp	bx, word_2527E
 jge	short loc_3011
 push	ax
-call	sub_1CFE
+call	get_tile_at_pixels
 pop	cx
 cmp	ax, di
 jle	short loc_3011
@@ -4862,13 +4926,13 @@ loc_3015:
 xor	ax, ax
 clc
 retn
-sub_2FEE endp
+check_airborne_path_clear endp
 
 
 
 
-sub_3019 proc near
-call	sub_1CFE
+check_airborne_tile_threshold proc near
+call	get_tile_at_pixels
 cmp	ax, word_25276
 jg	short loc_3024
 stc
@@ -4877,25 +4941,25 @@ retn
 loc_3024:
 clc
 retn
-sub_3019 endp
+check_airborne_tile_threshold endp
 
 
 
 
-sub_3026 proc near
-mov	ax, word_256A6
+move_left_step_airborne proc near
+mov	ax, comic_x
 or	ax, ax
 jnz	short loc_3033
-call	sub_35DE
+call	game_loop
 jmp	loc_2C32
 
 loc_3033:
 sub	ax, 8
 push	ax
-call	sub_309D
+call	check_airborne_side_clear
 pop	ax
 jb	short loc_3057
-mov	word_256A6, ax
+mov	comic_x, ax
 sub	ax, word_256A2
 cmp	ax, 50h	; 'P'
 jge	short locret_305D
@@ -4905,32 +4969,32 @@ sub	word_256A2, 8
 jmp	short locret_305D
 
 loc_3057:
-mov	word_25872, 0
+mov	comic_x_vel, 0
 
 locret_305D:
 retn
-sub_3026 endp
+move_left_step_airborne endp
 
 
 
 
-sub_305E proc near
-mov	ax, word_256A6
+move_right_step_airborne proc near
+mov	ax, comic_x
 mov	bx, ax
 add	bx, 20h	; ' '
 cmp	bx, word_2527C
 jl	short loc_3071
-call	sub_35DE
+call	game_loop
 jmp	short loc_3057
 
 loc_3071:
 add	ax, 8
 push	ax
 add	ax, 1Fh
-call	sub_309D
+call	check_airborne_side_clear
 pop	ax
 jb	short loc_3057
-mov	word_256A6, ax
+mov	comic_x, ax
 sub	ax, word_256A2
 cmp	ax, 60h	; '`'
 jle	short locret_305D
@@ -4940,18 +5004,18 @@ cmp	ax, word_2527C
 jz	short locret_305D
 add	word_256A2, 8
 jmp	short locret_305D
-sub_305E endp
+move_right_step_airborne endp
 
 
 
 
-sub_309D proc near
+check_airborne_side_clear proc near
 mov	di, word_25274
-mov	bx, word_256A8
-call	sub_1CFE
+mov	bx, comic_y
+call	get_tile_at_pixels
 cmp	ax, di
 jle	short loc_30C2
-mov	cx, word_256A8
+mov	cx, comic_y
 and	cx, 0Fh
 cmp	cx, 4
 jle	short loc_30C4
@@ -4967,15 +5031,15 @@ retn
 loc_30C4:
 clc
 retn
-sub_309D endp
+check_airborne_side_clear endp
 
 
 
 
-sub_30C6 proc near
-cmp	byte_2588D, 1
+player_start_state4_action_animation proc near
+cmp	comic_facing, 1
 jz	short loc_30DB
-cmp	word_256A6, 8
+cmp	comic_x, 8
 jl	short locret_3106
 mov	byte_25885, 2
 jmp	short loc_30EC
@@ -4983,41 +5047,41 @@ jmp	short loc_30EC
 loc_30DB:
 mov	ax, word_2527C
 sub	ax, 18h
-cmp	word_256A6, ax
+cmp	comic_x, ax
 jg	short locret_3106
 mov	byte_25885, 1
 
 loc_30EC:
-mov	byte_25883, 1
+mov	comic_is_animation_active, 1
 mov	byte_25884, 3
 mov	byte_2588F, 1
-mov	byte_2588E, 4
-mov	word_25872, 0
+mov	comic_state, 4
+mov	comic_x_vel, 0
 
 locret_3106:
 retn
-sub_30C6 endp
+player_start_state4_action_animation endp
 
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
-loc_3107:
+handle_player_animation:
 cmp	byte_25884, 3
 jnz	short loc_3123
 cmp	cs:byte_25D, 1
 jnz	short loc_3123
 mov	byte_2588F, 1
-mov	byte_2588E, 4
+mov	comic_state, 4
 jmp	loc_267F
 
 loc_3123:
 dec	byte_25884
 jnz	short loc_3135
-mov	byte_25883, 0
-mov	byte_2588E, 0
+mov	comic_is_animation_active, 0
+mov	comic_state, 0
 jmp	short loc_317E
 
 loc_3135:
-mov	ax, word_256A6
+mov	ax, comic_x
 test	ax, 8
 jnz	short loc_3179
 sub	ax, 10h
@@ -5026,7 +5090,7 @@ jnz	short loc_314A
 add	ax, 20h	; ' '
 
 loc_314A:
-mov	bx, word_256A8
+mov	bx, comic_y
 cmp	byte_25884, 2
 jz	short loc_3158
 add	bx, 10h
@@ -5034,7 +5098,7 @@ add	bx, 10h
 loc_3158:
 push	ax
 push	bx
-call	sub_1CFE
+call	get_tile_at_pixels
 pop	dx
 pop	cx
 cmp	al, byte_256AA
@@ -5045,18 +5109,18 @@ sub	al, byte_256AA
 mov	si, 6CCh
 add	si, ax
 mov	al, [si]
-call	sub_3181
+call	ent_spawn_transient_slot
 
 loc_3179:
-mov	byte_2588E, 4
+mov	comic_state, 4
 
 loc_317E:
 jmp	loc_267F
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 
 
 
-sub_3181 proc near
+ent_spawn_transient_slot proc near
 cmp	byte_25891, 6
 jz	short locret_31EA
 mov	si, 8B2h
@@ -5097,13 +5161,13 @@ xor	ch, ch
 push	ax
 push	bx
 push	cx
-call	sub_1E09
+call	gfx_draw_tile_id_at_pixel_xy
 pop	cx
 pop	bx
 pop	ax
 cmp	cx, word_25272
 jle	short loc_31E0
-call	sub_4579
+call	ent_deactivate_at_coords
 
 loc_31E0:
 mov	ax, 1
@@ -5113,12 +5177,12 @@ int	3		; Trap to Debugger
 
 locret_31EA:
 retn
-sub_3181 endp
+ent_spawn_transient_slot endp
 
 
 
 
-sub_31EB proc near
+ent_update_transient_slots proc near
 mov	di, 8B2h
 mov	word_2E600, 0
 
@@ -5152,7 +5216,7 @@ push	di
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	si, [si]
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 pop	di
@@ -5182,12 +5246,12 @@ jmp	loc_31F4
 
 locret_327C:
 retn
-sub_31EB endp
+ent_update_transient_slots endp
 
 
 
 
-sub_327D proc near
+player_cycle_mode_selection proc near
 cmp	byte_2587D, 1
 jz	short loc_3290
 cmp	byte_25904, 2
@@ -5225,16 +5289,16 @@ cmp	byte_251FD, 1
 jnz	short loc_329A
 
 loc_32CB:
-mov	byte_25883, 0
+mov	comic_is_animation_active, 0
 mov	byte_25876, ah
-call	sub_3A17
+call	hud_update_mode_icons
 cmp	byte_25876, 2
 jnz	short loc_32F8
 cmp	word_25202, 0
 jz	short locret_330E
 cmp	word_256DA, 0Eh
 jz	short locret_330E
-mov	byte_25877, 0
+mov	comic_is_physics_active, 0
 mov	byte_25886, 1
 jmp	short locret_330E
 
@@ -5242,14 +5306,14 @@ loc_32F8:
 cmp	byte_25886, 1
 jnz	short locret_330E
 mov	byte_25886, 0
-mov	byte_25877, 1
-mov	byte_25878, 0
+mov	comic_is_physics_active, 1
+mov	comic_jump_counter, 0
 
 locret_330E:
 retn
-sub_327D endp
+player_cycle_mode_selection endp
 
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_330F:
 cmp	word_256DA, 0Eh
@@ -5259,16 +5323,16 @@ jnz	short loc_332F
 
 loc_331D:
 mov	byte_25886, 0
-mov	byte_25877, 1
-mov	byte_25878, 0
-jmp	loc_2A10
+mov	comic_is_physics_active, 1
+mov	comic_jump_counter, 0
+jmp	update_player_physics
 
 loc_332F:
 test	byte_2E60B, 3
 jnz	short loc_3341
 cmp	cs:word_14D4, 0FFFFh
 jz	short loc_3341
-call	sub_48AA
+call	hud_decrement_word_25202_bcd
 
 loc_3341:
 cmp	cs:byte_25D, 1
@@ -5277,21 +5341,21 @@ cmp	cs:byte_25A, 1
 jnz	short loc_3363
 
 loc_3351:
-sub	word_25874, 2
-cmp	word_25874, 0FFF4h
+sub	comic_y_vel, 2
+cmp	comic_y_vel, 0FFF4h
 jge	short loc_3363
-mov	word_25874, 0FFF4h
+mov	comic_y_vel, 0FFF4h
 
 loc_3363:
-mov	ax, word_25874
+mov	ax, comic_y_vel
 mov	cx, ax
-add	ax, word_256A8
+add	ax, comic_y
 jge	short loc_3372
 xor	ax, ax
 xor	cx, cx
 
 loc_3372:
-mov	word_256A8, ax
+mov	comic_y, ax
 mov	word_2E600, cx
 add	cx, 1
 cmp	cx, 8
@@ -5299,11 +5363,11 @@ jle	short loc_3384
 mov	cx, 8
 
 loc_3384:
-mov	word_25874, cx
-mov	cx, word_25872
+mov	comic_y_vel, cx
+mov	cx, comic_x_vel
 cmp	cs:byte_258, 1
 jnz	short loc_33A2
-mov	byte_2588D, 2
+mov	comic_facing, 2
 dec	cx
 cmp	cx, 0FFFBh
 jge	short loc_33A2
@@ -5312,38 +5376,38 @@ mov	cx, 0FFFBh
 loc_33A2:
 cmp	cs:byte_259, 1
 jnz	short loc_33B8
-mov	byte_2588D, 1
+mov	comic_facing, 1
 inc	cx
 cmp	cx, 5
 jle	short loc_33B8
 mov	cx, 5
 
 loc_33B8:
-mov	word_25872, cx
+mov	comic_x_vel, cx
 or	cx, cx
 jz	short loc_33D2
 jg	short loc_33CB
-inc	word_25872
-call	sub_2BF7
+inc	comic_x_vel
+call	move_left_step_grounded
 jmp	short loc_33D2
 
 loc_33CB:
-dec	word_25872
-call	sub_2C54
+dec	comic_x_vel
+call	move_right_step_grounded
 
 loc_33D2:
-cmp	word_25874, 0
+cmp	comic_y_vel, 0
 jg	short loc_3405
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	di, word_25272
 mov	byte_25890, 2
-call	sub_2C9D
+call	check_floor_collision
 mov	byte_25890, 0
 jnb	short loc_3405
-mov	word_25874, 0
-and	word_256A8, 0FFF0h
-add	word_256A8, 0Ah
+mov	comic_y_vel, 0
+and	comic_y, 0FFF0h
+add	comic_y, 0Ah
 jmp	short loc_3453
 
 loc_3405:
@@ -5355,10 +5419,10 @@ jz	short loc_341C
 mov	di, word_25272
 
 loc_341C:
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 add	bx, 20h	; ' '
-call	sub_2C9D
+call	check_floor_collision
 jb	short loc_3455
 cmp	ax, word_25276
 jg	short loc_343A
@@ -5367,36 +5431,36 @@ jle	short loc_343A
 jmp	loc_2DC6
 
 loc_343A:
-mov	ax, word_256A8
+mov	ax, comic_y
 add	ax, 28h	; '('
 cmp	ax, word_2527E
 jl	short loc_3460
 cmp	ax, word_2527E
 sub	ax, 20h	; ' '
-mov	word_256A8, ax
+mov	comic_y, ax
 jmp	short loc_3455
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 db 90h
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_3453:
 jmp	short loc_3460
 
 loc_3455:
-and	word_256A8, 0FFF0h
-mov	word_25874, 0
+and	comic_y, 0FFF0h
+mov	comic_y_vel, 0
 
 loc_3460:
-mov	byte_2588E, 5
+mov	comic_state, 5
 jmp	loc_2B88
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 
 
 
-sub_3468 proc near
-cmp	byte_2588D, 1
+player_start_attack_animation proc near
+cmp	comic_facing, 1
 jz	short loc_347D
-cmp	word_256A6, 8
+cmp	comic_x, 8
 jl	short locret_34A8
 mov	byte_25885, 2
 jmp	short loc_348E
@@ -5404,28 +5468,28 @@ jmp	short loc_348E
 loc_347D:
 mov	ax, word_2527C
 sub	ax, 18h
-cmp	word_256A6, ax
+cmp	comic_x, ax
 jg	short locret_34A8
 mov	byte_25885, 1
 
 loc_348E:
-mov	byte_25887, 1
+mov	comic_is_attack_active, 1
 mov	byte_25884, 3
 mov	byte_2588F, 1
-mov	byte_2588E, 6
-mov	word_25872, 0
+mov	comic_state, 6
+mov	comic_x_vel, 0
 
 locret_34A8:
 retn
-sub_3468 endp
+player_start_attack_animation endp
 
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
-loc_34A9:
+handle_attack_animation:
 dec	byte_25884
 jnz	short loc_34BC
-mov	byte_25887, 0
-mov	byte_2588E, 0
+mov	comic_is_attack_active, 0
+mov	comic_state, 0
 jmp	loc_358E
 
 loc_34BC:
@@ -5440,14 +5504,14 @@ jnz	short loc_34D1
 jmp	loc_3589
 
 loc_34D1:
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 10h
 cmp	byte_25885, 1
 jnz	short loc_34E1
 add	ax, 20h	; ' '
 
 loc_34E1:
-mov	bx, word_256A8
+mov	bx, comic_y
 add	bx, 10h
 mov	si, 700h
 
@@ -5473,9 +5537,9 @@ jnz	short loc_3519
 cmp	byte_25200, 5
 jl	short loc_3519
 jmp	short loc_3591
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 db 90h
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_3519:
 mov	di, 946h
@@ -5487,9 +5551,9 @@ jz	short loc_352C
 add	di, 6
 loop	loc_3520
 jmp	short loc_3589
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 align 2
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_352C:
 mov	bx, [di+2]
@@ -5532,7 +5596,7 @@ mov	cx, 2
 int	3		; Trap to Debugger
 
 loc_3589:
-mov	byte_2588E, 6
+mov	comic_state, 6
 
 loc_358E:
 jmp	loc_267F
@@ -5552,23 +5616,23 @@ mov	ax, [si]
 mov	bx, [si+2]
 mov	word ptr [si], 0FFFFh
 sub	bx, 10h
-call	sub_401B
-mov	byte_25887, 0
-mov	byte_2588E, 0
+call	event_draw_stacked_sprite_rise
+mov	comic_is_attack_active, 0
+mov	comic_state, 0
 mov	byte_2591B, 14h
 inc	byte_25206
 cmp	byte_25206, 6
 jnz	short loc_35DB
 mov	sp, word_258C8
-jmp	sub_409C
+jmp	event_finale_transition_sequence
 
 loc_35DB:
 jmp	loc_267F
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 
 
 
-sub_35DE proc near
+game_loop proc near
 
 ; FUNCTION CHUNK AT 0185 SIZE 0000007C BYTES
 ; FUNCTION CHUNK AT 20FE SIZE 000009D3 BYTES
@@ -5598,10 +5662,10 @@ or	cx, cx
 jz	short locret_360F
 
 loc_35EA:
-mov	ax, word_256A6
+mov	ax, comic_x
 cmp	ax, cs:[si]
 jnz	short loc_3608
-mov	ax, word_256A8
+mov	ax, comic_y
 cmp	ax, cs:[si+2]
 jl	short loc_3608
 cmp	ax, cs:[si+4]
@@ -5616,12 +5680,12 @@ jnz	short loc_35EA
 
 locret_360F:
 retn
-sub_35DE endp
+game_loop endp
 
 
 
 
-sub_3610 proc near
+player_start_timed_overlay_sprite proc near
 cmp	byte_258FE, 0
 jnz	short locret_3629
 mov	word_258FF, ax
@@ -5633,19 +5697,19 @@ int	3		; Trap to Debugger
 
 locret_3629:
 retn
-sub_3610 endp
+player_start_timed_overlay_sprite endp
 
 
 
 
-sub_362A proc near
-mov	ax, word_256A6
+check_comic_near_room_event_anchor proc near
+mov	ax, comic_x
 sub	ax, word_25908
 jl	short loc_3655
 cmp	ax, 10h
 jg	short loc_3655
 mov	ax, word_2590A
-sub	ax, word_256A8
+sub	ax, comic_y
 jge	short loc_3643
 neg	ax
 
@@ -5660,9 +5724,9 @@ retn
 loc_3655:
 clc
 retn
-sub_362A endp
+check_comic_near_room_event_anchor endp
 
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_3657:
 cmp	byte_25876, 0
@@ -5670,27 +5734,27 @@ jz	short loc_366C
 xor	bh, bh
 mov	bl, byte_25876
 mov	byte_25876, 0
-call	sub_3A17
+call	hud_update_mode_icons
 
 loc_366C:
 cmp	cs:byte_25C, 1
 jnz	short loc_368E
-cmp	byte_25878, 0
+cmp	comic_jump_counter, 0
 jz	short loc_368E
-mov	byte_25877, 1
-mov	word_25872, 5
+mov	comic_is_physics_active, 1
+mov	comic_x_vel, 5
 mov	byte_25904, 1
-jmp	loc_2A10
+jmp	update_player_physics
 
 loc_368E:
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 10h
 cmp	ax, word_2527C
 jnz	short loc_369D
-call	sub_35DE
+call	game_loop
 
 loc_369D:
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, word_256A2
 cmp	ax, 70h	; 'p'
 jle	short loc_36BA
@@ -5701,13 +5765,13 @@ jz	short loc_36BA
 add	word_256A2, 8
 
 loc_36BA:
-call	sub_2B8E
+call	camera_update_y_follow_comic_clamped
 jmp	loc_267F
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 
 
 
-sub_36C0 proc near
+update_room_event_anchor_motion proc near
 mov	ax, word_25906
 add	ax, word_25908
 mov	word_25908, ax
@@ -5716,7 +5780,7 @@ push	ax
 push	bx
 add	ax, 10h
 add	bx, 10h
-call	sub_1CFE
+call	get_tile_at_pixels
 cmp	ax, 1Bh
 jnz	short loc_36E3
 pop	bx
@@ -5733,7 +5797,7 @@ add	ax, 10h
 
 loc_36EF:
 add	bx, 20h	; ' '
-call	sub_1CFE
+call	get_tile_at_pixels
 cmp	ax, 1Ah
 jz	short loc_3716
 cmp	ax, 1Bh
@@ -5776,30 +5840,30 @@ sub	word_2590A, ax
 loc_374A:
 cmp	byte_25904, 2
 jl	short locret_378D
-mov	byte_2588D, 1
+mov	comic_facing, 1
 mov	ax, word_25908
 add	ax, 8
-mov	word_256A6, ax
+mov	comic_x, ax
 mov	bx, word_2590A
-mov	word_256A8, bx
+mov	comic_y, bx
 add	ax, 8
-call	sub_1CFE
+call	get_tile_at_pixels
 cmp	ax, word_25272
 jg	short locret_378D
 mov	byte_25904, 1
-mov	byte_25877, 1
-mov	byte_25878, 0
-mov	word_25872, 0FFFBh
-mov	byte_2588E, 2
+mov	comic_is_physics_active, 1
+mov	comic_jump_counter, 0
+mov	comic_x_vel, 0FFFBh
+mov	comic_state, 2
 
 locret_378D:
 retn
-sub_36C0 endp
+update_room_event_anchor_motion endp
 
 
 
 
-sub_378E proc near
+update_room_event_anchor_sprite proc near
 cmp	byte_25905, 2
 jz	short loc_37B8
 mov	si, cs:word_8DB8
@@ -5811,7 +5875,7 @@ loc_37A6:
 mov	ax, word_25908
 mov	bx, word_2590A
 add	bx, 6
-call	sub_7DBB
+call	draw_sprite
 or	ax, ax
 jz	short loc_37CC
 retn
@@ -5820,14 +5884,14 @@ loc_37B8:
 mov	si, cs:word_8DBA
 mov	ax, word_25908
 mov	bx, word_2590A
-call	sub_7DBB
+call	draw_sprite
 or	ax, ax
 jz	short loc_37CC
 retn
 
 loc_37CC:
 mov	ax, word_25908
-cmp	ax, word_256A6
+cmp	ax, comic_x
 jle	short locret_3810
 cmp	word_256DC, 1
 jnz	short loc_37F5
@@ -5849,7 +5913,7 @@ locret_3810:
 retn
 
 loc_3811:
-mov	ax, word_256A6
+mov	ax, comic_x
 cmp	ax, 0AC0h
 jge	short locret_3810
 sub	ax, 140h
@@ -5867,7 +5931,7 @@ mov	ax, word_25908
 add	ax, 10h
 mov	bx, word_2590A
 add	bx, 20h	; ' '
-call	sub_1CFE
+call	get_tile_at_pixels
 cmp	ax, 1Bh
 jle	short loc_385C
 add	word_2590A, 10h
@@ -5879,9 +5943,9 @@ mov	word_2590A, 0
 loc_385C:
 pop	ax
 jmp	short loc_381C
-sub_378E endp
+update_room_event_anchor_sprite endp
 
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_385F:
 mov	word_2590E, 0
@@ -5894,7 +5958,7 @@ jz	short loc_3884
 xor	bh, bh
 mov	bl, byte_25876
 mov	byte_25876, 0
-call	sub_3A17
+call	hud_update_mode_icons
 
 loc_3884:
 add	word_2590E, 2
@@ -5911,7 +5975,7 @@ add	bx, word_2590E
 push	bx
 add	ax, 10h
 add	bx, 20h	; ' '
-call	sub_1CFE
+call	get_tile_at_pixels
 sub	bx, word_25278
 mov	cl, [bx]
 xor	ch, ch
@@ -5946,15 +6010,15 @@ mov	cx, 9
 int	3		; Trap to Debugger
 pop	bx
 jmp	short loc_393C
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 align 2
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_3900:
 mov	word_2590E, 0
 cmp	cs:byte_25C, 1
 jnz	short loc_3925
-cmp	byte_25878, 0
+cmp	comic_jump_counter, 0
 jz	short loc_3925
 
 loc_3915:
@@ -5976,31 +6040,31 @@ mov	word_25912, bx
 mov	ax, word_2590E
 mov	byte_2590D, al
 mov	al, byte_25879
-mov	byte_25878, al
+mov	comic_jump_counter, al
 cmp	cs:byte_25C, 1
 jnz	short loc_3959
-mov	byte_25878, 0
+mov	comic_jump_counter, 0
 
 loc_3959:
 mov	ax, word_25910
 add	ax, 8
-mov	word_256A6, ax
+mov	comic_x, ax
 mov	bx, word_25912
-mov	word_256A8, bx
+mov	comic_y, bx
 cmp	byte_258CC, 0Ah
 jnz	short loc_397B
-add	word_256A8, 10h
-sub	word_256A6, 8
+add	comic_y, 10h
+sub	comic_x, 8
 
 loc_397B:
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 10h
 cmp	ax, word_2527C
 jnz	short loc_398A
-call	sub_35DE
+call	game_loop
 
 loc_398A:
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, word_256A2
 cmp	ax, 70h	; 'p'
 jle	short loc_39A7
@@ -6011,23 +6075,23 @@ jz	short loc_39A7
 add	word_256A2, 8
 
 loc_39A7:
-call	sub_2B8E
+call	camera_update_y_follow_comic_clamped
 jmp	loc_267F
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 
 
 
-sub_39AD proc near
+ui_show_modal_prompt_wait_key proc near
 mov	ax, 1
 lea	bx, unk_2FAA0
 mov	cx, 4
 int	3		; Trap to Debugger
 mov	si, 962Ch
-call	sub_4206
-call	sub_774E
+call	ui_draw_framed_message_from_stream
+call	gfx_present_and_flip_page
 
 loc_39C1:
-call	sub_599
+call	input_wait_for_scancode_event
 cmp	cs:byte_61, 10h
 jz	short loc_39DB
 cmp	cs:byte_61, 1
@@ -6042,9 +6106,9 @@ mov	ax, word_256DC
 mov	word_251F6, ax
 mov	sp, word_258C8
 jmp	loc_63AB
-sub_39AD endp
+ui_show_modal_prompt_wait_key endp
 
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_39EE:
 mov	ax, word_256DA
@@ -6055,17 +6119,17 @@ mov	ax, 1
 lea	bx, unk_2E696
 mov	cx, 0Ah
 int	3		; Trap to Debugger
-call	sub_1D2C
+call	gfx_render_viewport_4plane
 mov	si, 9650h
-call	sub_4206
-call	sub_774E
-call	sub_599
+call	ui_draw_framed_message_from_stream
+call	gfx_present_and_flip_page
+call	input_wait_for_scancode_event
 jmp	loc_63AB
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 
 
 
-sub_3A17 proc near
+hud_update_mode_icons proc near
 lea	ax, aWri	; "^w��	"
 shl	bx, 1
 add	bx, ax
@@ -6075,7 +6139,7 @@ mov	ds, cs:seg_5E
 assume ds:seg003
 lea	si, unk_1F960
 mov	si, [si+2]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 xor	bh, bh
@@ -6089,16 +6153,16 @@ mov	ds, cs:seg_5E
 assume ds:seg003
 lea	si, unk_1F960
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
-sub_3A17 endp
+hud_update_mode_icons endp
 
 
 
 
-sub_3A5F proc near
+hud_draw_two_digit_counter proc near
 mov	ds, cs:seg_5E
 assume ds:seg003
 push	ax
@@ -6110,7 +6174,7 @@ xor	ch, ch
 shl	cx, 1
 add	si, cx
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 pop	cx
 pop	bx
 pop	ax
@@ -6120,27 +6184,27 @@ xor	ch, ch
 shl	cx, 1
 add	si, cx
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
-sub_3A5F endp
+hud_draw_two_digit_counter endp
 
 
 
 
-sub_3A92 proc near
+hud_c_meter_reset proc near
 mov	byte_258CB, 0
 mov	ax, 100h
 mov	bx, 43h	; 'C'
 jmp	short loc_3AAB
-sub_3A92 endp
+hud_c_meter_reset endp
 
 align 2
 
 
 
-sub_3AA0 proc near
+hud_star_meter_reset proc near
 mov	byte_258CA, 0
 mov	ax, 100h
 mov	bx, 2Ah	; '*'
@@ -6157,7 +6221,7 @@ push	ax
 push	bx
 push	cx
 push	si
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 pop	si
 pop	cx
 pop	bx
@@ -6167,12 +6231,12 @@ loop	loc_3AB8
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
-sub_3AA0 endp
+hud_star_meter_reset endp
 
 
 
 
-sub_3ACE proc near
+hud_star_meter_step_up proc near
 mov	al, byte_258CA
 xor	ah, ah
 cmp	ax, 17h
@@ -6199,18 +6263,18 @@ assume ds:seg003
 mov	si, 98D8h
 add	si, dx
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
 locret_3B11:
 retn
-sub_3ACE endp
+hud_star_meter_step_up endp
 
 
 
 
-sub_3B12 proc near
+hud_star_meter_step_down proc near
 mov	al, byte_258CA
 or	al, al
 jz	short locret_3B50
@@ -6234,18 +6298,18 @@ assume ds:seg003
 mov	si, 98D8h
 add	si, dx
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
 locret_3B50:
 retn
-sub_3B12 endp
+hud_star_meter_step_down endp
 
 
 
 
-sub_3B51 proc near
+hud_c_meter_step_up proc near
 cmp	byte_258CB, 0Ch
 jz	short locret_3B8B
 mov	al, byte_258CB
@@ -6266,18 +6330,18 @@ assume ds:seg003
 mov	si, 98D8h
 add	si, dx
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
 locret_3B8B:
 retn
-sub_3B51 endp
+hud_c_meter_step_up endp
 
 
 
 
-sub_3B8C proc near
+hud_c_meter_step_down proc near
 cmp	byte_258CB, 0
 jz	short locret_3BC5
 dec	byte_258CB
@@ -6297,51 +6361,51 @@ assume ds:seg003
 mov	si, 98D8h
 add	si, dx
 mov	si, [si]
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 
 locret_3BC5:
 retn
-sub_3B8C endp
+hud_c_meter_step_down endp
 
 
 
 
-sub_3BC6 proc near
+room_transition_draw_header proc near
 mov	ax, 1
 lea	bx, unk_2E63E
 mov	cx, 9
 int	3		; Trap to Debugger
-call	sub_1D2C
-call	sub_437B
+call	gfx_render_viewport_4plane
+call	ent_update_entities_in_viewport
 lea	si, unk_298B6
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, 0Ch
 sub	ax, word_256A2
 add	ax, 8
-mov	bx, word_256A8
+mov	bx, comic_y
 add	bx, 8
 sub	bx, word_256A4
 add	bx, 8
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
-call	sub_27A
-call	sub_1D2C
-call	sub_3DB6
+call	wait_n_ticks
+call	gfx_render_viewport_4plane
+call	room_transition_present_frame
 retn
-sub_3BC6 endp
+room_transition_draw_header endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_3C13 proc near
+room_transition_reveal_sequence_a proc near
 
 var_C= word ptr	-0Ch
 var_A= word ptr	-0Ah
@@ -6371,47 +6435,47 @@ mov	al, cs:[si+8]
 mov	[bp+var_A], ax
 mov	al, cs:[si+9]
 mov	[bp+var_C], ax
-call	sub_1D2C
-call	sub_4B25
-call	sub_3DB6
+call	gfx_render_viewport_4plane
+call	ent_update_object_behaviors
+call	room_transition_present_frame
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 lea	bx, unk_2E71C
 mov	ax, 1
 mov	cx, 9
 int	3		; Trap to Debugger
-call	sub_1D2C
-call	sub_3DA1
-call	sub_3DFB
-call	sub_3D3A
-call	sub_4B25
-call	sub_3DB6
-call	sub_1D2C
-call	sub_3DA1
-call	sub_3DFB
-call	sub_4B25
-call	sub_3DB6
-call	sub_1D2C
-call	sub_3DA1
-call	sub_3D3A
-call	sub_3DFB
-call	sub_4B25
-call	sub_3DB6
-call	sub_1D2C
-call	sub_3DFB
-call	sub_4B25
-call	sub_3DB6
+call	gfx_render_viewport_4plane
+call	room_transition_clear_reveal_box
+call	draw_player_sprite
+call	room_transition_draw_reveal_quad
+call	ent_update_object_behaviors
+call	room_transition_present_frame
+call	gfx_render_viewport_4plane
+call	room_transition_clear_reveal_box
+call	draw_player_sprite
+call	ent_update_object_behaviors
+call	room_transition_present_frame
+call	gfx_render_viewport_4plane
+call	room_transition_clear_reveal_box
+call	room_transition_draw_reveal_quad
+call	draw_player_sprite
+call	ent_update_object_behaviors
+call	room_transition_present_frame
+call	gfx_render_viewport_4plane
+call	draw_player_sprite
+call	ent_update_object_behaviors
+call	room_transition_present_frame
 pop	si
 mov	sp, bp
 pop	bp
 retn
-sub_3C13 endp
+room_transition_reveal_sequence_a endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_3CB1 proc near
+room_transition_reveal_sequence_b proc near
 
 var_C= word ptr	-0Ch
 var_A= word ptr	-0Ah
@@ -6445,84 +6509,84 @@ lea	bx, unk_2E71C
 mov	ax, 1
 mov	cx, 9
 int	3		; Trap to Debugger
-call	sub_1D2C
-call	sub_3DFB
-call	sub_3DB6
-call	sub_1D2C
-call	sub_3DA1
-call	sub_3D3A
-call	sub_3DFB
-call	sub_3DB6
-call	sub_1D2C
-call	sub_3DA1
-call	sub_3DFB
-call	sub_3DB6
-call	sub_1D2C
-call	sub_3DA1
-call	sub_3DFB
-call	sub_3D3A
-call	sub_3DB6
-call	sub_1D2C
-call	sub_3DB6
+call	gfx_render_viewport_4plane
+call	draw_player_sprite
+call	room_transition_present_frame
+call	gfx_render_viewport_4plane
+call	room_transition_clear_reveal_box
+call	room_transition_draw_reveal_quad
+call	draw_player_sprite
+call	room_transition_present_frame
+call	gfx_render_viewport_4plane
+call	room_transition_clear_reveal_box
+call	draw_player_sprite
+call	room_transition_present_frame
+call	gfx_render_viewport_4plane
+call	room_transition_clear_reveal_box
+call	draw_player_sprite
+call	room_transition_draw_reveal_quad
+call	room_transition_present_frame
+call	gfx_render_viewport_4plane
+call	room_transition_present_frame
 pop	si
 mov	sp, bp
 pop	bp
 retn
-sub_3CB1 endp
+room_transition_reveal_sequence_b endp
 
 
 
 
-sub_3D3A proc near
+room_transition_draw_reveal_quad proc near
 mov	ax, [bp-6]
-call	sub_3DC3
+call	sprite_frame_table_offset
 inc	si
 mov	ax, [bp-2]
 mov	bx, [bp-4]
-call	sub_3DD7
+call	viewport_xy_to_di
 push	di
-call	sub_3D7B
+call	room_transition_blit_reveal_quad_4plane
 mov	ax, [bp-0Ah]
-call	sub_3DC3
+call	sprite_frame_table_offset
 pop	di
 push	di
 add	di, 3
-call	sub_3D7B
+call	room_transition_blit_reveal_quad_4plane
 mov	ax, [bp-8]
-call	sub_3DC3
+call	sprite_frame_table_offset
 inc	si
 pop	di
 push	di
 add	di, 280h
-call	sub_3D7B
+call	room_transition_blit_reveal_quad_4plane
 mov	ax, [bp-0Ch]
-call	sub_3DC3
+call	sprite_frame_table_offset
 pop	di
 add	di, 283h
-call	sub_3D7B
+call	room_transition_blit_reveal_quad_4plane
 retn
-sub_3D3A endp
+room_transition_draw_reveal_quad endp
 
 
 
 
-sub_3D7B proc near
+room_transition_blit_reveal_quad_4plane proc near
 mov	cl, 0
-call	sub_3D90
+call	room_transition_blit_reveal_column_plane
 mov	cl, 1
-call	sub_3D90
+call	room_transition_blit_reveal_column_plane
 mov	cl, 2
-call	sub_3D90
+call	room_transition_blit_reveal_column_plane
 mov	cl, 3
-call	sub_3D90
+call	room_transition_blit_reveal_column_plane
 retn
-sub_3D7B endp
+room_transition_blit_reveal_quad_4plane endp
 
 
 
 
-sub_3D90 proc near
-call	sub_7A68
+room_transition_blit_reveal_column_plane proc near
+call	ega_select_plane_read_write
 mov	bx, 10h
 push	di
 
@@ -6534,36 +6598,36 @@ dec	bx
 jnz	short loc_3D97
 pop	di
 retn
-sub_3D90 endp
+room_transition_blit_reveal_column_plane endp
 
 
 
 
-sub_3DA1 proc near
+room_transition_clear_reveal_box proc near
 mov	ax, [bp-2]
 mov	bx, [bp-4]
 mov	cx, 20h	; ' '
 mov	dx, 20h	; ' '
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 retn
-sub_3DA1 endp
+room_transition_clear_reveal_box endp
 
 
 
 
-sub_3DB6 proc near
-call	sub_437B
-call	sub_774E
+room_transition_present_frame proc near
+call	ent_update_entities_in_viewport
+call	gfx_present_and_flip_page
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 retn
-sub_3DB6 endp
+room_transition_present_frame endp
 
 
 
 
-sub_3DC3 proc near
+sprite_frame_table_offset proc near
 shl	ax, 1
 shl	ax, 1
 shl	ax, 1
@@ -6574,12 +6638,12 @@ shl	ax, 1
 mov	si, 13A8h
 add	si, ax
 retn
-sub_3DC3 endp
+sprite_frame_table_offset endp
 
 
 
 
-sub_3DD7 proc near
+viewport_xy_to_di proc near
 shr	ax, 1
 shr	ax, 1
 shr	ax, 1
@@ -6597,34 +6661,34 @@ add	bx, ax
 mov	di, cs:word_773F
 add	di, bx
 retn
-sub_3DD7 endp
+viewport_xy_to_di endp
 
 
 
 
-sub_3DFB proc near
+draw_player_sprite proc near
 mov	si, 4882h
-cmp	byte_2588D, 1
+cmp	comic_facing, 1
 jz	short loc_3E08
 mov	si, 4860h
 
 loc_3E08:
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	si, [si]
-call	sub_7DBB
+call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
-sub_3DFB endp
+draw_player_sprite endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_3E1F proc near
+room_transition_player_entry_sequence proc near
 
 var_4= word ptr	-4
 var_2= word ptr	-2
@@ -6636,9 +6700,9 @@ mov	byte_258CC, 0Ah
 mov	[bp+var_2], 0Ah
 
 loc_3E2F:
-call	sub_1D2C
-call	sub_4B25
-call	sub_3DB6
+call	gfx_render_viewport_4plane
+call	ent_update_object_behaviors
+call	room_transition_present_frame
 dec	[bp+var_2]
 jnz	short loc_3E2F
 mov	ax, 1
@@ -6648,26 +6712,26 @@ int	3		; Trap to Debugger
 mov	[bp+var_2], 5
 
 loc_3E4D:
-call	sub_1D2C
-call	sub_4B25
-call	sub_3DB6
+call	gfx_render_viewport_4plane
+call	ent_update_object_behaviors
+call	room_transition_present_frame
 dec	[bp+var_2]
 jnz	short loc_3E4D
 mov	[bp+var_2], 9
 mov	[bp+var_4], 976Eh
 
 loc_3E65:
-call	sub_1D2C
-call	sub_4B25
-mov	ax, word_256A6
-mov	bx, word_256A8
+call	gfx_render_viewport_4plane
+call	ent_update_object_behaviors
+mov	ax, comic_x
+mov	bx, comic_y
 mov	si, [bp+var_4]
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_7DBB
+call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 sub	[bp+var_4], 146h
 dec	[bp+var_2]
 jnz	short loc_3E65
@@ -6675,13 +6739,13 @@ mov	byte_258CC, 0
 mov	sp, bp
 pop	bp
 retn
-sub_3E1F endp
+room_transition_player_entry_sequence endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_3E98 proc near
+room_transition_player_exit_sequence proc near
 
 var_4= word ptr	-4
 var_2= word ptr	-2
@@ -6693,10 +6757,10 @@ mov	byte_258CC, 0Ah
 mov	[bp+var_2], 0Ah
 
 loc_3EA8:
-call	sub_1D2C
-call	sub_4B25
-call	sub_3DFB
-call	sub_3DB6
+call	gfx_render_viewport_4plane
+call	ent_update_object_behaviors
+call	draw_player_sprite
+call	room_transition_present_frame
 dec	[bp+var_2]
 jnz	short loc_3EA8
 mov	ax, 1
@@ -6707,34 +6771,34 @@ mov	[bp+var_2], 9
 mov	[bp+var_4], 8D3Eh
 
 loc_3ECE:
-call	sub_1D2C
-call	sub_4B25
-mov	ax, word_256A6
-mov	bx, word_256A8
+call	gfx_render_viewport_4plane
+call	ent_update_object_behaviors
+mov	ax, comic_x
+mov	bx, comic_y
 mov	si, [bp+var_4]
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_7DBB
+call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 add	[bp+var_4], 146h
 dec	[bp+var_2]
 jnz	short loc_3ECE
-call	sub_1D2C
-call	sub_4B25
-call	sub_3DB6
+call	gfx_render_viewport_4plane
+call	ent_update_object_behaviors
+call	room_transition_present_frame
 mov	byte_258CC, 0
 mov	sp, bp
 pop	bp
 retn
-sub_3E98 endp
+room_transition_player_exit_sequence endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_3F0A proc near
+room_transition_palette_wave proc near
 
 var_8= word ptr	-8
 var_6= word ptr	-6
@@ -6761,17 +6825,17 @@ int	3		; Trap to Debugger
 mov	[bp+var_8], 0
 
 loc_3F3E:
-call	sub_1D2C
+call	gfx_render_viewport_4plane
 mov	ax, [bp+var_2]
 mov	bx, [bp+var_4]
 mov	si, [bp+var_6]
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 add	[bp+var_6], 204h
 inc	[bp+var_8]
 cmp	[bp+var_8], 4
@@ -6781,34 +6845,34 @@ sub	[bp+var_6], 204h
 
 loc_3F77:
 sub	[bp+var_6], 204h
-call	sub_1D2C
+call	gfx_render_viewport_4plane
 mov	ax, [bp+var_2]
 mov	bx, [bp+var_4]
 mov	si, [bp+var_6]
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 dec	[bp+var_8]
 jnz	short loc_3F77
 mov	[bp+var_8], 1
 add	[bp+var_6], 204h
 
 loc_3FAC:
-call	sub_1D2C
+call	gfx_render_viewport_4plane
 mov	ax, [bp+var_2]
 mov	bx, [bp+var_4]
 mov	si, [bp+var_6]
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 add	[bp+var_6], 204h
 inc	[bp+var_8]
 cmp	[bp+var_8], 4
@@ -6818,32 +6882,32 @@ sub	[bp+var_6], 204h
 
 loc_3FE5:
 sub	[bp+var_6], 204h
-call	sub_1D2C
+call	gfx_render_viewport_4plane
 mov	ax, [bp+var_2]
 mov	bx, [bp+var_4]
 mov	si, [bp+var_6]
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 dec	[bp+var_8]
 jnz	short loc_3FE5
-call	sub_1D2C
-call	sub_3DB6
+call	gfx_render_viewport_4plane
+call	room_transition_present_frame
 pop	si
 mov	sp, bp
 pop	bp
 retn
-sub_3F0A endp
+room_transition_palette_wave endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_401B proc near
+event_draw_stacked_sprite_rise proc near
 
 var_8= word ptr	-8
 var_6= word ptr	-6
@@ -6865,18 +6929,18 @@ mov	ax, cs:word_9537
 mov	[bp+var_6], ax
 
 loc_403E:
-call	sub_1D2C
-call	sub_4B25
-call	sub_3DFB
+call	gfx_render_viewport_4plane
+call	ent_update_object_behaviors
+call	draw_player_sprite
 mov	ax, [bp+var_2]
 mov	bx, [bp+var_4]
 mov	si, [bp+var_6]
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_7DBB
+call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 add	[bp+var_6], 146h
 inc	[bp+var_8]
 cmp	[bp+var_8], 7
@@ -6885,12 +6949,12 @@ pop	si
 mov	sp, bp
 pop	bp
 retn
-sub_401B endp
+event_draw_stacked_sprite_rise endp
 
 
 
 
-sub_4073 proc near
+event_transition_camera_bob_step proc near
 test	ax, 1
 jnz	short loc_4089
 add	word_256A4, 2
@@ -6905,16 +6969,16 @@ jnb	short loc_4095
 add	word_256A4, 2
 
 loc_4095:
-call	sub_1D2C
-call	sub_4B25
+call	gfx_render_viewport_4plane
+call	ent_update_object_behaviors
 retn
-sub_4073 endp
+event_transition_camera_bob_step endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_409C proc near
+event_finale_transition_sequence proc near
 
 var_A= word ptr	-0Ah
 var_8= word ptr	-8
@@ -6931,8 +6995,8 @@ mov	[bp+var_A], 0
 
 loc_40B1:
 mov	ax, [bp+var_8]
-call	sub_4073
-call	sub_3DFB
+call	event_transition_camera_bob_step
+call	draw_player_sprite
 test	[bp+var_8], 1
 jnz	short loc_40C5
 xor	[bp+var_A], 4
@@ -6944,16 +7008,16 @@ mov	[bp+var_6], 0
 loc_40CF:
 xor	[bp+var_A], 4
 mov	si, [bp+var_4]
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, [si]
 sub	ax, [bp+var_A]
-mov	bx, word_256A8
+mov	bx, comic_y
 add	bx, [si+2]
 add	bx, [bp+var_2]
 mov	si, cs:word_9535
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_7DBB
+call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
 add	[bp+var_4], 4
@@ -6966,24 +7030,24 @@ mov	[bp+var_6], 0
 loc_4111:
 xor	[bp+var_A], 4
 mov	si, [bp+var_4]
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, [si]
 sub	ax, [bp+var_A]
-mov	bx, word_256A8
+mov	bx, comic_y
 add	bx, [si+2]
 add	bx, [bp+var_2]
 sub	bx, 60h	; '`'
 mov	si, cs:word_9535
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_7DBB
+call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
 add	[bp+var_4], 4
 inc	[bp+var_6]
 cmp	[bp+var_6], 9
 jl	short loc_4111
-call	sub_3DB6
+call	room_transition_present_frame
 sub	[bp+var_2], 8
 inc	[bp+var_8]
 cmp	[bp+var_8], 32h	; '2'
@@ -6996,19 +7060,19 @@ mov	[bp+var_8], 0
 
 loc_4169:
 mov	ax, [bp+var_8]
-call	sub_4073
-call	sub_3DFB
-mov	ax, word_256A6
+call	event_transition_camera_bob_step
+call	draw_player_sprite
+mov	ax, comic_x
 sub	ax, 8
-mov	bx, word_256A8
+mov	bx, comic_y
 add	bx, [bp+var_2]
 mov	si, cs:word_9535
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_7DBB
+call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 sub	[bp+var_2], 8
 inc	[bp+var_8]
 cmp	[bp+var_2], 0FFF8h
@@ -7016,21 +7080,21 @@ jg	short loc_4169
 
 loc_41A1:
 mov	ax, [bp+var_8]
-call	sub_4073
-call	sub_3DFB
-mov	ax, word_256A6
+call	event_transition_camera_bob_step
+call	draw_player_sprite
+mov	ax, comic_x
 sub	ax, 8
-mov	bx, word_256A8
+mov	bx, comic_y
 mov	si, cs:word_9535
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_7DBB
+call	draw_sprite
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_3DB6
+call	room_transition_present_frame
 inc	[bp+var_8]
-sub	word_256A8, 8
-cmp	word_256A8, 0FFE0h
+sub	comic_y, 8
+cmp	comic_y, 0FFE0h
 jg	short loc_41A1
 mov	byte_25200, 6
 mov	ax, 0
@@ -7040,9 +7104,9 @@ mov	word_251F2, 0
 mov	word_256DA, 0FFFFh
 mov	word_256DC, bx
 mov	bx, 0FFFFh
-call	sub_1B8D
+call	load_resource
 jmp	loc_227B
-sub_409C endp
+event_finale_transition_sequence endp
 
 mov	sp, bp
 pop	bp
@@ -7051,7 +7115,7 @@ retn
 
 ; Attributes: bp-based frame
 
-sub_4206 proc near
+ui_draw_framed_message_from_stream proc near
 
 var_8= word ptr	-8
 var_6= word ptr	-6
@@ -7102,69 +7166,69 @@ loc_424E:
 mov	[bp+var_6], ax
 mov	[bp+var_8], bx
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, 9
-call	sub_4339
+call	ega_set_map_mask
 sub	[bp+var_4], 2
 mov	cx, [bp+var_8]
 mov	bx, [bp+var_6]
 mov	al, 22h	; '"'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, [bp+var_2]
 sub	dx, 2
 mov	al, 23h	; '#'
 
 loc_4279:
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_4279
 mov	al, 24h	; '$'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 
 loc_4284:
 add	cx, 8
 mov	bx, [bp+var_6]
 mov	al, 25h	; '%'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	dx, [bp+var_2]
 sub	dx, 2
 
 loc_429B:
 lodsb
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_429B
 mov	ax, 9
-call	sub_4339
+call	ega_set_map_mask
 mov	al, 26h	; '&'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	[bp+var_4]
 jnz	short loc_4284
 add	cx, 8
 mov	bx, [bp+var_6]
 mov	al, 3Ah	; ':'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, [bp+var_2]
 sub	dx, 2
 mov	al, 3Bh	; ';'
 
 loc_42C5:
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_42C5
 mov	al, 3Ch	; '<'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	sp, bp
 pop	bp
 retn
-sub_4206 endp
+ui_draw_framed_message_from_stream endp
 
 
 
 
-sub_42D4 proc near
+ui_draw_string_8x8 proc near
 push	bx
 mov	cx, bx
 mov	bx, ax
@@ -7174,19 +7238,19 @@ loc_42DA:
 lodsb
 or	al, al
 jz	short loc_42E4
-call	sub_42E8
+call	ui_draw_glyph_8x8
 jmp	short loc_42DA
 
 loc_42E4:
 mov	ax, bx
 pop	bx
 retn
-sub_42D4 endp
+ui_draw_string_8x8 endp
 
 
 
 
-sub_42E8 proc near
+ui_draw_glyph_8x8 proc near
 push	ax
 push	bx
 push	cx
@@ -7230,12 +7294,12 @@ pop	bx
 pop	ax
 add	bx, 8
 retn
-sub_42E8 endp
+ui_draw_glyph_8x8 endp
 
 
 
 
-sub_4339 proc near
+ega_set_map_mask proc near
 push	dx
 mov	ah, al
 mov	al, 2
@@ -7249,7 +7313,7 @@ dec	dx
 xchg	ah, al
 pop	dx
 retn
-sub_4339 endp
+ega_set_map_mask endp
 
 push	ax
 push	bx
@@ -7261,7 +7325,7 @@ mov	bx, cx
 mov	cx, 8
 mov	dx, cx
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 pop	di
 pop	dx
 pop	cx
@@ -7274,7 +7338,17 @@ db 0D6h, 45h, 15h, 46h
 
 
 
-sub_437B proc near
+; ============================================================================
+; ent_update_entities_in_viewport - Scan active entities in viewport and process sprite/contact events
+; Input:  word_256DE entity count, viewport (word_256A2/word_256A4), comic_x/y
+; Output: Draws in-range entities (draw_sprite), may consume entity slots and
+;         trigger scripted/object interactions via ent_draw_mapped_slot_or_placeholder and other handlers
+; Calls:  draw_sprite, ent_draw_mapped_slot_or_placeholder, hud_add_bcd_counter_from_tens_value, hud_decrement_word_25202_bcd
+; Evidence: AABB-style bounds checks around viewport extents, iterates 8-byte
+;           records at unk_256E0, branches on flag bit 8000h and object ids
+; Confidence: Medium
+; ============================================================================
+ent_update_entities_in_viewport proc near
 mov	di, word_256DE
 or	di, di
 jnz	short loc_4384
@@ -7325,19 +7399,19 @@ xchg	cx, dx
 loc_43D3:
 mov	ax, [si]
 add	ax, 0Fh
-cmp	ax, word_256A6
+cmp	ax, comic_x
 jl	short loc_440A
 sub	ax, 0Fh
 sub	ax, cx
-cmp	ax, word_256A6
+cmp	ax, comic_x
 jg	short loc_440A
 mov	bx, [si+2]
 add	bx, 0Fh
-cmp	bx, word_256A8
+cmp	bx, comic_y
 jl	short loc_440A
 sub	bx, 0Fh
 sub	bx, dx
-cmp	bx, word_256A8
+cmp	bx, comic_y
 jg	short loc_440A
 cmp	byte_258CC, 0
 jnz	short loc_440A
@@ -7348,7 +7422,7 @@ loc_440A:
 mov	ax, [si]
 mov	bx, [si+2]
 mov	si, [si+6]
-call	sub_7DBB
+call	draw_sprite
 
 loc_4415:
 pop	di
@@ -7416,7 +7490,7 @@ and	word ptr cs:[di+0Ah], 7FFFh
 mov	ax, [si+4]
 mov	[bx], ax
 mov	ax, cx
-call	sub_451C
+call	ent_draw_mapped_slot_or_placeholder
 pop	di
 pop	si
 mov	ax, [si+6]
@@ -7436,7 +7510,7 @@ mov	al, ah
 xor	ah, ah
 or	ax, ax
 jz	short loc_44D0
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 
 loc_44D0:
 jmp	loc_4415
@@ -7454,7 +7528,7 @@ jmp	short loc_44BB
 loc_44EB:
 push	di
 mov	word_25202, 0A00h
-call	sub_48AA
+call	hud_decrement_word_25202_bcd
 pop	di
 jmp	short loc_44BB
 
@@ -7472,12 +7546,22 @@ int	3		; Trap to Debugger
 
 loc_451A:
 jmp	short loc_44BB
-sub_437B endp
+ent_update_entities_in_viewport endp
 
 
 
 
-sub_451C proc near
+; ============================================================================
+; ent_draw_mapped_slot_or_placeholder - Resolve slot entry and render mapped object sprite/placeholder
+; Input:  ax=slot index into unk_25219 object mapping table
+; Output: DI points at selected object record (unk_25AD0) or 0 on empty slot;
+;         invokes object draw path for valid records
+; Calls:  gfx_clear_rect_both_pages, gfx_blit_sprite_opaque_offset_both_pages
+; Evidence: 0FFFFh sentinel handling in unk_25219, 12-byte index math into
+;           unk_25AD0, then render call with DS set to seg_5E asset segment
+; Confidence: Medium
+; ============================================================================
+ent_draw_mapped_slot_or_placeholder proc near
 mov	cx, ax
 shl	cx, 1
 lea	bx, unk_25219
@@ -7493,7 +7577,7 @@ add	ax, 8
 mov	bx, 0B1h ; '�'
 mov	cx, 10h
 mov	dx, 10h
-call	sub_7AAB
+call	gfx_clear_rect_both_pages
 xor	di, di
 retn
 
@@ -7515,17 +7599,17 @@ mov	bx, 0B1h ; '�'
 mov	si, cs:[di+8]
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 pop	di
 retn
-sub_451C endp
+ent_draw_mapped_slot_or_placeholder endp
 
 
 
 
-sub_4579 proc near
+ent_deactivate_at_coords proc near
 mov	di, word_256DE
 or	di, di
 jnz	short loc_4582
@@ -7546,17 +7630,17 @@ add	si, 8
 dec	di
 jnz	short loc_4586
 retn
-sub_4579 endp
+ent_deactivate_at_coords endp
 
-call	sub_45A6
+call	hud_increment_lives_bcd_clamped
 mov	ax, 5
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 clc
 retn
 
 
 
-sub_45A6 proc near
+hud_increment_lives_bcd_clamped proc near
 mov	ax, 1
 lea	bx, unk_2E8E4
 mov	cx, 9
@@ -7575,9 +7659,9 @@ loc_45C8:
 mov	word_2526F, cx
 mov	ax, 120h
 mov	bx, 0A9h ; '�'
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 retn
-sub_45A6 endp
+hud_increment_lives_bcd_clamped endp
 
 mov	cx, word_25202
 cmp	cx, 909h
@@ -7602,7 +7686,7 @@ loc_45FA:
 mov	word_25202, cx
 mov	ax, 120h
 mov	bx, 90h	; '�'
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 cmp	byte_25876, 2
 jnz	short loc_4613
 mov	byte_25886, 1
@@ -7611,16 +7695,16 @@ loc_4613:
 clc
 retn
 mov	al, byte_258CB
-add	al, byte_258CD
+add	al, comic_hp
 cmp	al, 0Ch
 jl	short loc_4622
 stc
 retn
 
 loc_4622:
-mov	byte_258CD, 0Ch
+mov	comic_hp, 0Ch
 mov	ax, 1
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 clc
 retn
 inc	byte_251FC
@@ -7634,9 +7718,9 @@ loc_4642:
 xor	ch, ch
 mov	ax, 120h
 mov	bx, 5Eh	; '^'
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 mov	ax, 1
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 clc
 retn
 clc
@@ -7647,11 +7731,11 @@ mov	bx, 90h	; '�'
 lea	si, unk_2EF30
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	ax, 8
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 clc
 retn
 mov	byte_251FF, 1
@@ -7660,11 +7744,11 @@ mov	bx, 0A9h ; '�'
 lea	si, unk_2EFD6
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	ax, 8
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 clc
 retn
 mov	cx, word_25204
@@ -7676,7 +7760,7 @@ add	cl, 5
 jmp	short loc_46C1
 align 2
 mov	ax, 1
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 mov	cx, word_25204
 inc	ch
 jmp	short loc_46C1
@@ -7693,25 +7777,25 @@ cmp	ch, 0Ah
 jnz	short loc_46D7
 mov	ch, 0
 push	cx
-call	sub_45A6
+call	hud_increment_lives_bcd_clamped
 pop	cx
 
 loc_46D7:
 mov	word_25204, cx
 mov	ax, 120h
 mov	bx, 77h	; 'w'
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 clc
 retn
 
 
 
-sub_46E6 proc near
-call	sub_1D2C
-call	sub_437B
-call	sub_774E
-call	sub_1D2C
-call	sub_437B
+ent_activate_slot_into_runtime proc near
+call	gfx_render_viewport_4plane
+call	ent_update_entities_in_viewport
+call	gfx_present_and_flip_page
+call	gfx_render_viewport_4plane
+call	ent_update_entities_in_viewport
 
 loc_46F5:
 mov	ax, word_25870
@@ -7724,10 +7808,10 @@ mov	bx, 0B1h ; '�'
 lea	si, unk_2F314
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_774E
+call	gfx_present_and_flip_page
 
 loc_471A:
 xor	al, al
@@ -7747,16 +7831,16 @@ mov	al, cs:byte_61
 cmp	al, cs:byte_257
 jnz	short loc_472C
 mov	ax, word_25870
-call	sub_451C
+call	ent_draw_mapped_slot_or_placeholder
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 retn
 
 loc_475C:
 cmp	word_25870, 0
 jz	short loc_471A
 mov	ax, word_25870
-call	sub_451C
+call	ent_draw_mapped_slot_or_placeholder
 dec	word_25870
 jmp	short loc_46F5
 
@@ -7764,18 +7848,18 @@ loc_476F:
 cmp	word_25870, 0Ch
 jz	short loc_471A
 mov	ax, word_25870
-call	sub_451C
+call	ent_draw_mapped_slot_or_placeholder
 inc	word_25870
 jmp	loc_46F5
 
 loc_4783:
 mov	ax, word_25870
-call	sub_451C
+call	ent_draw_mapped_slot_or_placeholder
 or	di, di
 jnz	short loc_479A
 mov	cs:byte_25D, 0
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 retn
 
 loc_479A:
@@ -7785,9 +7869,9 @@ cmp	word_256DA, 0Bh
 jnz	short loc_47DD
 cmp	word_256DC, 7
 jnz	short loc_47DD
-cmp	word_256A6, 250h
+cmp	comic_x, 250h
 jnz	short loc_47DD
-cmp	word_256A8, 50h	; 'P'
+cmp	comic_y, 50h	; 'P'
 jnz	short loc_47DD
 mov	byte_25201, 1
 mov	ax, 1
@@ -7796,19 +7880,19 @@ mov	cx, 9
 int	3		; Trap to Debugger
 mov	si, 991Ch
 push	di
-call	sub_4206
-call	sub_774E
+call	ui_draw_framed_message_from_stream
+call	gfx_present_and_flip_page
 pop	di
-call	sub_599
+call	input_wait_for_scancode_event
 
 loc_47DD:
 mov	ax, word_256DA
 mov	cs:[di], ax
 mov	ax, word_256DC
 mov	cs:[di+2], ax
-mov	ax, word_256A6
+mov	ax, comic_x
 mov	cs:[di+4], ax
-mov	ax, word_256A8
+mov	ax, comic_y
 add	ax, 10h
 mov	cs:[di+6], ax
 mov	si, 700h
@@ -7846,7 +7930,7 @@ add	bx, cx
 mov	cx, [bx]
 mov	[si+4],	cx
 mov	word ptr [bx], 0FFFFh
-call	sub_451C
+call	ent_draw_mapped_slot_or_placeholder
 mov	byte_25888, 14h
 mov	ax, 1
 lea	bx, unk_2E8DC
@@ -7854,14 +7938,14 @@ mov	cx, 4
 int	3		; Trap to Debugger
 mov	cs:byte_25D, 0
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 retn
-sub_46E6 endp
+ent_activate_slot_into_runtime endp
 
 
 
 
-sub_4870 proc near
+hud_set_data_disk_icon_collected proc near
 mov	ax, 1
 lea	bx, unk_2E8C0
 mov	cx, 3
@@ -7872,18 +7956,18 @@ mov	bx, 77h	; 'w'
 lea	si, aData_0	; "data.0"
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_78C6
+call	gfx_blit_sprite_opaque_offset_both_pages
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	ax, 8
-call	sub_6D95
+call	hud_add_bcd_counter_from_tens_value
 retn
-sub_4870 endp
+hud_set_data_disk_icon_collected endp
 
 
 
 
-sub_489E proc near
+hud_bcd_decrement_cx proc near
 jcxz	short locret_48A9
 dec	cl
 jge	short locret_48A9
@@ -7892,38 +7976,38 @@ dec	ch
 
 locret_48A9:
 retn
-sub_489E endp
+hud_bcd_decrement_cx endp
 
 
 
 
-sub_48AA proc near
+hud_decrement_word_25202_bcd proc near
 mov	cx, word_25202
-call	sub_489E
+call	hud_bcd_decrement_cx
 mov	word_25202, cx
 mov	ax, 120h
 mov	bx, 90h	; '�'
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 retn
-sub_48AA endp
+hud_decrement_word_25202_bcd endp
 
 
 
 
-sub_48BF proc near
+hud_decrement_lives_bcd proc near
 mov	cx, word_2526F
-call	sub_489E
+call	hud_bcd_decrement_cx
 mov	word_2526F, cx
 mov	ax, 120h
 mov	bx, 0A9h ; '�'
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 retn
-sub_48BF endp
+hud_decrement_lives_bcd endp
 
 
 
 
-sub_48D4 proc near
+ent_normalize_runtime_y_magnitudes proc near
 mov	cx, word_256DE
 jcxz	short locret_48EC
 mov	si, 700h
@@ -7939,14 +8023,14 @@ loop	loc_48DD
 
 locret_48EC:
 retn
-sub_48D4 endp
+ent_normalize_runtime_y_magnitudes endp
 
 db 0C0h	dup(0)
 
 
 ; Attributes: bp-based frame
 
-sub_49AD proc near
+ent_build_runtime_slots_for_viewport proc near
 
 var_4= word ptr	-4
 var_2= word ptr	-2
@@ -7962,7 +8046,7 @@ mov	al, [bx]
 mov	byte_2EA03, al
 cmp	al, 1
 jz	short loc_49D1
-call	sub_48D4
+call	ent_normalize_runtime_y_magnitudes
 
 loc_49D1:
 mov	si, word_256D8
@@ -8006,7 +8090,7 @@ jge	short loc_4A52
 add	ax, cs:[bx+2]
 cmp	ax, word_256A4
 jle	short loc_4A52
-call	sub_4A70
+call	ent_copy_descriptor_to_runtime_slot
 add	si, 20h	; ' '
 inc	[bp+var_2]
 cmp	[bp+var_2], 6
@@ -8028,12 +8112,12 @@ loc_4A6C:
 mov	sp, bp
 pop	bp
 retn
-sub_49AD endp
+ent_build_runtime_slots_for_viewport endp
 
 
 
 
-sub_4A70 proc near
+ent_copy_descriptor_to_runtime_slot proc near
 mov	cx, 8
 push	bx
 push	si
@@ -8076,7 +8160,7 @@ mov	byte_2EA02, al
 loc_4ADE:
 inc	byte_2EA04
 retn
-sub_4A70 endp
+ent_copy_descriptor_to_runtime_slot endp
 
 out	50h, ax
 dec	cx
@@ -8101,7 +8185,7 @@ db 59h,	0C1h, 59h, 0C9h, 59h
 
 ; Attributes: bp-based frame
 
-sub_4B25 proc near
+ent_update_object_behaviors proc near
 
 var_2= word ptr	-2
 
@@ -8195,7 +8279,7 @@ mov	byte ptr cs:[di+6], 2
 jmp	short loc_4BFD
 
 loc_4BEC:
-call	sub_4A70
+call	ent_copy_descriptor_to_runtime_slot
 add	di, 0Ch
 dec	[bp+var_2]
 jmp	loc_4F15
@@ -8207,12 +8291,12 @@ loc_4BFD:
 add	di, 0Ch
 dec	[bp+var_2]
 jmp	loc_4B59
-sub_4B25 endp
+ent_update_object_behaviors endp
 
 
 
 
-sub_4C06 proc near
+ent_deactivate_runtime_slot proc near
 mov	word ptr cs:[si+6], 0
 mov	bx, cs:[si+1Eh]
 mov	byte ptr cs:[bx+6], 2
@@ -8221,9 +8305,9 @@ mov	cs:[bx+8], ax
 mov	ax, cs:[bx+2]
 mov	cs:[bx+0Ah], ax
 retn
-sub_4C06 endp
+ent_deactivate_runtime_slot endp
 
-; START	OF FUNCTION CHUNK FOR sub_4B25
+; START	OF FUNCTION CHUNK FOR ent_update_object_behaviors
 
 loc_4C25:
 mov	word ptr cs:[si+6], 0
@@ -8280,7 +8364,7 @@ jnz	short loc_4CB5
 inc	al
 
 loc_4CB5:
-call	sub_6D99
+call	hud_add_bcd_counter_from_low_digit
 
 loc_4CB8:
 pop	di
@@ -8327,11 +8411,11 @@ mov	word ptr cs:[bx+6], 0
 add	bx, 20h	; ' '
 loop	loc_4D14
 push	si
-call	sub_45A6
-call	sub_48D4
+call	hud_increment_lives_bcd_clamped
+call	ent_normalize_runtime_y_magnitudes
 pop	si
 mov	ax, 5
-call	sub_6DE7
+call	hud_add_bcd_counter_from_mid_digit
 jmp	loc_4C25
 
 loc_4D30:
@@ -8348,13 +8432,13 @@ jnz	short loc_4D65
 cmp	byte ptr cs:[si+5], 80h	; '�'
 jz	short loc_4D5F
 mov	al, byte_2587D
-or	al, byte_25887
-or	al, byte_25883
+or	al, comic_is_attack_active
+or	al, comic_is_animation_active
 jnz	short loc_4D62
 jmp	loc_4E29
 
 loc_4D5F:
-call	sub_6806
+call	ent_process_interaction_script_and_queue_message
 
 loc_4D62:
 jmp	loc_5090
@@ -8404,11 +8488,11 @@ mov	bx, 9A3Dh
 mov	cx, 8
 int	3		; Trap to Debugger
 mov	ax, cs:[si+4]
-sub	byte_258CD, al
-mov	al, byte_258CD
+sub	comic_hp, al
+mov	al, comic_hp
 cmp	al, 0
 jge	short loc_4E16
-mov	byte_258CD, 0
+mov	comic_hp, 0
 neg	al
 cbw
 mov	cx, ax
@@ -8426,7 +8510,7 @@ jmp	short loc_4E15
 
 loc_4E0E:
 push	cx
-call	sub_3B8C
+call	hud_c_meter_step_down
 pop	cx
 loop	loc_4DF6
 
@@ -8462,49 +8546,49 @@ jmp	loc_5090
 
 loc_4E52:
 mov	al, byte_25886
-or	al, byte_25877
+or	al, comic_is_physics_active
 jnz	short loc_4E75
-mov	byte_25877, 1
-mov	byte_25878, 0
+mov	comic_is_physics_active, 1
+mov	comic_jump_counter, 0
 mov	ax, cs:[si+14h]
-mov	word_25872, ax
-mov	word_25874, 0FFF8h
+mov	comic_x_vel, ax
+mov	comic_y_vel, 0FFF8h
 jmp	loc_5090
 
 loc_4E75:
 mov	ax, cs:[si+14h]
-mov	word_25872, ax
-sub	word_25874, 8
+mov	comic_x_vel, ax
+sub	comic_y_vel, 8
 jmp	loc_5090
 
 loc_4E84:
 mov	al, byte_25886
 xor	al, 1
-mov	byte_25877, al
-mov	byte_25878, 0
-mov	word_25872, 0FFF8h
+mov	comic_is_physics_active, al
+mov	comic_jump_counter, 0
+mov	comic_x_vel, 0FFF8h
 cmp	word ptr cs:[si+18h], 2
 jz	short loc_4EA4
-mov	word_25872, 8
+mov	comic_x_vel, 8
 
 loc_4EA4:
-mov	word_25874, 0FFF4h
+mov	comic_y_vel, 0FFF4h
 jmp	loc_5090
 
 loc_4EAD:
 mov	ax, cs:[si+12h]
-sub	ax, word_256A8
+sub	ax, comic_y
 cmp	ax, 6
 jle	short loc_4EDB
 mov	al, byte_25886
 xor	al, 1
-mov	byte_25877, al
-mov	byte_25878, 0
+mov	comic_is_physics_active, al
+mov	comic_jump_counter, 0
 mov	ax, cs:[si+16h]
-mov	word_25874, ax
-mov	word_25872, 0
+mov	comic_y_vel, ax
+mov	comic_x_vel, 0
 mov	ax, cs:[si+10h]
-mov	word_256A6, ax
+mov	comic_x, ax
 
 loc_4EDB:
 jmp	loc_5090
@@ -8512,18 +8596,18 @@ jmp	loc_5090
 loc_4EDE:
 mov	al, byte_25886
 xor	al, 1
-mov	byte_25877, al
-mov	byte_25878, 0
-mov	word_25872, 0FFF8h
+mov	comic_is_physics_active, al
+mov	comic_jump_counter, 0
+mov	comic_x_vel, 0FFF8h
 mov	ax, cs:[si+18h]
 mov	word ptr cs:[si+18h], 1
 cmp	ax, 2
 jz	short loc_4F0C
 mov	word ptr cs:[si+18h], 2
-mov	word_25872, 8
+mov	comic_x_vel, 8
 
 loc_4F0C:
-mov	word_25874, 0FFFDh
+mov	comic_y_vel, 0FFFDh
 jmp	loc_5090
 
 loc_4F15:
@@ -8583,11 +8667,11 @@ cmp	ax, 15h
 jnz	short loc_4FB2
 
 loc_4FA3:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 jmp	short loc_4FC7
 
 loc_4FA8:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 mov	byte ptr cs:[bx+6], 1
 jmp	short loc_4FC7
 
@@ -8652,14 +8736,14 @@ loop	loc_4FDD
 loc_5031:
 cmp	byte_2587D, 1
 jz	short loc_5064
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 0Fh
 sub	ax, cs:[si+10h]
 jle	short loc_5090
 sub	ax, 0Eh
 cmp	ax, cs:[si]
 jge	short loc_5090
-mov	ax, word_256A8
+mov	ax, comic_y
 add	ax, 20h	; ' '
 sub	ax, cs:[si+12h]
 jle	short loc_5090
@@ -8669,14 +8753,14 @@ jge	short loc_5090
 jmp	loc_4D41
 
 loc_5064:
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 1Eh
 sub	ax, cs:[si+10h]
 jle	short loc_5090
 sub	ax, 1Ch
 cmp	ax, cs:[si]
 jge	short loc_5090
-mov	ax, word_256A8
+mov	ax, comic_y
 add	ax, 0Fh
 sub	ax, cs:[si+12h]
 jle	short loc_5090
@@ -8699,9 +8783,9 @@ loc_50A7:
 mov	cx, cs:[si+8]
 add	cx, ax
 jmp	short loc_50BA
-; END OF FUNCTION CHUNK	FOR sub_4B25
+; END OF FUNCTION CHUNK	FOR ent_update_object_behaviors
 align 2
-; START	OF FUNCTION CHUNK FOR sub_4B25
+; START	OF FUNCTION CHUNK FOR ent_update_object_behaviors
 
 loc_50B0:
 cmp	ax, cs:[si+8]
@@ -8726,11 +8810,11 @@ mov	ax, cs:[si+10h]
 mov	bx, cs:[si+12h]
 push	si
 mov	si, dx
-call	sub_7DBB
+call	draw_sprite
 pop	si
 pop	di
 jmp	loc_4B46
-; END OF FUNCTION CHUNK	FOR sub_4B25
+; END OF FUNCTION CHUNK	FOR ent_update_object_behaviors
 cmp	word ptr cs:[si+18h], 2
 jz	short loc_5103
 mov	bx, 4
@@ -8752,13 +8836,13 @@ push	ax
 
 loc_5111:
 push	ax
-call	sub_5BF7
+call	ent_probe_x_collision_strict
 pop	ax
 jb	short loc_5129
 mov	bx, cs:[si+12h]
 add	bx, cs:[si+2]
 mov	di, word_25274
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 jb	short loc_5143
 
 loc_5129:
@@ -8778,19 +8862,19 @@ mov	cs:[si+10h], ax
 
 locret_5148:
 retn
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jnb	short loc_5155
 cmp	word ptr cs:[si+16h], 0
 jz	short loc_515D
 
 loc_5155:
 mov	bx, cs:[si+1Ch]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 
 loc_515D:
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 mov	bx, ax
 jnb	short loc_516B
 neg	ax
@@ -8838,7 +8922,7 @@ jle	short loc_51DC
 mov	bx, 4
 
 loc_51DC:
-call	sub_5B7B
+call	ent_move_y_with_probe_and_bounce
 jnb	short loc_51EE
 xor	word ptr cs:[si+1Ch], 1
 mov	word ptr cs:[si+16h], 0
@@ -8849,9 +8933,9 @@ mov	cs:[si+12h], bx
 
 loc_51F2:
 mov	bx, 4
-call	sub_5BAC
+call	ent_move_x_with_range_probe_and_bounce
 retn
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jnb	short loc_5205
 cmp	word ptr cs:[si+16h], 0
 jz	short loc_5214
@@ -8859,18 +8943,18 @@ jz	short loc_5214
 loc_5205:
 mov	bx, 4
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 pop	word ptr cs:[si+18h]
 retn
 
 loc_5214:
 mov	bx, 4
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 jz	short loc_5230
 jl	short loc_5238
 mov	word ptr cs:[si+18h], 2
-cmp	byte_2588D, 2
+cmp	comic_facing, 2
 jz	short loc_5245
 
 loc_5230:
@@ -8879,12 +8963,12 @@ jmp	short locret_5258
 
 loc_5238:
 mov	word ptr cs:[si+18h], 1
-cmp	byte_2588D, 2
+cmp	comic_facing, 2
 jz	short loc_5230
 
 loc_5245:
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 pop	word ptr cs:[si+18h]
 jnb	short locret_5258
 mov	word ptr cs:[si+16h], 0FFF7h
@@ -8892,7 +8976,7 @@ mov	word ptr cs:[si+16h], 0FFF7h
 locret_5258:
 retn
 mov	bx, 4
-mov	ax, word_256A8
+mov	ax, comic_y
 sub	ax, cs:[si+12h]
 jnb	short loc_5267
 neg	ax
@@ -8903,22 +8987,22 @@ jg	short loc_526F
 mov	bx, 8
 
 loc_526F:
-call	sub_5BAC
+call	ent_move_x_with_range_probe_and_bounce
 retn
 mov	bx, 2
-mov	ax, word_256A8
+mov	ax, comic_y
 sub	ax, cs:[si+12h]
 jz	short loc_5286
 jge	short loc_5283
 neg	bx
 
 loc_5283:
-call	sub_5B7B
+call	ent_move_y_with_probe_and_bounce
 
 loc_5286:
 mov	bx, 4
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 jz	short locret_52BE
 jl	short loc_52A4
 cmp	word ptr cs:[si+18h], 2
@@ -8934,14 +9018,14 @@ jmp	short locret_52BE
 
 loc_52B3:
 push	word ptr cs:[si+18h]
-call	sub_5BAC
+call	ent_move_x_with_range_probe_and_bounce
 pop	word ptr cs:[si+18h]
 
 locret_52BE:
 retn
 mov	word ptr cs:[si+16h], 0
 mov	word ptr cs:[si+14h], 0
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_52DE
@@ -8950,7 +9034,7 @@ mov	cs:[si+1Ch], ax
 
 loc_52DE:
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 jge	short loc_52EA
 neg	ax
 
@@ -8984,13 +9068,13 @@ push	ax
 
 loc_5329:
 push	ax
-call	sub_5BF7
+call	ent_probe_x_collision_strict
 pop	ax
 jb	short loc_5341
 mov	bx, cs:[si+12h]
 add	bx, cs:[si+2]
 mov	di, word_25274
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 jb	short loc_535B
 
 loc_5341:
@@ -9016,17 +9100,17 @@ jle	short loc_53CD
 cmp	ax, 1
 jz	short loc_5389
 mov	ax, cs:[si+12h]
-cmp	ax, word_256A8
+cmp	ax, comic_y
 jg	short loc_5389
 jz	short loc_53AE
 mov	word ptr cs:[si+16h], 7
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 dec	word ptr cs:[si+1Ch]
 jmp	short loc_53AE
 
 loc_5389:
 mov	word ptr cs:[si+16h], 0FFF7h
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jnb	short loc_53AE
 cmp	word ptr cs:[si+1Ch], 1
 jnz	short loc_53AE
@@ -9038,14 +9122,14 @@ retn
 loc_53AE:
 mov	word ptr cs:[si+18h], 2
 mov	ax, cs:[si+10h]
-cmp	ax, word_256A6
+cmp	ax, comic_x
 jg	short loc_53C6
 jz	short locret_53CC
 mov	word ptr cs:[si+18h], 1
 
 loc_53C6:
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 
 locret_53CC:
 retn
@@ -9066,25 +9150,25 @@ push	word_25272
 mov	word_25274, 0FFFFh
 mov	word_25272, 0FFFFh
 mov	ax, cs:[si+12h]
-sub	ax, word_256A8
+sub	ax, comic_y
 jz	short loc_5422
 jg	short loc_5414
 mov	word ptr cs:[si+16h], 1
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jmp	short loc_5422
 
 loc_5414:
 cmp	ax, 1
 jle	short loc_5422
 mov	word ptr cs:[si+16h], 0FFFDh
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 
 loc_5422:
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 or	ax, ax
 jz	short loc_542F
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 
 loc_542F:
 pop	word_25272
@@ -9096,20 +9180,20 @@ mov	word ptr cs:[si+1Ch], 1
 mov	word ptr cs:[si+16h], 0FFF8h
 
 loc_544B:
-call	sub_5B01
+call	ent_move_y_and_bounce
 mov	bx, 8
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_545D
 jmp	loc_54E7
 
 loc_545D:
 mov	ax, cs:[si+12h]
-cmp	ax, word_256A8
+cmp	ax, comic_y
 jge	short loc_5486
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 jge	short loc_5473
 neg	ax
 
@@ -9143,13 +9227,13 @@ push	ax
 
 loc_54B0:
 push	ax
-call	sub_5BF7
+call	ent_probe_x_collision_strict
 pop	ax
 jb	short loc_54C8
 mov	bx, cs:[si+12h]
 add	bx, cs:[si+2]
 mov	di, word_25274
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 jb	short loc_54E2
 
 loc_54C8:
@@ -9191,13 +9275,13 @@ push	ax
 
 loc_5518:
 push	ax
-call	sub_5BF7
+call	ent_probe_x_collision_strict
 pop	ax
 jb	short loc_5530
 mov	bx, cs:[si+12h]
 add	bx, cs:[si+2]
 mov	di, word_25274
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 jb	short loc_554A
 
 loc_5530:
@@ -9220,17 +9304,17 @@ retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_5560
 mov	word ptr cs:[si+1Ch], 1
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 
 loc_5560:
 mov	word ptr cs:[si+16h], 0
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 mov	word ptr cs:[si+14h], 0
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 jge	short loc_5582
 neg	ax
 
@@ -9240,7 +9324,7 @@ jg	short loc_558D
 mov	word ptr cs:[si+16h], 0FFF7h
 
 loc_558D:
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_55AF
@@ -9251,26 +9335,26 @@ jz	short loc_55AF
 neg	word ptr cs:[si+16h]
 
 loc_55AF:
-call	sub_5B01
+call	ent_move_y_and_bounce
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 inc	word ptr cs:[si+16h]
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_55C9
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 
 loc_55C9:
 cmp	word ptr cs:[si+16h], 0
 jl	short locret_55D9
 mov	word ptr cs:[si+16h], 0FFF4h
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 
 locret_55D9:
 retn
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jnb	short loc_55E6
 cmp	word ptr cs:[si+16h], 0
 jz	short loc_55F5
@@ -9278,17 +9362,17 @@ jz	short loc_55F5
 loc_55E6:
 mov	bx, 4
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 pop	word ptr cs:[si+18h]
 retn
 
 loc_55F5:
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 or	ax, ax
 jz	short loc_5614
 mov	bx, 4
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 pop	word ptr cs:[si+18h]
 jnb	short locret_561A
 mov	word ptr cs:[si+16h], 0FFF7h
@@ -9301,13 +9385,13 @@ locret_561A:
 retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_5648
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, cs:[si+10h]
 jnb	short loc_562D
 neg	ax
 
 loc_562D:
-mov	bx, word_256A8
+mov	bx, comic_y
 sub	bx, cs:[si+12h]
 jb	short loc_563B
 cmp	ax, bx
@@ -9325,7 +9409,7 @@ mov	word ptr cs:[si+14h], 0
 cmp	word ptr cs:[si+1Ch], 2
 jz	short loc_5666
 inc	word ptr cs:[si+16h]
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_565F
 retn
 
@@ -9334,13 +9418,13 @@ mov	word ptr cs:[si+1Ch], 2
 retn
 
 loc_5666:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 mov	word ptr cs:[si+14h], 0
 cmp	word ptr cs:[si+1Ch], 2
 jz	short loc_5688
 inc	word ptr cs:[si+16h]
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_5681
 retn
 
@@ -9349,11 +9433,11 @@ mov	word ptr cs:[si+1Ch], 2
 retn
 
 loc_5688:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 mov	word ptr cs:[si+18h], 2
 mov	bx, 8
-call	sub_5A4E
+call	ent_move_x_and_bounce
 jnb	short loc_56B4
 mov	ax, cs:[si+10h]
 sub	ax, word_256A2
@@ -9377,11 +9461,11 @@ jl	short loc_56CF
 mov	word ptr cs:[si+16h], 1
 
 loc_56CF:
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_56E3
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 mov	word ptr cs:[si+1Ch], 1
 
 loc_56E3:
@@ -9389,24 +9473,24 @@ cmp	word ptr cs:[si+1Ch], 2
 jz	short loc_5739
 mov	ax, cs:[si+12h]
 add	ax, 18h
-sub	ax, word_256A8
+sub	ax, comic_y
 jz	short loc_5712
 jg	short loc_5704
 mov	word ptr cs:[si+16h], 3
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jmp	short loc_5712
 
 loc_5704:
 cmp	ax, 4
 jl	short loc_5712
 mov	word ptr cs:[si+16h], 0FFFBh
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 
 loc_5712:
 mov	bx, 8
 push	word ptr cs:[si+18h]
-call	sub_5A4E
-call	sub_5CCF
+call	ent_move_x_and_bounce
+call	ent_set_horizontal_chase_direction_to_comic
 mov	bx, cs:[si+18h]
 pop	word ptr cs:[si+18h]
 cmp	bx, cs:[si+18h]
@@ -9420,29 +9504,29 @@ retn
 
 loc_5739:
 mov	ax, cs:[si+12h]
-sub	ax, word_256A8
+sub	ax, comic_y
 jz	short loc_575E
 jg	short loc_5750
 mov	word ptr cs:[si+16h], 7
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jmp	short loc_575E
 
 loc_5750:
 cmp	ax, 8
 jl	short loc_575E
 mov	word ptr cs:[si+16h], 0FFF7h
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 
 loc_575E:
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 cmp	ax, 8
 jl	short locret_576C
 mov	bx, 8
-call	sub_5A4E
+call	ent_move_x_and_bounce
 
 locret_576C:
 retn
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jnb	short loc_5779
 cmp	word ptr cs:[si+16h], 0
 jz	short loc_5788
@@ -9450,16 +9534,16 @@ jz	short loc_5788
 loc_5779:
 mov	bx, 8
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 pop	word ptr cs:[si+18h]
 retn
 
 loc_5788:
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 or	ax, ax
 jz	short loc_57BC
 mov	ax, cs:[si+18h]
-cmp	al, byte_2588D
+cmp	al, comic_facing
 jnz	short loc_57A6
 cmp	ax, 20h	; ' '
 jle	short loc_57A0
@@ -9471,7 +9555,7 @@ mov	word ptr cs:[si+16h], 0FFF8h
 loc_57A6:
 mov	bx, 8
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 pop	word ptr cs:[si+18h]
 jnb	short loc_57BC
 mov	word ptr cs:[si+16h], 0FFF7h
@@ -9482,13 +9566,13 @@ retn
 mov	word ptr cs:[si+14h], 0
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_57F0
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, cs:[si+10h]
 jnb	short loc_57DB
 neg	ax
 
 loc_57DB:
-mov	bx, word_256A8
+mov	bx, comic_y
 sub	bx, cs:[si+12h]
 jb	short locret_57E9
 cmp	ax, bx
@@ -9506,7 +9590,7 @@ push	word_25272
 mov	word_25274, 0FFFFh
 mov	word_25272, 0FFFFh
 inc	word ptr cs:[si+16h]
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 pop	word_25272
 pop	word_25274
 retn
@@ -9518,7 +9602,7 @@ mov	word ptr cs:[si+1Ch], 2
 neg	word ptr cs:[si+16h]
 
 loc_5831:
-call	sub_5B01
+call	ent_move_y_and_bounce
 jnb	short locret_583E
 mov	ax, cs:[si+1Ch]
 mov	cs:[si+18h], ax
@@ -9528,16 +9612,16 @@ retn
 mov	word ptr cs:[si+16h], 0
 mov	word ptr cs:[si+14h], 4
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 cmp	word ptr cs:[si+1Ch], 1
 jge	short loc_5878
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_5871
 mov	word ptr cs:[si+18h], 1
 mov	word ptr cs:[si+14h], 4
 mov	bx, 6
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 
 loc_5871:
@@ -9553,7 +9637,7 @@ mov	word ptr cs:[si+14h], 4
 cmp	word ptr cs:[si+1Ch], 10h
 jg	short locret_589C
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 
 locret_589C:
 retn
@@ -9561,7 +9645,7 @@ retn
 loc_589D:
 mov	word ptr cs:[si+14h], 0
 mov	word ptr cs:[si+16h], 0FFEFh
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 retn
 cmp	word ptr cs:[si+1Ch], 1
 jge	short loc_58C1
@@ -9574,38 +9658,38 @@ cmp	word ptr cs:[si+1Ch], 20h ; ' '
 jz	short loc_58E8
 inc	word ptr cs:[si+1Ch]
 mov	word ptr cs:[si+16h], 0FFFEh
-call	sub_5B01
+call	ent_move_y_and_bounce
 mov	word ptr cs:[si+18h], 1
 mov	word ptr cs:[si+14h], 4
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 retn
 
 loc_58E8:
 mov	word ptr cs:[si+18h], 1
 mov	word ptr cs:[si+14h], 4
 mov	bx, 0Ch
-call	sub_5A4E
+call	ent_move_x_and_bounce
 jb	short loc_58FD
 retn
 
 loc_58FD:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 mov	word ptr cs:[si+18h], 2
 mov	word ptr cs:[si+16h], 0
 mov	word ptr cs:[si+14h], 4
 mov	bx, 4
-call	sub_5A4E
+call	ent_move_x_and_bounce
 jb	short loc_591C
 retn
 
 loc_591C:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 mov	word ptr cs:[si+14h], 0
 mov	word ptr cs:[si+16h], 0
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 cmp	word ptr cs:[si+1Ch], 1
 jz	short loc_593B
 cmp	ax, 10h
@@ -9619,7 +9703,7 @@ mov	word ptr cs:[si+18h], 1
 mov	word ptr cs:[si+16h], 0
 mov	word ptr cs:[si+14h], 8
 mov	bx, 8
-call	sub_5A4E
+call	ent_move_x_and_bounce
 jb	short loc_5968
 retn
 
@@ -9628,17 +9712,17 @@ mov	word ptr cs:[si+1Ch], 0
 retn
 
 loc_5968:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_599F
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, cs:[si+10h]
 jnb	short loc_597E
 neg	ax
 
 loc_597E:
-mov	bx, word_256A8
+mov	bx, comic_y
 sub	bx, cs:[si+12h]
 jb	short loc_5992
 sub	bx, cs:[si+2]
@@ -9658,7 +9742,7 @@ mov	word ptr cs:[si+14h], 0
 cmp	word ptr cs:[si+1Ch], 2
 jz	short loc_59BD
 inc	word ptr cs:[si+16h]
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_59B6
 retn
 
@@ -9667,13 +9751,13 @@ mov	word ptr cs:[si+1Ch], 2
 retn
 
 loc_59BD:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 mov	word ptr cs:[si+18h], 2
 jmp	short loc_59EB
 cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_59E5
-mov	ax, word_256A6
+mov	ax, comic_x
 sub	ax, cs:[si+10h]
 jnb	short loc_59E0
 
@@ -9694,14 +9778,14 @@ jz	short loc_5A4A
 mov	word ptr cs:[si+1Ch], 1
 mov	bx, 0Ch
 push	word ptr cs:[si+18h]
-call	sub_5A4E
+call	ent_move_x_and_bounce
 jb	short loc_5A47
-call	sub_5CCF
+call	ent_set_horizontal_chase_direction_to_comic
 pop	ax
 cmp	ax, cs:[si+18h]
 jnz	short loc_5A28
 mov	word ptr cs:[si+16h], 4
-mov	ax, word_256A8
+mov	ax, comic_y
 sub	ax, cs:[si+12h]
 jb	short loc_5A2E
 cmp	ax, 0Ch
@@ -9713,7 +9797,7 @@ loc_5A28:
 mov	word ptr cs:[si+16h], 0Ch
 
 loc_5A2E:
-call	sub_5A99
+call	ent_apply_gravity_and_move_y
 jb	short loc_5A34
 retn
 
@@ -9727,12 +9811,12 @@ loc_5A47:
 add	sp, 2
 
 loc_5A4A:
-call	sub_4C06
+call	ent_deactivate_runtime_slot
 retn
 
 
 
-sub_5A4E proc near
+ent_move_x_and_bounce proc near
 cmp	word ptr cs:[si+18h], 2
 jz	short loc_5A67
 mov	cs:[si+14h], bx
@@ -9752,7 +9836,7 @@ add	ax, bx
 push	ax
 
 loc_5A74:
-call	sub_5BF7
+call	ent_probe_x_collision_strict
 pop	ax
 jnb	short loc_5A93
 cmp	word ptr cs:[si+18h], 2
@@ -9769,12 +9853,12 @@ loc_5A93:
 mov	cs:[si+10h], ax
 clc
 retn
-sub_5A4E endp
+ent_move_x_and_bounce endp
 
 
 
 
-sub_5A99 proc near
+ent_apply_gravity_and_move_y proc near
 inc	word ptr cs:[si+16h]
 cmp	word ptr cs:[si+16h], 0Ch
 jl	short loc_5AAA
@@ -9792,7 +9876,7 @@ cmp	word ptr cs:[si+16h], 0
 jl	short loc_5AF0
 add	bx, cs:[si+2]
 mov	di, word_25274
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 pop	bx
 jnb	short loc_5AEA
 mov	word ptr cs:[si+16h], 0
@@ -9810,18 +9894,18 @@ retn
 
 loc_5AF0:
 mov	di, word_25272
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 pop	bx
 jnb	short loc_5AEA
 and	word ptr cs:[si+12h], 0FFF0h
 stc
 retn
-sub_5A99 endp
+ent_apply_gravity_and_move_y endp
 
 
 
 
-sub_5B01 proc near
+ent_move_y_and_bounce proc near
 mov	ax, cs:[si+10h]
 mov	bx, cs:[si+12h]
 add	bx, cs:[si+16h]
@@ -9838,7 +9922,7 @@ jnz	short loc_5B2D
 mov	di, word_25272
 
 loc_5B2D:
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 pop	bx
 jb	short loc_5B43
 mov	ax, word_256A4
@@ -9864,7 +9948,7 @@ retn
 
 loc_5B5E:
 mov	di, word_25272
-call	sub_5C91
+call	ent_probe_tile_above_threshold
 pop	bx
 jb	short loc_5B70
 cmp	bx, word_256A4
@@ -9878,12 +9962,12 @@ loc_5B75:
 neg	word ptr cs:[si+16h]
 stc
 retn
-sub_5B01 endp
+ent_move_y_and_bounce endp
 
 
 
 
-sub_5B7B proc near
+ent_move_y_with_probe_and_bounce proc near
 mov	cs:[si+16h], bx
 mov	ax, cs:[si+10h]
 add	bx, cs:[si+12h]
@@ -9896,7 +9980,7 @@ loc_5B93:
 mov	cx, cs:[si]
 shr	cx, 1
 add	ax, cx
-call	sub_5CA1
+call	ent_probe_tile_range_in_viewport
 pop	bx
 jnb	short loc_5BA6
 neg	word ptr cs:[si+16h]
@@ -9907,12 +9991,12 @@ loc_5BA6:
 mov	cs:[si+12h], bx
 clc
 retn
-sub_5B7B endp
+ent_move_y_with_probe_and_bounce endp
 
 
 
 
-sub_5BAC proc near
+ent_move_x_with_range_probe_and_bounce proc near
 cmp	word ptr cs:[si+18h], 2
 jz	short loc_5BC5
 mov	cs:[si+14h], bx
@@ -9932,7 +10016,7 @@ add	ax, bx
 push	ax
 
 loc_5BD2:
-call	sub_5C3E
+call	ent_probe_x_collision_range
 pop	ax
 jnb	short loc_5BF1
 cmp	word ptr cs:[si+18h], 2
@@ -9949,12 +10033,12 @@ loc_5BF1:
 mov	cs:[si+10h], ax
 clc
 retn
-sub_5BAC endp
+ent_move_x_with_range_probe_and_bounce endp
 
 
 
 
-sub_5BF7 proc near
+ent_probe_x_collision_strict proc near
 cmp	ax, word_256A2
 jl	short loc_5C3A
 mov	cx, word_256A2
@@ -9965,7 +10049,7 @@ mov	bx, cs:[si+12h]
 add	bx, cs:[si+2]
 sub	bx, 8
 push	ax
-call	sub_1CFE
+call	get_tile_at_pixels
 pop	cx
 shr	cx, 1
 shr	cx, 1
@@ -9987,12 +10071,12 @@ retn
 loc_5C3C:
 clc
 retn
-sub_5BF7 endp
+ent_probe_x_collision_strict endp
 
 
 
 
-sub_5C3E proc near
+ent_probe_x_collision_range proc near
 cmp	ax, word_256A2
 jl	short loc_5C3A
 mov	cx, word_256A2
@@ -10003,7 +10087,7 @@ mov	bx, cs:[si+12h]
 add	bx, cs:[si+2]
 sub	bx, 8
 push	ax
-call	sub_1CFE
+call	get_tile_at_pixels
 pop	cx
 shr	cx, 1
 shr	cx, 1
@@ -10029,15 +10113,15 @@ retn
 loc_5C8F:
 stc
 retn
-sub_5C3E endp
+ent_probe_x_collision_range endp
 
 
 
 
-sub_5C91 proc near
+ent_probe_tile_above_threshold proc near
 cmp	bx, 0
 jl	short loc_5C9F
-call	sub_1CFE
+call	get_tile_at_pixels
 cmp	ax, di
 jle	short loc_5C9F
 clc
@@ -10046,12 +10130,12 @@ retn
 loc_5C9F:
 stc
 retn
-sub_5C91 endp
+ent_probe_tile_above_threshold endp
 
 
 
 
-sub_5CA1 proc near
+ent_probe_tile_range_in_viewport proc near
 cmp	bx, 0
 jl	short loc_5CCD
 cmp	bx, word_2527E
@@ -10062,7 +10146,7 @@ jl	short loc_5C9F
 add	cx, 0A0h ; '�'
 cmp	bx, cx
 jge	short loc_5C9F
-call	sub_1CFE
+call	get_tile_at_pixels
 cmp	ax, word_25274
 jle	short loc_5CCD
 cmp	ax, word_25276
@@ -10073,14 +10157,14 @@ retn
 loc_5CCD:
 stc
 retn
-sub_5CA1 endp
+ent_probe_tile_range_in_viewport endp
 
 
 
 
-sub_5CCF proc near
+ent_set_horizontal_chase_direction_to_comic proc near
 mov	ax, cs:[si+10h]
-sub	ax, word_256A6
+sub	ax, comic_x
 jl	short loc_5CE2
 mov	word ptr cs:[si+18h], 2
 jmp	short locret_5CEA
@@ -10092,12 +10176,12 @@ neg	ax
 
 locret_5CEA:
 retn
-sub_5CCF endp
+ent_set_horizontal_chase_direction_to_comic endp
 
 
 
 
-sub_5CEB proc near
+spawn_player_projectile proc near
 mov	cl, byte_251FC
 xor	ch, ch
 lea	si, unk_258CE
@@ -10105,11 +10189,11 @@ lea	si, unk_258CE
 loc_5CF5:
 cmp	word ptr [si], 0FFFFh
 jnz	short loc_5D58
-mov	ax, word_256A6
+mov	ax, comic_x
 add	ax, 4
 mov	[si], ax
 mov	ax, 0FFF0h
-cmp	byte_2588D, 2
+cmp	comic_facing, 2
 jz	short loc_5D18
 neg	ax
 cmp	byte_2587D, 1
@@ -10118,7 +10202,7 @@ add	word ptr [si], 10h
 
 loc_5D18:
 mov	[si+4],	ax
-mov	ax, word_256A8
+mov	ax, comic_y
 add	ax, 4
 cmp	byte_2587D, 1
 jz	short loc_5D2B
@@ -10149,12 +10233,12 @@ clc
 
 locret_5D5E:
 retn
-sub_5CEB endp
+spawn_player_projectile endp
 
 
 
 
-sub_5D5F proc near
+update_projectiles proc near
 mov	cl, byte_251FC
 or	cl, cl
 jnz	short loc_5D68
@@ -10197,7 +10281,7 @@ mov	ax, [si]
 mov	bx, [si+2]
 add	ax, 3
 add	bx, 3
-call	sub_1CFE
+call	get_tile_at_pixels
 mov	cx, ax
 mov	dx, bx
 cmp	ax, word_25272
@@ -10218,7 +10302,7 @@ push	si
 mov	si, 0A4A6h
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 pop	si
@@ -10257,7 +10341,7 @@ mov	cx, [si]
 mov	dx, [si+2]
 add	cx, 3
 add	dx, 3
-call	sub_2D06
+call	handle_projectile_impact
 pop	si
 pop	bx
 pop	ax
@@ -10267,12 +10351,12 @@ push	si
 mov	si, 0A4D4h
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 pop	si
 jmp	short loc_5DFD
-sub_5D5F endp
+update_projectiles endp
 
 ; START	OF FUNCTION CHUNK FOR start
 
@@ -10283,54 +10367,54 @@ int	21h		; DOS -	GET CURRENT TIME
 			; DL = hundredths of seconds
 mov	dl, cl
 mov	word_2FB89, dx
-call	sub_6545
+call	cfg_compute_hardware_seed
 mov	dx, 9C73h
-call	sub_633C
+call	savegame_write_snapshot
 mov	word_2EC6C, 0FFFFh
 jmp	short loc_5E73
 ; END OF FUNCTION CHUNK	FOR start
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_5E6D:
 mov	dx, 9C73h
-call	sub_636F
-; END OF FUNCTION CHUNK	FOR sub_35DE
+call	savegame_read_snapshot
+; END OF FUNCTION CHUNK	FOR game_loop
 ; START	OF FUNCTION CHUNK FOR start
 
 loc_5E73:
-call	sub_62A4
-call	sub_6DF4
+call	cfg_load_options_or_defaults
+call	cfg_run_integrity_challenge
 or	ax, ax
 jz	short loc_5E80
-call	sub_631A
+call	cfg_save_options
 
 loc_5E80:
 mov	ax, 1
 mov	bx, 9D3Fh
 mov	cx, 1
 int	3		; Trap to Debugger
-call	sub_5F86
+call	ui_draw_menu_frame
 mov	ax, 50h	; 'P'
 mov	bx, 28h	; '('
 mov	si, 9AE4h
-call	sub_42D4
-call	sub_774E
-call	sub_5F86
+call	ui_draw_string_8x8
+call	gfx_present_and_flip_page
+call	ui_draw_menu_frame
 mov	ax, 50h	; 'P'
 mov	bx, 28h	; '('
 mov	si, 9AE4h
-call	sub_42D4
+call	ui_draw_string_8x8
 
 loc_5EAB:
 mov	ax, 9CFAh
 mov	word_2ED1B, ax
 mov	byte_2ED1A, 0
 mov	ax, word_2EC6C
-call	sub_6011
+call	ui_select_next_valid_option
 mov	word_2ED1D, ax
 
 loc_5EBF:
-call	sub_615C
+call	ui_option_list_input_loop
 jnb	short loc_5EC7
 jmp	loc_215
 
@@ -10351,7 +10435,7 @@ dec	word_2EC6C
 add	al, 31h	; '1'
 mov	byte_2EC6A, al
 mov	dx, 9C83h
-call	sub_636F
+call	savegame_read_snapshot
 mov	ax, 3
 int	3		; Trap to Debugger
 jmp	loc_16F8
@@ -10368,19 +10452,19 @@ inc	word_2ED1D
 cmp	byte ptr [bx], 0
 jnz	short loc_5F01
 mov	word ptr [bx], 20h ; ' '
-call	sub_606B
-call	sub_774E
-call	sub_606B
-call	sub_774E
-call	sub_61C8
+call	ui_render_option_list
+call	gfx_present_and_flip_page
+call	ui_render_option_list
+call	gfx_present_and_flip_page
+call	ui_edit_selected_option_text
 jb	short loc_5F47
 inc	word_2EC74
-call	sub_631A
+call	cfg_save_options
 mov	ax, word_2ED1D
 add	al, 31h	; '1'
 mov	byte_2EC6A, al
 mov	dx, 9C83h
-call	sub_633C
+call	savegame_write_snapshot
 mov	ax, 9CFAh
 mov	word_2ED1B, ax
 mov	byte_2ED1A, 0
@@ -10394,9 +10478,9 @@ mov	ax, 9D0Ah
 mov	word_2ED1B, ax
 mov	byte_2ED1A, 1
 mov	ax, 0FFFFh
-call	sub_6011
+call	ui_select_next_valid_option
 mov	word_2ED1D, ax
-call	sub_615C
+call	ui_option_list_input_loop
 jb	short loc_5F83
 mov	ax, word_2ED1D
 shl	ax, 1
@@ -10408,7 +10492,7 @@ mov	bx, ax
 mov	bx, [bx]
 mov	byte ptr [bx], 0
 dec	word_2EC74
-call	sub_631A
+call	cfg_save_options
 
 loc_5F83:
 jmp	loc_5EAB
@@ -10416,78 +10500,78 @@ jmp	loc_5EAB
 
 
 
-sub_5F86 proc near
+ui_draw_menu_frame proc near
 mov	ax, 0
 mov	bx, 0
 mov	cx, 140h
 mov	dx, 0C8h ; '�'
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, 9
-call	sub_4339
+call	ega_set_map_mask
 mov	cx, 18h
 mov	bx, 0
 mov	al, 22h	; '"'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, 26h	; '&'
 mov	al, 23h	; '#'
 
 loc_5FB0:
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_5FB0
 mov	al, 24h	; '$'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	cx, 0C0h ; '�'
 mov	bx, 0
 mov	al, 3Ah	; ':'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, 26h	; '&'
 mov	al, 3Bh	; ';'
 
 loc_5FCB:
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_5FCB
 mov	al, 3Ch	; '<'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, 14h
 mov	cx, 20h	; ' '
 
 loc_5FDC:
 mov	bx, 0
 mov	al, 25h	; '%'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	bx, 138h
 mov	al, 26h	; '&'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 add	cx, 8
 dec	dx
 jnz	short loc_5FDC
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, 10h
 mov	bx, 0
 mov	si, 9AA0h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 28h	; '('
 mov	bx, 10h
 mov	si, 9AC5h
-call	sub_42D4
+call	ui_draw_string_8x8
 retn
-sub_5F86 endp
+ui_draw_menu_frame endp
 
 
 
 
-sub_6011 proc near
+ui_select_next_valid_option proc near
 push	ax
 
 loc_6012:
 cmp	ax, 7
 jz	short loc_601F
 inc	ax
-call	sub_6030
+call	ui_is_option_selectable
 jb	short loc_6012
 pop	cx
 retn
@@ -10495,30 +10579,30 @@ retn
 loc_601F:
 pop	ax
 retn
-sub_6011 endp
+ui_select_next_valid_option endp
 
 
 
 
-sub_6021 proc near
+ui_select_prev_valid_option proc near
 push	ax
 
 loc_6022:
 or	ax, ax
 jz	short loc_601F
 dec	ax
-call	sub_6030
+call	ui_is_option_selectable
 jb	short loc_6022
 pop	cx
 retn
-sub_6021 endp
+ui_select_prev_valid_option endp
 
 pop	ax
 retn
 
 
 
-sub_6030 proc near
+ui_is_option_selectable proc near
 cmp	ax, 7
 jz	short loc_6059
 cmp	ax, 6
@@ -10550,12 +10634,12 @@ retn
 loc_6069:
 clc
 retn
-sub_6030 endp
+ui_is_option_selectable endp
 
 
 
 
-sub_606B proc near
+ui_render_option_list proc near
 mov	word_2EC6E, 0
 mov	ax, 38h	; '8'
 mov	bx, 3Ch	; '<'
@@ -10568,7 +10652,7 @@ sub	dx, 8
 
 loc_608A:
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, word_2ED1D
 neg	ax
 add	ax, 8
@@ -10583,18 +10667,18 @@ push	ax
 cmp	ax, cx
 jnz	short loc_60B3
 mov	ax, 0Ah
-call	sub_4339
+call	ega_set_map_mask
 jmp	short loc_60B9
 
 loc_60B3:
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 
 loc_60B9:
 mov	si, [si]
 push	si
 mov	ax, 48h	; 'H'
-call	sub_42D4
+call	ui_draw_string_8x8
 pop	si
 cmp	si, 9C96h
 jl	short loc_611D
@@ -10617,7 +10701,7 @@ push	ax
 push	bx
 push	dx
 push	si
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 pop	si
 pop	dx
 pop	bx
@@ -10636,7 +10720,7 @@ push	ax
 push	bx
 push	dx
 push	si
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 pop	si
 pop	dx
 pop	bx
@@ -10676,21 +10760,21 @@ mov	si, 9EAAh
 loc_614E:
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
-sub_606B endp
+ui_render_option_list endp
 
 
 
 
-sub_615C proc near
-call	sub_606B
-call	sub_774E
+ui_option_list_input_loop proc near
+call	ui_render_option_list
+call	gfx_present_and_flip_page
 mov	cs:byte_61, 0
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 
 loc_616E:
 cmp	cs:byte_61, 0
@@ -10712,15 +10796,15 @@ jmp	short loc_616E
 
 loc_61AE:
 mov	ax, word_2ED1D
-call	sub_6011
+call	ui_select_next_valid_option
 mov	word_2ED1D, ax
-jmp	short sub_615C
+jmp	short ui_option_list_input_loop
 
 loc_61B9:
 mov	ax, word_2ED1D
-call	sub_6021
+call	ui_select_prev_valid_option
 mov	word_2ED1D, ax
-jmp	short sub_615C
+jmp	short ui_option_list_input_loop
 
 loc_61C4:
 stc
@@ -10729,13 +10813,13 @@ retn
 loc_61C6:
 clc
 retn
-sub_615C endp
+ui_option_list_input_loop endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_61C8 proc near
+ui_edit_selected_option_text proc near
 
 var_8= word ptr	-8
 var_6= word ptr	-6
@@ -10778,18 +10862,18 @@ mov	bx, [bp+var_4]
 mov	cx, 0A0h ; '�'
 mov	dx, 8
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, [bp+var_2]
 mov	bx, [bp+var_4]
 mov	si, [bp+var_6]
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	cx, bx
 mov	bx, ax
 mov	al, 2Bh	; '+'
-call	sub_42E8
-call	sub_774E
+call	ui_draw_glyph_8x8
+call	gfx_present_and_flip_page
 xor	ax, ax
 int	16h		; KEYBOARD - READ CHAR FROM BUFFER, WAIT IF EMPTY
 			; Return: AH = scan code, AL = character
@@ -10845,12 +10929,12 @@ mov	cs:byte_60, 0
 mov	sp, bp
 pop	bp
 retn
-sub_61C8 endp
+ui_edit_selected_option_text endp
 
 
 
 
-sub_62A4 proc near
+cfg_load_options_or_defaults proc near
 mov	dx, 9C7Ch
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
@@ -10891,12 +10975,12 @@ mov	word_2ECD2, 0
 mov	word_2ECD4, 0
 mov	word_2ECD6, 0
 retn
-sub_62A4 endp
+cfg_load_options_or_defaults endp
 
 
 
 
-sub_631A proc near
+cfg_save_options proc near
 mov	dx, 9C7Ch
 xor	cx, cx
 mov	ax, 3C00h
@@ -10917,12 +11001,12 @@ mov	ax, 3E00h
 int	21h		; DOS -	2+ - CLOSE A FILE WITH HANDLE
 			; BX = file handle
 retn
-sub_631A endp
+cfg_save_options endp
 
 
 
 
-sub_633C proc near
+savegame_write_snapshot proc near
 xor	cx, cx
 mov	ax, 3C00h
 int	21h		; DOS -	2+ - CREATE A FILE WITH	HANDLE (CREAT)
@@ -10954,12 +11038,12 @@ mov	ax, 3E00h
 int	21h		; DOS -	2+ - CLOSE A FILE WITH HANDLE
 			; BX = file handle
 retn
-sub_633C endp
+savegame_write_snapshot endp
 
 
 
 
-sub_636F proc near
+savegame_read_snapshot proc near
 
 ; FUNCTION CHUNK AT 0202 SIZE 00000012 BYTES
 
@@ -11001,12 +11085,12 @@ jmp	loc_202
 
 locret_63AA:
 retn
-sub_636F endp
+savegame_read_snapshot endp
 
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_63AB:
-call	sub_65EF
+call	io_verify_game000_or_prompt_retry
 mov	al, ds:21Ch
 xor	ah, ah
 test	cs:word_CC2, 0F00h
@@ -11107,41 +11191,41 @@ inc	ax
 
 loc_6474:
 mov	ds:9C90h, ax
-call	sub_5F86
+call	ui_draw_menu_frame
 mov	bl, ds:9C8Ah
 sub	bl, 31h	; '1'
 xor	bh, bh
 shl	bx, 1
 add	bx, 9CEEh
 mov	ds:9C92h, bx
-call	sub_64F5
+call	ui_draw_completion_delta_hint
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, 28h	; '('
 mov	bx, 38h	; '8'
 mov	si, 9B65h
-call	sub_42D4
-call	sub_774E
-call	sub_5F86
-call	sub_64F5
+call	ui_draw_string_8x8
+call	gfx_present_and_flip_page
+call	ui_draw_menu_frame
+call	ui_draw_completion_delta_hint
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, 28h	; '('
 mov	bx, 38h	; '8'
 mov	si, 9B65h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 9D2Ah
 mov	ds:9D3Bh, ax
 mov	byte ptr ds:9D3Ah, 2
 mov	ax, 0FFFFh
-call	sub_6011
+call	ui_select_next_valid_option
 mov	ds:9D3Dh, ax
-call	sub_615C
+call	ui_option_list_input_loop
 jnb	short loc_64D9
 jmp	short loc_64F2
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 db 90h
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_64D9:
 cmp	word ptr ds:9D3Dh, 1
@@ -11149,35 +11233,35 @@ jnz	short loc_64F2
 mov	bx, ds:9C92h
 mov	ax, ds:9C90h
 mov	[bx], ax
-call	sub_631A
+call	cfg_save_options
 mov	dx, 9C83h
-call	sub_633C
+call	savegame_write_snapshot
 
 loc_64F2:
 jmp	loc_5E6D
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 
 
 
-sub_64F5 proc near
+ui_draw_completion_delta_hint proc near
 mov	ax, ds:9C90h
 mov	bx, ds:9C92h
 sub	ax, [bx]
 jle	short locret_6544
 push	ax
 mov	ax, 0Eh
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, 40h	; '@'
 mov	bx, 28h	; '('
 mov	si, 9BA9h
-call	sub_42D4
+call	ui_draw_string_8x8
 pop	ax
 cmp	ax, 1
 jg	short loc_6527
 mov	ax, 0C0h ; '�'
 mov	bx, 28h	; '('
 mov	si, 9BBAh
-call	sub_42D4
+call	ui_draw_string_8x8
 jmp	short locret_6544
 
 loc_6527:
@@ -11189,20 +11273,20 @@ loc_652F:
 add	ax, 30h	; '0'
 mov	cx, bx
 mov	bx, 0C0h ; '�'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	ax, bx
 mov	bx, cx
 mov	si, 9BC7h
-call	sub_42D4
+call	ui_draw_string_8x8
 
 locret_6544:
 retn
-sub_64F5 endp
+ui_draw_completion_delta_hint endp
 
 
 
 
-sub_6545 proc near
+cfg_compute_hardware_seed proc near
 push	es
 mov	ax, ds:0ABA9h
 mov	ds:9CE6h, ax
@@ -11282,40 +11366,40 @@ neg	bx
 loc_65EA:
 mov	ds:0ABBBh, bx
 retn
-sub_6545 endp
+cfg_compute_hardware_seed endp
 
 
 
 
-sub_65EF proc near
+io_verify_game000_or_prompt_retry proc near
 push	si
 push	di
 mov	si, 9BDFh
 mov	di, 9BD3h
-call	sub_660B
+call	io_open_file_or_prompt_retry
 pop	di
 pop	si
 retn
-sub_65EF endp
+io_verify_game000_or_prompt_retry endp
 
 
 
 
-sub_65FD proc near
+io_verify_frcfg_or_prompt_retry proc near
 push	si
 push	di
 mov	si, 9C29h
 mov	di, 9BD9h
-call	sub_660B
+call	io_open_file_or_prompt_retry
 pop	di
 pop	si
 retn
-sub_65FD endp
+io_verify_frcfg_or_prompt_retry endp
 
 
 
 
-sub_660B proc near
+io_open_file_or_prompt_retry proc near
 mov	dx, di
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
@@ -11332,22 +11416,22 @@ retn
 loc_661C:
 push	si
 push	di
-call	sub_4206
-call	sub_774E
+call	ui_draw_framed_message_from_stream
+call	gfx_present_and_flip_page
 pop	di
 pop	si
-call	sub_599
+call	input_wait_for_scancode_event
 cmp	cs:byte_61, 1
-jnz	short sub_660B
+jnz	short io_open_file_or_prompt_retry
 jmp	loc_215
-sub_660B endp
+io_open_file_or_prompt_retry endp
 
 db 3, 5	dup(0),	4Eh, 66h, 3, 5 dup(0), 56h
 db 66h,	5, 5 dup(0), 60h, 66h, 0Dh, 2 dup(0)
 db 8, 0, 8, 0, 8, 18h, 2 dup(0), 1, 7, 1
 db 17h,	1, 7, 1, 18h, 2	dup(0),	8, 0, 8
 db 0, 8, 18h, 0
-; START	OF FUNCTION CHUNK FOR sub_35DE
+; START	OF FUNCTION CHUNK FOR game_loop
 
 loc_6668:
 mov	dx, 9EA8h
@@ -11373,7 +11457,7 @@ int	21h		; DOS -	2+ - CLOSE A FILE WITH HANDLE
 mov	ax, 8
 mov	bx, 8
 mov	si, 9A8h
-call	sub_790C
+call	gfx_blit_sprite_opaque_both_pages
 mov	dx, 9EB1h
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
@@ -11406,10 +11490,10 @@ mov	word ptr cs:[bx+14h], 0
 sti
 
 loc_66E0:
-call	sub_677A
+call	ui_render_game_selection_panel
 
 loc_66E3:
-call	sub_599
+call	input_wait_for_scancode_event
 cmp	cs:byte_25A, 1
 jz	short loc_6729
 cmp	cs:byte_25B, 1
@@ -11462,11 +11546,11 @@ jmp	loc_66E3
 loc_6771:
 mov	cs:byte_61, 0
 jmp	loc_2323
-; END OF FUNCTION CHUNK	FOR sub_35DE
+; END OF FUNCTION CHUNK	FOR game_loop
 
 
 
-sub_677A proc near
+ui_render_game_selection_panel proc near
 mov	cx, 6
 mov	si, 9E90h
 
@@ -11477,7 +11561,7 @@ push	si
 push	cx
 mov	si, 9A8h
 add	si, 4B6h
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 pop	cx
 pop	si
 add	si, 4
@@ -11487,7 +11571,7 @@ mov	bx, 5Ah	; 'Z'
 mov	cx, 30h	; '0'
 mov	dx, 8
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, ds:21Ah
 shl	ax, 1
 shl	ax, 1
@@ -11496,16 +11580,16 @@ add	si, ax
 mov	ax, [si]
 mov	bx, [si+2]
 mov	si, 9A8h
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ax, 9
-call	sub_4339
+call	ega_set_map_mask
 mov	bx, ds:21Ah
 shl	bx, 1
 add	bx, 9E84h
 mov	si, [bx]
 mov	ax, 88h	; '�'
 mov	bx, 5Ah	; 'Z'
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	bx, ds:21Ah
 shl	bx, 1
 add	bx, 98DEh
@@ -11515,18 +11599,18 @@ mov	si, [bx]
 mov	di, cs:word_773F
 mov	ax, 60h	; '`'
 mov	bx, 4Ch	; 'L'
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_774E
+call	gfx_present_and_flip_page
 retn
-sub_677A endp
+ui_render_game_selection_panel endp
 
 
 
 
-sub_6806 proc near
-mov	al, byte_25877
+ent_process_interaction_script_and_queue_message proc near
+mov	al, comic_is_physics_active
 or	al, byte_25901
 or	al, byte_25886
 jz	short loc_6816
@@ -11751,7 +11835,7 @@ jmp	loc_6D75
 loc_69BA:
 push	si
 push	di
-call	sub_4870
+call	hud_set_data_disk_icon_collected
 pop	di
 pop	si
 mov	ax, 6
@@ -11767,7 +11851,7 @@ cmp	word ptr cs:[si+1Ch], 0
 jnz	short loc_6A21
 mov	word ptr cs:[si+1Ch], 1
 mov	ax, 0AC0Ah
-call	sub_3610
+call	player_start_timed_overlay_sprite
 mov	ax, 8
 jmp	loc_6D75
 
@@ -11778,7 +11862,7 @@ cmp	word ptr cs:[si+1Ch], 1
 jz	short loc_6A15
 mov	byte_25200, 2
 mov	ax, 0AC0Ah
-call	sub_3610
+call	player_start_timed_overlay_sprite
 mov	ax, 5
 jmp	loc_6D75
 
@@ -12185,20 +12269,20 @@ lea	bx, unk_2FAA0
 mov	cx, 9
 int	3		; Trap to Debugger
 retn
-sub_6806 endp
+ent_process_interaction_script_and_queue_message endp
 
 
 
 
-sub_6D95 proc near
+hud_add_bcd_counter_from_tens_value proc near
 mov	ah, al
 xor	al, al
-sub_6D95 endp
+hud_add_bcd_counter_from_tens_value endp
 
 
 
 
-sub_6D99 proc near
+hud_add_bcd_counter_from_low_digit proc near
 push	si
 push	di
 mov	bx, 934h
@@ -12228,7 +12312,7 @@ push	dx
 mov	[bx], cx
 mov	ax, dx
 mov	bx, 10h
-call	sub_3A5F
+call	hud_draw_two_digit_counter
 pop	dx
 pop	bx
 pop	ax
@@ -12243,27 +12327,27 @@ loc_6DE0:
 pop	di
 pop	si
 retn
-sub_6D99 endp
+hud_add_bcd_counter_from_low_digit endp
 
 mov	ah, al
 xor	al, al
 
 
 
-sub_6DE7 proc near
+hud_add_bcd_counter_from_mid_digit proc near
 push	si
 push	di
 mov	bx, 934h
 add	bx, 2
 mov	dx, 100h
 jmp	short loc_6DA4
-sub_6DE7 endp
+hud_add_bcd_counter_from_mid_digit endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_6DF4 proc near
+cfg_run_integrity_challenge proc near
 
 var_4= word ptr	-4
 var_2= word ptr	-2
@@ -12285,15 +12369,15 @@ pop	bp
 retn
 
 loc_6E19:
-call	sub_6F47
-call	sub_774E
-call	sub_6F47
-call	sub_7057
+call	cfg_draw_integrity_challenge_screen
+call	gfx_present_and_flip_page
+call	cfg_draw_integrity_challenge_screen
+call	cfg_input_challenge_code
 mov	ax, word_2FB91
 mov	[bp+var_2], ax
 mov	bx, word_2FB93
 mov	[bp+var_4], bx
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	dx, 25h	; '%'
 mov	ax, word_2FB91
 mov	cx, word_2FB91
@@ -12329,7 +12413,7 @@ loc_6E71:
 mov	word_2ECD8, ax
 mov	word_2FB91, bx
 mov	word_2FB93, cx
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	dx, 25h	; '%'
 mov	ax, word_2FB91
 mov	cx, word_2FB91
@@ -12358,7 +12442,7 @@ mov	word_2FB91, ax
 mov	word_2FB93, cx
 push	ax
 push	bx
-call	sub_774E
+call	gfx_present_and_flip_page
 pop	bx
 pop	ax
 add	ax, bx
@@ -12382,7 +12466,7 @@ xor	cx, ax
 xor	bx, dx
 add	cx, word_2FB93
 mov	word_2FB91, cx
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	dx, 25h	; '%'
 mov	ax, word_2FB91
 mov	cx, word_2FB91
@@ -12409,99 +12493,99 @@ pop	bp
 mov	ax, word_2FB8B
 mov	bx, word_2ECC8
 xor	ax, bx
-jnz	short sub_6F47
+jnz	short cfg_draw_integrity_challenge_screen
 inc	ax
 retn
-sub_6DF4 endp
+cfg_run_integrity_challenge endp
 
 
 
 
-sub_6F47 proc near
+cfg_draw_integrity_challenge_screen proc near
 mov	ax, 0
 mov	bx, 0
 mov	cx, 140h
 mov	dx, 0C8h ; '�'
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, 9
-call	sub_4339
+call	ega_set_map_mask
 mov	cx, 18h
 mov	bx, 0
 mov	al, 22h	; '"'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, 26h	; '&'
 mov	al, 23h	; '#'
 
 loc_6F71:
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_6F71
 mov	al, 24h	; '$'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	cx, 0C0h ; '�'
 mov	bx, 0
 mov	al, 3Ah	; ':'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, 26h	; '&'
 mov	al, 3Bh	; ';'
 
 loc_6F8C:
-call	sub_42E8
+call	ui_draw_glyph_8x8
 dec	dx
 jnz	short loc_6F8C
 mov	al, 3Ch	; '<'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, 14h
 mov	cx, 20h	; ' '
 
 loc_6F9D:
 mov	bx, 0
 mov	al, 25h	; '%'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	bx, 138h
 mov	al, 26h	; '&'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 add	cx, 8
 dec	dx
 jnz	short loc_6F9D
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, 10h
 mov	bx, 0
 mov	si, 0AAE0h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 50h	; 'P'
 mov	bx, 10h
 mov	si, 0AB05h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 10h
 mov	bx, 28h	; '('
 mov	si, 0AB1Bh
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 10h
 mov	bx, 30h	; '0'
 mov	si, 0AB40h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 10h
 mov	bx, 38h	; '8'
 mov	si, 0AB65h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 10h
 mov	bx, 40h	; '@'
 mov	si, 0AB8Ah
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, 10h
 mov	bx, 58h	; 'X'
 mov	si, 0AB97h
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	ax, word_2FB91
 add	al, 41h	; 'A'
 mov	bx, 0A0h ; '�'
 mov	cx, 58h	; 'X'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	al, 2Ch	; ','
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	dx, word_2FB93
 xor	ax, ax
 
@@ -12514,7 +12598,7 @@ jmp	short loc_7026
 
 loc_7032:
 add	al, 30h	; '0'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 xor	ax, ax
 
 loc_7039:
@@ -12526,20 +12610,20 @@ jmp	short loc_7039
 
 loc_7045:
 add	al, 30h	; '0'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	ax, dx
 add	al, 30h	; '0'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 mov	al, 2Dh	; '-'
-call	sub_42E8
+call	ui_draw_glyph_8x8
 retn
-sub_6F47 endp
+cfg_draw_integrity_challenge_screen endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_7057 proc near
+cfg_input_challenge_code proc near
 
 var_8= word ptr	-8
 var_6= word ptr	-6
@@ -12564,21 +12648,21 @@ mov	bx, [bp+var_4]
 mov	cx, 30h	; '0'
 mov	dx, 8
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	ax, 7
-call	sub_4339
+call	ega_set_map_mask
 mov	ax, [bp+var_2]
 mov	bx, [bp+var_4]
 mov	si, [bp+var_6]
-call	sub_42D4
+call	ui_draw_string_8x8
 mov	cx, bx
 mov	bx, ax
 mov	al, 2Bh	; '+'
-call	sub_42E8
-call	sub_774E
+call	ui_draw_glyph_8x8
+call	gfx_present_and_flip_page
 
 loc_70AD:
-call	sub_599
+call	input_wait_for_scancode_event
 mov	al, cs:byte_61
 cmp	al, 1
 jnz	short loc_70BB
@@ -12622,11 +12706,11 @@ mov	bx, [bp+var_4]
 mov	cx, 30h	; '0'
 mov	dx, 8
 mov	di, cs:word_773F
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	sp, bp
 pop	bp
 retn
-sub_7057 endp
+cfg_input_challenge_code endp
 
 db 3, 5	dup(0),	3Ah, 71h, 3, 5 dup(0), 42h
 db 71h,	5, 5 dup(0), 4Ah, 71h, 0Dh, 0, 3
@@ -12639,7 +12723,7 @@ db 14h,	0, 18h,	0
 
 
 
-sub_7164 proc near
+play_intro_cinematic proc near
 
 ; FUNCTION CHUNK AT 7298 SIZE 00000249 BYTES
 ; FUNCTION CHUNK AT 7660 SIZE 000000DF BYTES
@@ -12652,62 +12736,62 @@ mov	ds, ax
 assume ds:seg004
 mov	si, 1CD0h
 mov	di, 6000h
-call	sub_79C7
+call	gfx_rle_blit_opaque_4plane
 pop	ds
 assume ds:nothing
 mov	di, cs:word_773F
 mov	si, 6000h
-call	sub_7765
-call	sub_774E
+call	gfx_copy_page_4plane
+call	gfx_present_and_flip_page
 mov	dx, 0ABC0h
-call	sub_15D
-mov	dx, 0ABF7h
-call	sub_2022
+call	gfx_load_ega_palette_16_from_table
+mov	dx, 0ABF7h	; "frdemo.0"
+call	io_read_file_to_seg5e_base
 mov	ax, 12h
-call	sub_7278
-call	sub_7255
+call	wait_ticks_or_abort
+call	gfx_copy_backbuffer_to_active_page
 mov	ax, 48h	; 'H'
 mov	bx, 60h	; '`'
 mov	si, 1722h
-call	sub_7261
+call	intro_draw_sprite_and_present
 mov	ax, 1Bh
-call	sub_7278
-call	sub_7255
-call	sub_774E
+call	wait_ticks_or_abort
+call	gfx_copy_backbuffer_to_active_page
+call	gfx_present_and_flip_page
 mov	ax, 12h
-call	sub_7278
+call	wait_ticks_or_abort
 mov	ax, 100h
 mov	bx, 0
 mov	si, 13D4h
 mov	cx, 6
-call	sub_71FE
+call	intro_repeat_draw_with_offset_4_3
 mov	si, 1086h
 mov	cx, 6
-call	sub_71FE
+call	intro_repeat_draw_with_offset_4_3
 mov	si, 0D38h
 mov	cx, 5
-call	sub_721B
+call	intro_repeat_draw_with_offset_8_6
 mov	si, 9EAh
 mov	cx, 5
-call	sub_721B
+call	intro_repeat_draw_with_offset_8_6
 mov	si, 69Ch
 mov	cx, 5
-call	sub_7238
+call	intro_repeat_draw_with_offset_12_8
 mov	si, 34Eh
 mov	cx, 5
-call	sub_7238
+call	intro_repeat_draw_with_offset_12_8
 jmp	loc_7298
-sub_7164 endp
+play_intro_cinematic endp
 
 
 
 
-sub_71FE proc near
+intro_repeat_draw_with_offset_4_3 proc near
 push	cx
 push	si
 push	ax
 push	bx
-call	sub_7255
+call	gfx_copy_backbuffer_to_active_page
 pop	bx
 pop	ax
 pop	si
@@ -12716,24 +12800,24 @@ add	bx, 3
 push	si
 push	ax
 push	bx
-call	sub_7261
+call	intro_draw_sprite_and_present
 pop	bx
 pop	ax
 pop	si
 pop	cx
-loop	sub_71FE
+loop	intro_repeat_draw_with_offset_4_3
 retn
-sub_71FE endp
+intro_repeat_draw_with_offset_4_3 endp
 
 
 
 
-sub_721B proc near
+intro_repeat_draw_with_offset_8_6 proc near
 push	cx
 push	si
 push	ax
 push	bx
-call	sub_7255
+call	gfx_copy_backbuffer_to_active_page
 pop	bx
 pop	ax
 pop	si
@@ -12742,24 +12826,24 @@ add	bx, 6
 push	si
 push	ax
 push	bx
-call	sub_7261
+call	intro_draw_sprite_and_present
 pop	bx
 pop	ax
 pop	si
 pop	cx
-loop	sub_721B
+loop	intro_repeat_draw_with_offset_8_6
 retn
-sub_721B endp
+intro_repeat_draw_with_offset_8_6 endp
 
 
 
 
-sub_7238 proc near
+intro_repeat_draw_with_offset_12_8 proc near
 push	cx
 push	si
 push	ax
 push	bx
-call	sub_7255
+call	gfx_copy_backbuffer_to_active_page
 pop	bx
 pop	ax
 pop	si
@@ -12768,69 +12852,69 @@ add	bx, 8
 push	si
 push	ax
 push	bx
-call	sub_7261
+call	intro_draw_sprite_and_present
 pop	bx
 pop	ax
 pop	si
 pop	cx
-loop	sub_7238
+loop	intro_repeat_draw_with_offset_12_8
 retn
-sub_7238 endp
+intro_repeat_draw_with_offset_12_8 endp
 
 
 
 
-sub_7255 proc near
+gfx_copy_backbuffer_to_active_page proc near
 mov	di, cs:word_773F
 mov	si, 6000h
-call	sub_7765
+call	gfx_copy_page_4plane
 retn
-sub_7255 endp
+gfx_copy_backbuffer_to_active_page endp
 
 
 
 
-sub_7261 proc near
+intro_draw_sprite_and_present proc near
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
-call	sub_7278
+call	wait_ticks_or_abort
 retn
-sub_7261 endp
+intro_draw_sprite_and_present endp
 
 
 
 
-sub_7278 proc near
+wait_ticks_or_abort proc near
 push	ax
 mov	ax, 1
-call	sub_27A
+call	wait_n_ticks
 cmp	cs:byte_61, 0
 jnz	short loc_728C
 pop	ax
 dec	ax
-jnz	short sub_7278
+jnz	short wait_ticks_or_abort
 retn
 
 loc_728C:
-call	sub_22B
+call	gfx_disable_retrace_palette_script
 mov	ax, 3
 int	3		; Trap to Debugger
 mov	sp, word_2FBD3
 retn
-sub_7278 endp ;	sp = -2
+wait_ticks_or_abort endp ;	sp = -2
 
-; START	OF FUNCTION CHUNK FOR sub_7164
+; START	OF FUNCTION CHUNK FOR play_intro_cinematic
 
 loc_7298:
 mov	ax, 0Dh
 int	10h		; - VIDEO - SET	VIDEO MODE
 			; AL = mode
-call	sub_7741
+call	gfx_init_double_buffer_pages
 mov	bx, 7106h
 cli
 mov	cs:word_278, bx
@@ -12841,31 +12925,31 @@ mov	word ptr cs:[bx+0Ch], 0
 mov	word ptr cs:[bx+12h], 0
 mov	word ptr cs:[bx+14h], 0
 sti
-call	sub_238
+call	gfx_enable_retrace_palette_script
 mov	dx, 0ABD1h
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 mov	di, 4000h
-mov	dx, 0AC12h
-call	sub_7990
+mov	dx, 0AC12h	; "frpak.003"
+call	gfx_load_and_blit_opaque_file
 mov	di, 6000h
-mov	dx, 0AC1Ch
-call	sub_7990
+mov	dx, 0AC1Ch	; "frpak.004"
+call	gfx_load_and_blit_opaque_file
 mov	si, 4000h
 mov	di, cs:word_773F
-call	sub_7765
-call	sub_774E
-mov	dx, 0AC00h
-call	sub_2022
+call	gfx_copy_page_4plane
+call	gfx_present_and_flip_page
+mov	dx, 0AC00h	; "frdemo.1"
+call	io_read_file_to_seg5e_base
 mov	ax, 32h	; '2'
-call	sub_7278
+call	wait_ticks_or_abort
 mov	ax, 8
 
 loc_7306:
 push	ax
-call	sub_74E1
-call	sub_774E
+call	intro_wipe_split_buffers_step
+call	gfx_present_and_flip_page
 mov	ax, 1
-call	sub_7278
+call	wait_ticks_or_abort
 pop	ax
 add	ax, 8
 cmp	ax, 148h
@@ -12880,142 +12964,142 @@ mov	word ptr cs:[bx+0Ch], 0
 mov	word ptr cs:[bx+12h], 0
 mov	word ptr cs:[bx+14h], 0
 sti
-call	sub_238
+call	gfx_enable_retrace_palette_script
 mov	dx, 0ABD1h
-call	sub_15D
-mov	word_256A6, 0
-mov	word_256A8, 81h	; '�'
-mov	byte_2588D, 1
+call	gfx_load_ega_palette_16_from_table
+mov	comic_x, 0
+mov	comic_y, 81h	; '�'
+mov	comic_facing, 1
 mov	word_2FBD5, 10h
 
 loc_736A:
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
-call	sub_7622
-call	sub_774E
+call	gfx_copy_page_4plane
+call	intro_draw_comic_walk_frame
+call	gfx_present_and_flip_page
 mov	ax, 1
-call	sub_7278
-add	word_256A6, 8
+call	wait_ticks_or_abort
+add	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_736A
 xor	si, si
-call	sub_75AD
-mov	byte_2588D, 2
+call	intro_flash_comic_with_optional_overlay
+mov	comic_facing, 2
 mov	word_2FBD5, 0Ah
 
 loc_739C:
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
-call	sub_7622
-call	sub_774E
+call	gfx_copy_page_4plane
+call	intro_draw_comic_walk_frame
+call	gfx_present_and_flip_page
 mov	ax, 1
-call	sub_7278
-sub	word_256A6, 8
+call	wait_ticks_or_abort
+sub	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_739C
 xor	si, si
-call	sub_75AD
-mov	byte_2588D, 1
+call	intro_flash_comic_with_optional_overlay
+mov	comic_facing, 1
 mov	word_2FBD5, 2
 
 loc_73CE:
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
-call	sub_7622
-call	sub_774E
+call	gfx_copy_page_4plane
+call	intro_draw_comic_walk_frame
+call	gfx_present_and_flip_page
 mov	ax, 1
-call	sub_7278
-add	word_256A6, 8
+call	wait_ticks_or_abort
+add	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_73CE
 xor	si, si
-call	sub_75AD
+call	intro_flash_comic_with_optional_overlay
 mov	ax, 1
 lea	bx, unk_2FC1A
 mov	cx, 9
 int	3		; Trap to Debugger
-mov	byte_2588D, 1
+mov	comic_facing, 1
 mov	word_2FBD5, 12h
 
 loc_740B:
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
+call	gfx_copy_page_4plane
 mov	si, 28Ch
 mov	ax, 0C0h ; '�'
 mov	bx, offset unk_160F0
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_7622
-call	sub_774E
+call	intro_draw_comic_walk_frame
+call	gfx_present_and_flip_page
 mov	ax, 1
-call	sub_7278
-add	word_256A6, 8
+call	wait_ticks_or_abort
+add	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_740B
 mov	si, 28Ch
-call	sub_75AD
+call	intro_flash_comic_with_optional_overlay
 mov	si, 710h
-call	sub_756D
+call	intro_draw_overlay_with_comic
 mov	ax, 1
 lea	bx, unk_2FC5A
 mov	cx, 9
 int	3		; Trap to Debugger
 mov	ax, 1Eh
-call	sub_7278
+call	wait_ticks_or_abort
 mov	si, 710h
-call	sub_75AD
+call	intro_flash_comic_with_optional_overlay
 mov	si, 0B94h
-call	sub_756D
+call	intro_draw_overlay_with_comic
 mov	ax, 1
 lea	bx, unk_2FC5A
 mov	cx, 9
 int	3		; Trap to Debugger
 mov	ax, 1Eh
-call	sub_7278
+call	wait_ticks_or_abort
 mov	si, 0B94h
-call	sub_75AD
+call	intro_flash_comic_with_optional_overlay
 mov	ax, 1
 lea	bx, unk_2FC1A
 mov	cx, 9
 int	3		; Trap to Debugger
-mov	byte_2588D, 2
+mov	comic_facing, 2
 mov	word_2FBD5, 1Ah
 
 loc_749E:
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
+call	gfx_copy_page_4plane
 mov	si, 1018h
 mov	ax, 0C0h ; '�'
 mov	bx, offset unk_160F0
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_7622
-call	sub_774E
+call	intro_draw_comic_walk_frame
+call	gfx_present_and_flip_page
 mov	ax, 1
-call	sub_7278
-sub	word_256A6, 8
+call	wait_ticks_or_abort
+sub	comic_x, 8
 dec	word_2FBD5
 jnz	short loc_749E
-call	sub_22B
+call	gfx_disable_retrace_palette_script
 jmp	loc_7660
-; END OF FUNCTION CHUNK	FOR sub_7164
+; END OF FUNCTION CHUNK	FOR play_intro_cinematic
 
 
 
-sub_74E1 proc near
+intro_wipe_split_buffers_step proc near
 push	ds
 mov	bx, 0A000h
 mov	ds, bx
@@ -13033,7 +13117,7 @@ mov	dx, 28h	; '('
 sub	dx, ax
 add	si, 280h
 add	di, 280h
-call	sub_752A
+call	gfx_copy_rect_all_planes
 pop	ax
 
 loc_750E:
@@ -13044,43 +13128,43 @@ sub	si, ax
 mov	dx, ax
 add	si, 280h
 add	di, 280h
-call	sub_752A
+call	gfx_copy_rect_all_planes
 pop	ds
 assume ds:nothing
 retn
-sub_74E1 endp
+intro_wipe_split_buffers_step endp
 
 
 
 
-sub_752A proc near
+gfx_copy_rect_all_planes proc near
 xor	cl, cl
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
-call	sub_7553
+call	gfx_copy_rect_rows_stride40
 mov	cl, 1
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
-call	sub_7553
+call	gfx_copy_rect_rows_stride40
 mov	cl, 2
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
-call	sub_7553
+call	gfx_copy_rect_rows_stride40
 mov	cl, 3
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
-call	sub_7553
+call	gfx_copy_rect_rows_stride40
 retn
-sub_752A endp
+gfx_copy_rect_all_planes endp
 
 
 
 
-sub_7553 proc near
+gfx_copy_rect_rows_stride40 proc near
 push	si
 push	di
 mov	cx, 0A0h ; '�'
@@ -13100,59 +13184,59 @@ loop	loc_7558
 pop	di
 pop	si
 retn
-sub_7553 endp
+gfx_copy_rect_rows_stride40 endp
 
 
 
 
-sub_756D proc near
+intro_draw_overlay_with_comic proc near
 push	si
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
+call	gfx_copy_page_4plane
 pop	si
 mov	ax, 0C0h ; '�'
 mov	bx, offset unk_160F0
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 mov	si, 0
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
-call	sub_774E
+call	gfx_present_and_flip_page
 retn
-sub_756D endp
+intro_draw_overlay_with_comic endp
 
 
 
 
-sub_75AD proc near
+intro_flash_comic_with_optional_overlay proc near
 mov	word_2FBD5, 0Ah
 
 loc_75B3:
 push	si
 mov	si, 6000h
 mov	di, cs:word_773F
-call	sub_7765
+call	gfx_copy_page_4plane
 mov	si, 0
 test	word_2FBD5, 1
 jnz	short loc_75CD
 mov	si, 146h
 
 loc_75CD:
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 pop	si
@@ -13164,15 +13248,15 @@ mov	ds, cs:seg_5E
 assume ds:seg003
 mov	di, cs:word_773F
 push	si
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 pop	si
 mov	ds, cs:seg_5C
 assume ds:seg005
 
 loc_7600:
-call	sub_774E
+call	gfx_present_and_flip_page
 mov	ax, 1
-call	sub_7278
+call	wait_ticks_or_abort
 cmp	word_2FBD5, 9
 jnz	short loc_761B
 mov	ax, 1
@@ -13184,12 +13268,12 @@ loc_761B:
 dec	word_2FBD5
 jnz	short loc_75B3
 retn
-sub_75AD endp
+intro_flash_comic_with_optional_overlay endp
 
 
 
 
-sub_7622 proc near
+intro_draw_comic_walk_frame proc near
 mov	ch, byte_2588F
 inc	ch
 cmp	ch, 4
@@ -13199,7 +13283,7 @@ mov	ch, 1
 loc_762F:
 mov	byte_2588F, ch
 mov	si, 4882h
-cmp	byte_2588D, 1
+cmp	comic_facing, 1
 jz	short loc_7640
 mov	si, 4860h
 
@@ -13208,131 +13292,131 @@ mov	al, byte_2588F
 xor	ah, ah
 shl	ax, 1
 add	si, ax
-mov	ax, word_256A6
-mov	bx, word_256A8
+mov	ax, comic_x
+mov	bx, comic_y
 mov	ds, cs:seg_5E
 assume ds:seg003
 mov	si, [si]
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 retn
-sub_7622 endp
+intro_draw_comic_walk_frame endp
 
-; START	OF FUNCTION CHUNK FOR sub_7164
+; START	OF FUNCTION CHUNK FOR play_intro_cinematic
 
 loc_7660:
-mov	dx, 0AC09h
-call	sub_2022
+mov	dx, 0AC09h	; "frdemo.2"
+call	io_read_file_to_seg5e_base
 mov	ax, 0Dh
 int	10h		; - VIDEO - SET	VIDEO MODE
 			; AL = mode
-call	sub_7741
+call	gfx_init_double_buffer_pages
 push	ds
 mov	ax, seg	seg004
 mov	ds, ax
 assume ds:seg004
 mov	si, 1CD0h
 mov	di, 6000h
-call	sub_79C7
+call	gfx_rle_blit_opaque_4plane
 pop	ds
 assume ds:nothing
 mov	dx, 0ABC0h
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 mov	word ptr ds:6C6h, 84h ;	'�'
 mov	word ptr ds:6C8h, 0B4h ; '�'
 mov	ax, 0
 mov	ds:0ABF5h, ax
 
 loc_7696:
-call	sub_7255
+call	gfx_copy_backbuffer_to_active_page
 mov	si, ds:0ABF5h
 mov	ax, ds:6C6h
 mov	bx, ds:6C8h
-call	sub_7261
+call	intro_draw_sprite_and_present
 sub	word ptr ds:6C8h, 0Ah
-call	sub_7255
+call	gfx_copy_backbuffer_to_active_page
 mov	si, ds:0ABF5h
 mov	ax, ds:6C6h
 mov	bx, ds:6C8h
-call	sub_7261
+call	intro_draw_sprite_and_present
 sub	word ptr ds:6C8h, 0Ah
 add	word ptr ds:0ABF5h, 34Eh
 cmp	word ptr ds:6C8h, 3Ch ;	'<'
 jg	short loc_7696
-call	sub_7255
-call	sub_774E
+call	gfx_copy_backbuffer_to_active_page
+call	gfx_present_and_flip_page
 push	ds
 mov	ax, seg	seg004
 mov	ds, ax
 assume ds:seg004
 mov	si, 1CD0h
 mov	di, cs:word_773F
-call	sub_79C7
+call	gfx_rle_blit_opaque_4plane
 pop	ds
 assume ds:nothing
-mov	dx, 0AC26h
+mov	dx, 0AC26h	; "frpak.005"
 mov	di, cs:word_773F
-call	sub_7999
+call	gfx_load_and_blit_masked_file
 mov	dx, 0ABE2h
-call	sub_15D
-call	sub_774E
+call	gfx_load_ega_palette_16_from_table
+call	gfx_present_and_flip_page
 mov	ax, 1
 mov	bx, 0DBh ; '�'
 mov	cx, 1
 int	3		; Trap to Debugger
 mov	ax, 28h	; '('
-call	sub_7278
+call	wait_ticks_or_abort
 push	ds
 mov	ax, seg	seg004
 mov	ds, ax
 assume ds:seg004
 mov	si, 1CD0h
 mov	di, cs:word_773F
-call	sub_79C7
+call	gfx_rle_blit_opaque_4plane
 pop	ds
 assume ds:nothing
-mov	dx, 0AC30h
+mov	dx, 0AC30h	; "frpak.006"
 mov	di, cs:word_773F
-call	sub_7999
+call	gfx_load_and_blit_masked_file
 mov	dx, 2
-call	sub_15D
-call	sub_774E
+call	gfx_load_ega_palette_16_from_table
+call	gfx_present_and_flip_page
 mov	dx, 24h	; '$'
-call	sub_15D
+call	gfx_load_ega_palette_16_from_table
 
 loc_7737:
 mov	ax, 1
-call	sub_7278
+call	wait_ticks_or_abort
 jmp	short loc_7737
-; END OF FUNCTION CHUNK	FOR sub_7164
+; END OF FUNCTION CHUNK	FOR play_intro_cinematic
 word_773F dw 0
 
 
 
-sub_7741 proc near
+gfx_init_double_buffer_pages proc near
 xor	ax, ax
-call	sub_7A89
+call	gfx_set_crtc_start_on_retrace
 mov	cs:word_773F, 2000h
 retn
-sub_7741 endp
+gfx_init_double_buffer_pages endp
 
 
 
 
-sub_774E proc near
+gfx_present_and_flip_page proc near
 mov	al, cs:byte_229
 mov	cs:byte_22A, al
 mov	ax, cs:word_773F
-call	sub_7A89
+call	gfx_set_crtc_start_on_retrace
 xor	cs:word_773F, 2000h
 retn
-sub_774E endp
+gfx_present_and_flip_page endp
 
 
 
 
-sub_7765 proc near
+gfx_copy_page_4plane proc near
 push	ds
 mov	ax, 0A000h
 mov	ds, ax
@@ -13340,7 +13424,7 @@ assume ds:nothing
 mov	es, ax
 assume es:nothing
 xor	cl, cl
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	cx, 0FA0h
 push	si
 push	di
@@ -13348,7 +13432,7 @@ rep movsw
 pop	di
 pop	si
 mov	cl, 1
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	cx, 0FA0h
 push	si
 push	di
@@ -13356,7 +13440,7 @@ rep movsw
 pop	di
 pop	si
 mov	cl, 2
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	cx, 0FA0h
 push	si
 push	di
@@ -13364,18 +13448,18 @@ rep movsw
 pop	di
 pop	si
 mov	cl, 3
-call	sub_7A68
+call	ega_select_plane_read_write
 mov	cx, 0FA0h
 rep movsw
 pop	ds
 assume ds:nothing
 retn
-sub_7765 endp
+gfx_copy_page_4plane endp
 
 
 
 
-sub_77A3 proc near
+gfx_blit_sprite_masked_active_page proc near
 
 ; FUNCTION CHUNK AT 7833 SIZE 00000016 BYTES
 
@@ -13412,23 +13496,23 @@ align 2
 
 loc_77DC:
 mov	cl, 0
-call	sub_77F2
+call	gfx_blit_masked_plane_aligned
 mov	cl, 1
-call	sub_77F2
+call	gfx_blit_masked_plane_aligned
 mov	cl, 2
-call	sub_77F2
+call	gfx_blit_masked_plane_aligned
 mov	cl, 3
-call	sub_77F2
+call	gfx_blit_masked_plane_aligned
 pop	bp
 retn
-sub_77A3 endp
+gfx_blit_sprite_masked_active_page endp
 
 
 
 
-sub_77F2 proc near
+gfx_blit_masked_plane_aligned proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -13470,28 +13554,28 @@ jnz	short loc_77FD
 pop	bx
 pop	di
 retn
-sub_77F2 endp
+gfx_blit_masked_plane_aligned endp
 
-; START	OF FUNCTION CHUNK FOR sub_77A3
+; START	OF FUNCTION CHUNK FOR gfx_blit_sprite_masked_active_page
 
 loc_7833:
 mov	cl, 0
-call	sub_7849
+call	gfx_blit_masked_plane_shift4
 mov	cl, 1
-call	sub_7849
+call	gfx_blit_masked_plane_shift4
 mov	cl, 2
-call	sub_7849
+call	gfx_blit_masked_plane_shift4
 mov	cl, 3
-call	sub_7849
+call	gfx_blit_masked_plane_shift4
 pop	bp
 retn
-; END OF FUNCTION CHUNK	FOR sub_77A3
+; END OF FUNCTION CHUNK	FOR gfx_blit_sprite_masked_active_page
 
 
 
-sub_7849 proc near
+gfx_blit_masked_plane_shift4 proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -13566,30 +13650,30 @@ pop	bp
 pop	bx
 pop	di
 retn
-sub_7849 endp
+gfx_blit_masked_plane_shift4 endp
 
 
 
 
-sub_78C6 proc near
+gfx_blit_sprite_opaque_offset_both_pages proc near
 mov	di, cs:word_773F
 push	ax
 push	bx
 push	si
-call	sub_78E1
+call	gfx_blit_sprite_opaque_offset_active_page
 mov	di, cs:word_773F
 xor	di, 2000h
 pop	si
 pop	bx
 pop	ax
-call	sub_78E1
+call	gfx_blit_sprite_opaque_offset_active_page
 retn
-sub_78C6 endp
+gfx_blit_sprite_opaque_offset_both_pages endp
 
 
 
 
-sub_78E1 proc near
+gfx_blit_sprite_opaque_offset_active_page proc near
 push	bp
 shr	ax, 1
 shr	ax, 1
@@ -13613,31 +13697,31 @@ mov	bx, ax
 lodsw
 add	si, ax
 jmp	short loc_794C
-sub_78E1 endp
+gfx_blit_sprite_opaque_offset_active_page endp
 
 align 2
 
 
 
-sub_790C proc near
+gfx_blit_sprite_opaque_both_pages proc near
 mov	di, cs:word_773F
 push	ax
 push	bx
 push	si
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 mov	di, cs:word_773F
 xor	di, 2000h
 pop	si
 pop	bx
 pop	ax
-call	sub_7927
+call	gfx_blit_sprite_opaque_active_page
 retn
-sub_790C endp
+gfx_blit_sprite_opaque_both_pages endp
 
 
 
 
-sub_7927 proc near
+gfx_blit_sprite_opaque_active_page proc near
 push	bp
 shr	ax, 1
 shr	ax, 1
@@ -13661,23 +13745,23 @@ mov	bx, ax
 
 loc_794C:
 mov	cl, 0
-call	sub_7962
+call	gfx_blit_sprite_plane_rows
 mov	cl, 1
-call	sub_7962
+call	gfx_blit_sprite_plane_rows
 mov	cl, 2
-call	sub_7962
+call	gfx_blit_sprite_plane_rows
 mov	cl, 3
-call	sub_7962
+call	gfx_blit_sprite_plane_rows
 pop	bp
 retn
-sub_7927 endp
+gfx_blit_sprite_opaque_active_page endp
 
 
 
 
-sub_7962 proc near
+gfx_blit_sprite_plane_rows proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -13709,35 +13793,35 @@ jnz	short loc_796D
 pop	bx
 pop	di
 retn
-sub_7962 endp
+gfx_blit_sprite_plane_rows endp
 
 word_798E dw 0
 
 
 
-sub_7990 proc near
+gfx_load_and_blit_opaque_file proc near
 push	ds
-call	sub_79A2
-call	sub_79C7
+call	io_read_file_to_seg001_0600
+call	gfx_rle_blit_opaque_4plane
 pop	ds
 retn
-sub_7990 endp
+gfx_load_and_blit_opaque_file endp
 
 
 
 
-sub_7999 proc near
+gfx_load_and_blit_masked_file proc near
 push	ds
-call	sub_79A2
-call	sub_7A13
+call	io_read_file_to_seg001_0600
+call	gfx_rle_blit_masked_or_4plane
 pop	ds
 retn
-sub_7999 endp
+gfx_load_and_blit_masked_file endp
 
 
 
 
-sub_79A2 proc near
+io_read_file_to_seg001_0600 proc near
 mov	ax, 3D00h
 int	21h		; DOS -	2+ - OPEN DISK FILE WITH HANDLE
 			; DS:DX	-> ASCIZ filename
@@ -13762,33 +13846,43 @@ int	21h		; DOS -	2+ - CLOSE A FILE WITH HANDLE
 			; BX = file handle
 mov	si, 600h
 retn
-sub_79A2 endp
+io_read_file_to_seg001_0600 endp
 
 
 
 
-sub_79C7 proc near
+; ============================================================================
+; gfx_rle_blit_opaque_4plane - 4-plane opaque RLE blit into current EGA buffer
+; Input:  DS:SI points at stream: [word row_bytes][RLE packets...],
+;         ES:DI is destination start in active page
+; Output: Writes all 4 EGA planes for one row-span and restores DI to row base
+; Calls:  ega_select_plane_read_write (plane select), gfx_rle_decode_copy_rowspan (RLE decode copy/fill)
+; Evidence: Iterates CL=0..3, programs Sequencer/GC plane state, then uses
+;           MOVSB/STOSB decoder with 0x80 packet high-bit run marker
+; Confidence: High
+; ============================================================================
+gfx_rle_blit_opaque_4plane proc near
 lodsw
 mov	cs:word_798E, ax
 mov	cl, 0
-call	sub_7A68
-call	sub_79ED
+call	ega_select_plane_read_write
+call	gfx_rle_decode_copy_rowspan
 mov	cl, 1
-call	sub_7A68
-call	sub_79ED
+call	ega_select_plane_read_write
+call	gfx_rle_decode_copy_rowspan
 mov	cl, 2
-call	sub_7A68
-call	sub_79ED
+call	ega_select_plane_read_write
+call	gfx_rle_decode_copy_rowspan
 mov	cl, 3
-call	sub_7A68
-call	sub_79ED
+call	ega_select_plane_read_write
+call	gfx_rle_decode_copy_rowspan
 retn
-sub_79C7 endp
+gfx_rle_blit_opaque_4plane endp
 
 
 
 
-sub_79ED proc near
+gfx_rle_decode_copy_rowspan proc near
 mov	bx, di
 
 loc_79EF:
@@ -13814,33 +13908,44 @@ cmp	ax, cs:word_798E
 jl	short loc_79EF
 mov	di, bx
 retn
-sub_79ED endp
+gfx_rle_decode_copy_rowspan endp
 
 
 
 
-sub_7A13 proc near
+; ============================================================================
+; gfx_rle_blit_masked_or_4plane - 4-plane masked RLE blit (OR compositing)
+; Input:  DS:SI points at stream: [word row_bytes][RLE packets...],
+;         ES:DI is destination start in active page
+; Output: OR-blends decoded bytes into all 4 EGA planes; preserves uncovered
+;         destination bits and restores DI to row base
+; Calls:  ega_select_plane_read_write (plane select), gfx_rle_decode_or_rowspan (RLE decode OR writer)
+; Evidence: Same plane loop as gfx_rle_blit_opaque_4plane but inner writer uses OR es:[di],al
+;           for both literal and run packets
+; Confidence: High
+; ============================================================================
+gfx_rle_blit_masked_or_4plane proc near
 lodsw
 mov	cs:word_798E, ax
 mov	cl, 0
-call	sub_7A68
-call	sub_7A39
+call	ega_select_plane_read_write
+call	gfx_rle_decode_or_rowspan
 mov	cl, 1
-call	sub_7A68
-call	sub_7A39
+call	ega_select_plane_read_write
+call	gfx_rle_decode_or_rowspan
 mov	cl, 2
-call	sub_7A68
-call	sub_7A39
+call	ega_select_plane_read_write
+call	gfx_rle_decode_or_rowspan
 mov	cl, 3
-call	sub_7A68
-call	sub_7A39
+call	ega_select_plane_read_write
+call	gfx_rle_decode_or_rowspan
 retn
-sub_7A13 endp
+gfx_rle_blit_masked_or_4plane endp
 
 
 
 
-sub_7A39 proc near
+gfx_rle_decode_or_rowspan proc near
 mov	bx, di
 
 loc_7A3B:
@@ -13875,12 +13980,12 @@ cmp	ax, cs:word_798E
 jl	short loc_7A3B
 mov	di, bx
 retn
-sub_7A39 endp
+gfx_rle_decode_or_rowspan endp
 
 
 
 
-sub_7A68 proc near
+ega_select_plane_read_write proc near
 mov	ah, 1
 shl	ah, cl
 mov	al, 2
@@ -13904,12 +14009,21 @@ out	dx, al		; EGA port: graphics controller	data register
 dec	dx
 xchg	ah, al
 retn
-sub_7A68 endp
+ega_select_plane_read_write endp
 
 
 
 
-sub_7A89 proc near
+; ============================================================================
+; gfx_set_crtc_start_on_retrace - Program CRTC start address around vertical retrace window
+; Input:  CH provides high byte of CRTC start address register 0Ch value
+; Output: CRTC regen start address high byte updated; waits for retrace phase
+; Calls:  none
+; Evidence: Polls 3DAh bit 3 (vertical sync), writes 3D4h/3D5h index 0Ch
+;           (CRT controller regen start high) before waiting for retrace start
+; Confidence: High
+; ============================================================================
+gfx_set_crtc_start_on_retrace proc near
 mov	dx, 3DAh
 
 loc_7A8C:		; Video	status bits:
@@ -13940,32 +14054,32 @@ in	al, dx		; 0: retrace.  1=display is in vert or horiz retrace.
 test	al, 8
 jz	short loc_7AA5
 retn
-sub_7A89 endp
+gfx_set_crtc_start_on_retrace endp
 
 
 
 
-sub_7AAB proc near
+gfx_clear_rect_both_pages proc near
 mov	di, cs:word_773F
 push	ax
 push	bx
 push	cx
 push	dx
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 mov	di, cs:word_773F
 xor	di, 2000h
 pop	dx
 pop	cx
 pop	bx
 pop	ax
-call	sub_7AC8
+call	gfx_clear_rect_active_page
 retn
-sub_7AAB endp
+gfx_clear_rect_both_pages endp
 
 
 
 
-sub_7AC8 proc near
+gfx_clear_rect_active_page proc near
 push	dx
 push	cx
 shr	ax, 1
@@ -13988,22 +14102,22 @@ mov	dx, ax
 pop	ax
 mov	bx, ax
 mov	cl, 0
-call	sub_7B03
+call	gfx_clear_rect_plane_rows
 mov	cl, 1
-call	sub_7B03
+call	gfx_clear_rect_plane_rows
 mov	cl, 2
-call	sub_7B03
+call	gfx_clear_rect_plane_rows
 mov	cl, 3
-call	sub_7B03
+call	gfx_clear_rect_plane_rows
 retn
-sub_7AC8 endp
+gfx_clear_rect_active_page endp
 
 
 
 
-sub_7B03 proc near
+gfx_clear_rect_plane_rows proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -14035,13 +14149,13 @@ jnz	short loc_7B0C
 pop	bx
 pop	di
 retn
-sub_7B03 endp
+gfx_clear_rect_plane_rows endp
 
 word_7B2F dw 0
 
 
 
-sub_7B31 proc near
+gfx_blit_sprite_masked_clipped_active_page proc near
 
 ; FUNCTION CHUNK AT 7BD9 SIZE 00000016 BYTES
 
@@ -14083,23 +14197,23 @@ db 90h
 
 loc_7B75:
 mov	cl, 0
-call	sub_7B8B
+call	gfx_blit_masked_plane_aligned_clipped
 mov	cl, 1
-call	sub_7B8B
+call	gfx_blit_masked_plane_aligned_clipped
 mov	cl, 2
-call	sub_7B8B
+call	gfx_blit_masked_plane_aligned_clipped
 mov	cl, 3
-call	sub_7B8B
+call	gfx_blit_masked_plane_aligned_clipped
 pop	bp
 retn
-sub_7B31 endp
+gfx_blit_sprite_masked_clipped_active_page endp
 
 
 
 
-sub_7B8B proc near
+gfx_blit_masked_plane_aligned_clipped proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -14146,28 +14260,28 @@ jnz	short loc_7B96
 pop	bx
 pop	di
 retn
-sub_7B8B endp
+gfx_blit_masked_plane_aligned_clipped endp
 
-; START	OF FUNCTION CHUNK FOR sub_7B31
+; START	OF FUNCTION CHUNK FOR gfx_blit_sprite_masked_clipped_active_page
 
 loc_7BD9:
 mov	cl, 0
-call	sub_7BEF
+call	gfx_blit_masked_plane_shift4_clipped
 mov	cl, 1
-call	sub_7BEF
+call	gfx_blit_masked_plane_shift4_clipped
 mov	cl, 2
-call	sub_7BEF
+call	gfx_blit_masked_plane_shift4_clipped
 mov	cl, 3
-call	sub_7BEF
+call	gfx_blit_masked_plane_shift4_clipped
 pop	bp
 retn
-; END OF FUNCTION CHUNK	FOR sub_7B31
+; END OF FUNCTION CHUNK	FOR gfx_blit_sprite_masked_clipped_active_page
 
 
 
-sub_7BEF proc near
+gfx_blit_masked_plane_shift4_clipped proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -14251,12 +14365,12 @@ pop	bp
 pop	bx
 pop	di
 retn
-sub_7BEF endp
+gfx_blit_masked_plane_shift4_clipped endp
 
 
 
 
-sub_7C79 proc near
+gfx_blit_sprite_masked_bottom_clipped_active_page proc near
 
 ; FUNCTION CHUNK AT 7D1B SIZE 00000016 BYTES
 
@@ -14294,23 +14408,23 @@ db 90h
 
 loc_7CB7:
 mov	cl, 0
-call	sub_7CCD
+call	gfx_blit_masked_plane_aligned_bottom_clipped
 mov	cl, 1
-call	sub_7CCD
+call	gfx_blit_masked_plane_aligned_bottom_clipped
 mov	cl, 2
-call	sub_7CCD
+call	gfx_blit_masked_plane_aligned_bottom_clipped
 mov	cl, 3
-call	sub_7CCD
+call	gfx_blit_masked_plane_aligned_bottom_clipped
 pop	bp
 retn
-sub_7C79 endp
+gfx_blit_sprite_masked_bottom_clipped_active_page endp
 
 
 
 
-sub_7CCD proc near
+gfx_blit_masked_plane_aligned_bottom_clipped proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -14357,28 +14471,28 @@ jnz	short loc_7CD8
 pop	bx
 pop	di
 retn
-sub_7CCD endp
+gfx_blit_masked_plane_aligned_bottom_clipped endp
 
-; START	OF FUNCTION CHUNK FOR sub_7C79
+; START	OF FUNCTION CHUNK FOR gfx_blit_sprite_masked_bottom_clipped_active_page
 
 loc_7D1B:
 mov	cl, 0
-call	sub_7D31
+call	gfx_blit_masked_plane_shift4_bottom_clipped
 mov	cl, 1
-call	sub_7D31
+call	gfx_blit_masked_plane_shift4_bottom_clipped
 mov	cl, 2
-call	sub_7D31
+call	gfx_blit_masked_plane_shift4_bottom_clipped
 mov	cl, 3
-call	sub_7D31
+call	gfx_blit_masked_plane_shift4_bottom_clipped
 pop	bp
 retn
-; END OF FUNCTION CHUNK	FOR sub_7C79
+; END OF FUNCTION CHUNK	FOR gfx_blit_sprite_masked_bottom_clipped_active_page
 
 
 
-sub_7D31 proc near
+gfx_blit_masked_plane_shift4_bottom_clipped proc near
 push	dx
-call	sub_7A68
+call	ega_select_plane_read_write
 pop	dx
 push	di
 push	bx
@@ -14462,13 +14576,13 @@ pop	bp
 pop	bx
 pop	di
 retn
-sub_7D31 endp
+gfx_blit_masked_plane_shift4_bottom_clipped endp
 
 
 
 ; Attributes: bp-based frame
 
-sub_7DBB proc near
+draw_sprite proc near
 
 var_4= word ptr	-4
 var_2= word ptr	-2
@@ -14500,7 +14614,7 @@ jge	short loc_7E3F
 add	bx, 8
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_7B31
+call	gfx_blit_sprite_masked_clipped_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 jmp	short loc_7E43
@@ -14515,7 +14629,7 @@ jge	short loc_7E3F
 add	bx, 8
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_7C79
+call	gfx_blit_sprite_masked_bottom_clipped_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 jmp	short loc_7E43
@@ -14524,7 +14638,7 @@ loc_7E2D:
 add	bx, 8
 mov	ds, cs:seg_5E
 assume ds:seg003
-call	sub_77A3
+call	gfx_blit_sprite_masked_active_page
 mov	ds, cs:seg_5C
 assume ds:seg005
 jmp	short loc_7E43
@@ -14540,8 +14654,22 @@ loc_7E46:
 mov	sp, bp
 pop	bp
 retn
-sub_7DBB endp
+draw_sprite endp
 
+; ============================================================================
+; SPRITE/DESCRIPTOR TABLE + CODE-BOUNDARY MIXED BLOB
+; Purpose: Structured sprite frame metadata and small dispatch/landing-table
+;          data used by the renderer and entity copy/setup logic.
+; Callers:
+;   - draw_sprite (draw path consumes frame descriptor records)
+;   - update_room_event_anchor_sprite (selects frame offset words word_8DB8..word_8DC2)
+;   - ent_copy_descriptor_to_runtime_slot (copies a descriptor record into runtime entity storage)
+;   - jmp near ptr byte_834B (direct transfer into a likely landing pad)
+; Evidence: Repeated little-endian address pairs, flag bytes, and small
+;           fixed-size records; mixed with a direct jump target label, so this
+;           region may straddle data and code.
+; Confidence: Medium
+; ============================================================================
 db 58h,	7Eh, 8Ah, 7Eh, 8Fh, 7Eh, 92h, 7Eh
 db 95h,	7Eh, 0D5h, 7Fh,	57h, 81h, 3, 5 dup(0)
 db 72h,	7Eh, 3,	5 dup(0), 7Ah, 7Eh, 5, 5 dup(0)
@@ -14653,6 +14781,19 @@ db 0, 0A1h, 80h, 6 dup(0), 90h,	0, 80h,	0
 db 0A1h, 80h, 6	dup(0),	0C0h, 5, 80h, 0
 db 0A1h, 80h, 6	dup(0),	0F0h, 5, 50h, 0
 db 0A1h, 80h, 4	dup(0)
+; ============================================================================
+; SPRITE/OBJECT DESCRIPTOR BLOB WITH POSSIBLE LANDING PAD
+; Purpose: Dense structured object/frame records used by sprite or entity setup
+;          logic; may also serve as a jump landing pad because code branches
+;          directly into this label.
+; Callers:
+;   - ent_update_object_behaviors / nearby state flow (jmp near ptr byte_834B)
+;   - draw_sprite-style descriptor consumers in the graphics pipeline (indirect)
+;   - ent_copy_descriptor_to_runtime_slot entity-copy routine likely uses the same record shape nearby
+; Evidence: Repeated fixed-size records with coordinate-like words, flag bytes,
+;           and 80h/0A1h/0B1h/0D1h marker bytes; direct jump target at line 8131.
+; Confidence: Medium
+; ============================================================================
 byte_834B db 2 dup(0), 10h, 6, 50h, 0, 0A1h, 80h, 7 dup(0)
 db 7, 50h, 0, 0A1h, 80h, 6 dup(0), 10h,	7
 db 50h,	0, 0A1h, 80h, 6	dup(0),	20h, 7,	50h
@@ -14878,6 +15019,15 @@ db 0, 70h, 1, 2, 0, 1, 0, 1, 3 dup(0), 10h
 db 0, 10h, 0, 1, 0, 8, 0, 2, 0,	2, 0, 0CEh
 db 8Dh,	0D6h, 8Dh, 10h,	0, 10h,	0, 2, 0
 db 9, 0, 1, 0, 4, 0, 0C4h, 8Dh,	0C4h, 8Dh
+; ============================================================================
+; ANIMATION FRAME OFFSET TABLE (indexes into sprite metadata blob above)
+; Purpose: Selects frame descriptor offsets used by animation draw logic.
+; Callers:
+;   - update_room_event_anchor_sprite (loads word_8DB8/word_8DBA/word_8DBC into SI)
+;   - loc_27F7 path in main loop chunk (loads word_8DBE/word_8DC0/word_8DC2)
+; Use: SI is passed to draw_sprite for sprite render descriptor decode.
+; Confidence: High
+; ============================================================================
 word_8DB8 dw 0
 word_8DBA dw 286h
 word_8DBC dw 50Ch
@@ -14998,6 +15148,16 @@ db 10h,	0, 10h,	2 dup(0), 80h, 7, 0, 1,	3 dup(0)
 db 0FAh, 92h, 0FAh, 92h, 10h, 0, 20h, 2	dup(0)
 db 80h,	7, 0, 1, 3 dup(0), 0FEh, 92h, 0FCh
 db 92h,	2 dup(0), 0A6h,	0, 0ECh, 1
+; ============================================================================
+; EFFECT/SCENE DESCRIPTOR OFFSET (cluster anchor)
+; Purpose: Entry offset into the large descriptor blob for scripted scene/effect
+;          setup (used as SI input to renderer staging paths).
+; Callers:
+;   - main-loop chunk loc_21F2 (mov ax, cs:word_9300; call room_transition_palette_wave)
+; Evidence: Consumed by room_transition_palette_wave path that performs repeated viewport redraw and
+;           staged animation updates.
+; Confidence: Medium
+; ============================================================================
 word_9300 dw 332h
 db 8, 93h, 16h,	93h, 18h, 93h, 1, 2 dup(0)
 db 1, 80h, 0, 0DAh, 92h, 8 dup(0), 3, 0
@@ -15020,6 +15180,14 @@ db 12h,	5, 0, 1, 6 dup(0), 1, 70h, 0, 10h
 db 0, 0Fh, 10h,	11h, 12h, 5, 3 dup(0), 2
 db 3 dup(0), 90h, 7, 40h, 0, 10h, 0, 0Fh
 db 10h,	11h, 12h
+; ============================================================================
+; DESCRIPTOR CLUSTER STATE FLAG/GATE
+; Purpose: Mode gate toggled during progression setup; influences which records
+;          in this blob become active during scripted transitions.
+; Writers:
+;   - init/progression paths at lines ~2013, ~2017, ~2472
+; Confidence: Medium
+; ============================================================================
 word_93DD dw 0
 db 1, 0, 2, 0, 5Bh, 2, 0C0h, 7,	40h, 0,	10h
 db 0, 48h, 2 dup(49h), 48h, 5, 0, 3, 5 dup(0)
@@ -15053,7 +15221,25 @@ db 7, 3	dup(0),	1, 0, 33h, 95h,	31h, 95h
 db 2 dup(0), 0A6h, 0, 4Ch, 1, 0F2h, 1, 98h
 db 2, 0DEh, 3, 24h, 5, 0DEh, 3,	6Ah, 6,	0B0h
 db 7
+; ============================================================================
+; SPRITE FRAME POINTER FOR SCRIPTED EFFECT DRAWS
+; Purpose: Frame descriptor offset used by repeated draw_sprite calls in scripted
+;          camera/scene animation loops.
+; Callers:
+;   - event_finale_transition_sequence loop draws (mov si, cs:word_9535; call draw_sprite)
+;   - additional draw sites around lines ~6971/~6994/~7023/~7042
+; Confidence: High
+; ============================================================================
 word_9535 dw 8F6h
+; ============================================================================
+; SCRIPTED EFFECT BASE OFFSET (paired with word_9535)
+; Purpose: Base descriptor/asset offset used by setup loops before per-frame
+;          increments (event_draw_stacked_sprite_rise adds 146h each iteration).
+; Callers:
+;   - event_draw_stacked_sprite_rise initialization (mov ax, cs:word_9537)
+;   - draw/effect sequence around line ~6882
+; Confidence: High
+; ============================================================================
 word_9537 dw 0A3Ch
 db 41h,	95h, 63h, 96h, 49h, 97h, 0Bh, 98h
 db 18h,	0, 0E0h, 6, 20h, 0, 0F1h, 94h, 6 dup(0)
@@ -16486,6 +16672,16 @@ seg000 ends
 seg001 segment byte public 'UNK' use16
 assume cs:seg001
 assume es:nothing, ss:nothing, ds:nothing, fs:nothing, gs:nothing
+; ============================================================================
+; CALIBRATION/KEYMAP UI STRING BANK
+; Purpose: DOS AH=9 $-terminated prompts for joystick calibration and
+;          key binding setup screens.
+; Callers:
+;   - gfx_startup_graphics_and_menu_probe (multiple lea dx, aCalibrateJoyst+offset prompts)
+;   - input_wait_for_joystick_or_key_confirm / input_capture_unique_key_binding_and_echo interaction flow that waits for input and captures keys
+; Evidence: Repeated INT 21h AH=9 prints from offsets +0A8h..+327h.
+; Confidence: High
+; ============================================================================
 aCalibrateJoyst	db 0Ah
 db 0Ah
 db 0Ah
@@ -111545,8 +111741,8 @@ db    0
 word_256A0 dw 0
 word_256A2 dw 0
 word_256A4 dw 0
-word_256A6 dw 0
-word_256A8 dw 0
+comic_x dw 0
+comic_y dw 0
 byte_256AA db 0
 byte_256AB db 0
 unk_256AC db	0
@@ -111993,11 +112189,11 @@ db    0
 db    0
 db    0
 word_25870 dw 0
-word_25872 dw 0
-word_25874 dw 0
+comic_x_vel dw 0
+comic_y_vel dw 0
 byte_25876 db 0
-byte_25877 db 0
-byte_25878 db 0
+comic_is_physics_active db 0
+comic_jump_counter db 0
 byte_25879 db 5
 byte_2587A db 0
 byte_2587B db 1
@@ -112006,16 +112202,16 @@ byte_2587D db 0
 byte_2587E db 0
 word_2587F dw 0
 word_25881 dw 0
-byte_25883 db 0
+comic_is_animation_active db 0
 byte_25884 db 0
 byte_25885 db 0
 byte_25886 db 0
-byte_25887 db 0
+comic_is_attack_active db 0
 byte_25888 db 0
 word_25889 dw 0
 word_2588B dw 0
-byte_2588D db 1
-byte_2588E db 0
+comic_facing db 1
+comic_state db 0
 byte_2588F db 0
 byte_25890 db 0
 byte_25891 db 0
@@ -112077,7 +112273,7 @@ word_258C8 dw 0
 byte_258CA db 0
 byte_258CB db 0
 byte_258CC db 0
-byte_258CD db 0
+comic_hp db 0
 unk_258CE db	0
 db    0
 db    0
