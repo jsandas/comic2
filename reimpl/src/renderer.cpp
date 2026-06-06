@@ -179,6 +179,8 @@ struct Sdl2FramePresenter::Impl {
     SDL_Window* window{};
     SDL_Renderer* renderer{};
     SDL_Texture* texture{};
+    SDL_PixelFormat* pixel_format{};
+    std::array<Uint32, 16> palette{};
     std::uint16_t window_width{};
     std::uint16_t window_height{};
 
@@ -195,16 +197,8 @@ struct Sdl2FramePresenter::Impl {
         if (window) {
             SDL_DestroyWindow(window);
         }
-        SDL_Quit();
-    }
-};
-            SDL_DestroyTexture(texture);
-        }
-        if (renderer) {
-            SDL_DestroyRenderer(renderer);
-        }
-        if (window) {
-            SDL_DestroyWindow(window);
+        if (pixel_format) {
+            SDL_FreeFormat(pixel_format);
         }
         SDL_Quit();
     }
@@ -256,10 +250,43 @@ Sdl2FramePresenter::Sdl2FramePresenter(std::uint16_t window_width, std::uint16_t
         throw std::runtime_error("SDL_CreateRenderer failed: " + std::string(SDL_GetError()));
     }
 
-    // Create texture (32-bit RGBA format for display)
+    // Create an explicit 32-bit RGBA format for display
+    impl_->pixel_format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
+    if (!impl_->pixel_format) {
+        delete impl_;
+        impl_ = nullptr;
+        throw std::runtime_error("SDL_AllocFormat failed: " + std::string(SDL_GetError()));
+    }
+
+    constexpr std::uint8_t kEgaPalette[16][4] = {
+        {  0,   0,   0, 255 },  // Black
+        {  0,   0, 200, 255 },  // Blue
+        {  0, 200,   0, 255 },  // Green
+        {  0, 200, 200, 255 },  // Cyan
+        { 200,   0,   0, 255 },  // Red
+        { 200,   0, 200, 255 },  // Magenta
+        { 200, 100,   0, 255 },  // Brown
+        { 200, 200, 200, 255 },  // Light gray
+        { 100, 100, 100, 255 },  // Dark gray
+        {  50,  50, 255, 255 },  // Light blue
+        {  50, 255,  50, 255 },  // Light green
+        {  50, 255, 255, 255 },  // Light cyan
+        { 255,  50,  50, 255 },  // Light red
+        { 255,  50, 255, 255 },  // Light magenta
+        { 255, 255,  50, 255 },  // Yellow
+        { 255, 255, 255, 255 },  // White
+    };
+    for (std::size_t i = 0; i < impl_->palette.size(); ++i) {
+        impl_->palette[i] = SDL_MapRGBA(impl_->pixel_format,
+                                       kEgaPalette[i][0],
+                                       kEgaPalette[i][1],
+                                       kEgaPalette[i][2],
+                                       kEgaPalette[i][3]);
+    }
+
     impl_->texture = SDL_CreateTexture(
         impl_->renderer,
-        SDL_PIXELFORMAT_RGBA32,
+        SDL_PIXELFORMAT_RGBA8888,
         SDL_TEXTUREACCESS_STREAMING,
         320,  // EGA resolution width
         200   // EGA resolution height
@@ -281,42 +308,25 @@ void Sdl2FramePresenter::present(const EgaPlanarSurface& frame) {
         return;
     }
 
-    // Convert 4-plane EGA data to 32-bit RGBA
+    // Convert 4-plane EGA data to packed 32-bit pixels
     // EGA uses 4 planes, each pixel is represented by 4 bits (one bit per plane)
-    // We'll use a simple palette mapping for now
-    static constexpr std::uint8_t kEgaPalette[16][4] = {
-        {  0,   0,   0, 255 },  // Black
-        {  0,   0, 200, 255 },  // Blue
-        {  0, 200,   0, 255 },  // Green
-        {  0, 200, 200, 255 },  // Cyan
-        { 200,   0,   0, 255 },  // Red
-        { 200,   0, 200, 255 },  // Magenta
-        { 200, 100,   0, 255 },  // Brown
-        { 200, 200, 200, 255 },  // Light gray
-        { 100, 100, 100, 255 },  // Dark gray
-        {  50,  50, 255, 255 },  // Light blue
-        {  50, 255,  50, 255 },  // Light green
-        {  50, 255, 255, 255 },  // Light cyan
-        { 255,  50,  50, 255 },  // Light red
-        { 255,  50, 255, 255 },  // Light magenta
-        { 255, 255,  50, 255 },  // Yellow
-        { 255, 255, 255, 255 },  // White
-    };
+    if (frame.width_pixels() != 320 || frame.height_rows() != 200) {
+        throw std::invalid_argument("Sdl2FramePresenter expects a 320x200 EGA frame");
+    }
 
-    // Lock texture for updating
     void* pixels = nullptr;
     int pitch = 0;
     if (SDL_LockTexture(impl_->texture, nullptr, &pixels, &pitch) != 0) {
         return;
     }
 
-    auto* dst = static_cast<std::uint8_t*>(pixels);
-
-    // Convert each pixel from 4-plane to RGBA
-    if (frame.width_pixels() != 320 || frame.height_rows() != 200) {
-        throw std::invalid_argument("Sdl2FramePresenter expects a 320x200 EGA frame");
+    if (pitch % sizeof(Uint32) != 0) {
+        SDL_UnlockTexture(impl_->texture);
+        throw std::runtime_error("SDL texture pitch is not a multiple of Uint32");
     }
 
+    auto* dst = static_cast<Uint32*>(pixels);
+    const auto row_pixels = static_cast<std::size_t>(pitch / sizeof(Uint32));
     const auto row_stride = frame.row_stride_bytes();
     const auto* plane0 = frame.plane(0).data();
     const auto* plane1 = frame.plane(1).data();
@@ -325,12 +335,11 @@ void Sdl2FramePresenter::present(const EgaPlanarSurface& frame) {
 
     for (std::size_t y = 0; y < 200; ++y) {
         for (std::size_t x = 0; x < 320; ++x) {
-            // Get the pixel value from 4 planes
             const auto byte_x = x / 8;
             const auto bit_x = 7 - (x % 8);
+            const auto off = y * row_stride + byte_x;
 
             std::uint8_t color_index = 0;
-            const auto off = y * row_stride + byte_x;
             if (plane0[off] & (1u << bit_x)) {
                 color_index |= 0x1;
             }
@@ -344,13 +353,7 @@ void Sdl2FramePresenter::present(const EgaPlanarSurface& frame) {
                 color_index |= 0x8;
             }
 
-            // Map to RGBA using palette
-            const auto* palette_color = kEgaPalette[color_index];
-            const auto dst_offset = (y * pitch) + (x * 4);
-            dst[dst_offset + 0] = palette_color[0];  // R
-            dst[dst_offset + 1] = palette_color[1];  // G
-            dst[dst_offset + 2] = palette_color[2];  // B
-            dst[dst_offset + 3] = palette_color[3];  // A
+            dst[y * row_pixels + x] = impl_->palette[color_index];
         }
     }
 
