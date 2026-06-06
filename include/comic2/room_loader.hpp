@@ -11,19 +11,19 @@
 namespace comic2 {
 
 struct RoomLoadSpec {
-    std::uint16_t level = 0;
-    std::uint16_t room = 0;
-    FrdataRoomEntry room_entry{};
+  std::uint16_t level = 0;
+  std::uint16_t room = 0;
+  FrdataRoomEntry room_entry{};
 
-    bool operator==(const RoomLoadSpec&) const = default;
+  bool operator==(const RoomLoadSpec &) const = default;
 };
 
-std::optional<FrdataRoomEntry> decode_frdata_room_entry(
-    std::span<const std::uint8_t> bytes,
-    std::size_t offset);
+std::optional<FrdataRoomEntry>
+decode_frdata_room_entry(std::span<const std::uint8_t> bytes,
+                         std::size_t offset);
 
-std::optional<std::vector<std::uint16_t>> build_room_row_pointer_table(
-    std::span<const std::uint8_t> decoded_room_bytes,
-    std::uint16_t tile_h);
+std::optional<std::vector<std::uint16_t>>
+build_room_row_pointer_table(std::span<const std::uint8_t> decoded_room_bytes,
+                             std::uint16_t tile_h);
 
-}  // namespace comic2
+} // namespace comic2

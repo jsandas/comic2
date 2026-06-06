@@ -16,7 +16,7 @@ clean-tools:
 
 .PHONY: tools clean-tools
 
-quality: cppcheck clang-format
+quality: cppcheck format-check
 
 cppcheck:
 	@docker run --name cppcheck_container --rm -v ${PWD}:/workspace \
@@ -32,7 +32,7 @@ cppcheck:
 		-I include \
 		src tests"
 
-clang-format:
+format-check:
 	@if ! command -v clang-format > /dev/null; then \
 		echo "Error: clang-format is not installed." >&2; \
 		exit 1; \
@@ -40,3 +40,12 @@ clang-format:
 	@find src include tests \
         \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cc" -o -name "*.h" \) \
         -print0 | xargs -0 clang-format --dry-run --Werror
+
+format:
+	@if ! command -v clang-format > /dev/null; then \
+		echo "Error: clang-format is not installed." >&2; \
+		exit 1; \
+	fi
+	@find src include tests \
+        \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cc" -o -name "*.h" \) \
+        -print0 | xargs -0 clang-format -i
