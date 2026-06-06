@@ -45,7 +45,7 @@ public:
 
 **New Files:**
 - `reimpl/src/renderer_demo.cpp` - Demo executable showcasing both presenters
-- `reimpl/SDL2_INTEGRATION.md` - Comprehensive documentation
+- `reimpl/docs/SDL2_INTEGRATION.md` - Comprehensive documentation
 
 #### 3. Build Configuration
 

@@ -7,7 +7,7 @@ This document describes the optional SDL2 presenter integration for visual outpu
 The rendering system uses a presenter abstraction (`IFramePresenter`) that allows swapping between different output backends:
 
 - **MemoryFramePresenter** (default): Headless presenter that stores frames in memory for testing and validation
-- **Sdl2FramePresenter** (optional): Visual presenter using SDL2 for windowed display with VGA-to-SDL conversion
+- **Sdl2FramePresenter** (optional): Visual presenter using SDL2 for windowed display with EGA-to-SDL conversion
 
 ## Building with SDL2
 

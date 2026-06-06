@@ -193,19 +193,23 @@ struct Sdl2FramePresenter::Impl {
     SDL_Texture* texture{};
     std::uint16_t window_width{};
     std::uint16_t window_height{};
-    std::uint8_t* frame_buffer{};
-    std::size_t frame_buffer_size{};
 
     Impl(std::uint16_t ww, std::uint16_t hh)
-        : window_width(ww), window_height(hh) {
-        // Calculate frame buffer size (4 planes * 320/8 bytes * 200 rows)
-        frame_buffer_size = 4 * 40 * 200;
-        frame_buffer = new std::uint8_t[frame_buffer_size];
-    }
+        : window_width(ww), window_height(hh) {}
 
     ~Impl() {
-        delete[] frame_buffer;
         if (texture) {
+            SDL_DestroyTexture(texture);
+        }
+        if (renderer) {
+            SDL_DestroyRenderer(renderer);
+        }
+        if (window) {
+            SDL_DestroyWindow(window);
+        }
+        SDL_Quit();
+    }
+};
             SDL_DestroyTexture(texture);
         }
         if (renderer) {
@@ -237,6 +241,8 @@ Sdl2FramePresenter::Sdl2FramePresenter(std::uint16_t window_width, std::uint16_t
     );
 
     if (!impl_->window) {
+        delete impl_;
+        impl_ = nullptr;
         throw std::runtime_error("SDL_CreateWindow failed: " + std::string(SDL_GetError()));
     }
 
@@ -257,6 +263,8 @@ Sdl2FramePresenter::Sdl2FramePresenter(std::uint16_t window_width, std::uint16_t
     }
 
     if (!impl_->renderer) {
+        delete impl_;
+        impl_ = nullptr;
         throw std::runtime_error("SDL_CreateRenderer failed: " + std::string(SDL_GetError()));
     }
 
@@ -270,6 +278,8 @@ Sdl2FramePresenter::Sdl2FramePresenter(std::uint16_t window_width, std::uint16_t
     );
 
     if (!impl_->texture) {
+        delete impl_;
+        impl_ = nullptr;
         throw std::runtime_error("SDL_CreateTexture failed: " + std::string(SDL_GetError()));
     }
 }
@@ -315,6 +325,16 @@ void Sdl2FramePresenter::present(const EgaPlanarSurface& frame) {
     auto* dst = static_cast<std::uint8_t*>(pixels);
 
     // Convert each pixel from 4-plane to RGBA
+    if (frame.width_pixels() != 320 || frame.height_rows() != 200) {
+        throw std::invalid_argument("Sdl2FramePresenter expects a 320x200 EGA frame");
+    }
+
+    const auto row_stride = frame.row_stride_bytes();
+    const auto* plane0 = frame.plane(0).data();
+    const auto* plane1 = frame.plane(1).data();
+    const auto* plane2 = frame.plane(2).data();
+    const auto* plane3 = frame.plane(3).data();
+
     for (std::size_t y = 0; y < 200; ++y) {
         for (std::size_t x = 0; x < 320; ++x) {
             // Get the pixel value from 4 planes
@@ -322,12 +342,18 @@ void Sdl2FramePresenter::present(const EgaPlanarSurface& frame) {
             const auto bit_x = 7 - (x % 8);
 
             std::uint8_t color_index = 0;
-            for (std::size_t plane = 0; plane < 4; ++plane) {
-                const auto plane_data = frame.plane(plane).data();
-                const auto byte_value = plane_data[y * 40 + byte_x];
-                if (byte_value & (1 << bit_x)) {
-                    color_index |= (1 << plane);
-                }
+            const auto off = y * row_stride + byte_x;
+            if (plane0[off] & (1u << bit_x)) {
+                color_index |= 0x1;
+            }
+            if (plane1[off] & (1u << bit_x)) {
+                color_index |= 0x2;
+            }
+            if (plane2[off] & (1u << bit_x)) {
+                color_index |= 0x4;
+            }
+            if (plane3[off] & (1u << bit_x)) {
+                color_index |= 0x8;
             }
 
             // Map to RGBA using palette
