@@ -127,6 +127,18 @@ If any of the above is weak, reduce confidence and keep provisional naming.
 - Do not remove original labels if they are still useful for cross-reference.
 - Do not introduce comments that restate obvious single instructions.
 
+## Code Review Agent
+
+For code review tasks, use the repository's reverse engineering standards and evidence rules as your evaluation guide. Review comments should focus on behavior preservation, annotation accuracy, naming confidence, and the project-specific ground rules in `comic2.asm`.
+
+When reviewing changes, check whether a patch:
+
+- preserves original behavior instead of replacing it with higher-level abstractions,
+- adds or updates comments consistent with existing annotation style,
+- supplies evidence for renames or subsystem claims,
+- follows ASCII-only annotations and naming conventions,
+- updates supporting docs when new function mappings or subsystem behaviors are identified.
+
 ## Expected Output Quality
 
 - Comments should explain intent and verification evidence, not syntax.

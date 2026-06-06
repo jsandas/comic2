@@ -10,6 +10,7 @@
 void run_dispatcher_tests();
 void run_player_controller_tests();
 void run_renderer_tests();
+void run_renderer_validation_tests();
 void run_subsystem_scaffold_tests();
 void run_tile_collision_tests();
 
@@ -66,6 +67,7 @@ int main() {
         run_dispatcher_tests();
         run_player_controller_tests();
         run_renderer_tests();
+        run_renderer_validation_tests();
         run_subsystem_scaffold_tests();
         run_tile_collision_tests();
         std::cout << "comic2_unit_tests: OK\n";

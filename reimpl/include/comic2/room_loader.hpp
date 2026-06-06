@@ -26,8 +26,4 @@ std::optional<std::vector<std::uint16_t>> build_room_row_pointer_table(
     std::span<const std::uint8_t> decoded_room_bytes,
     std::uint16_t tile_h);
 
-std::optional<RoomTileGrid> build_room_tile_grid(
-    std::span<const std::uint8_t> decoded_room_bytes,
-    const FrdataRoomEntry& room_entry);
-
 }  // namespace comic2

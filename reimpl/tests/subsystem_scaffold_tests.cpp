@@ -1,5 +1,6 @@
-#include <stdexcept>
+#include <algorithm>
 #include <limits>
+#include <stdexcept>
 #include <vector>
 
 #include "comic2/entity_runtime.hpp"
@@ -72,12 +73,8 @@ void test_ent_build_runtime_slots_for_viewport_culls() {
     expect_eq(runtime_slots.size(), 6, "should have 6 runtime slots");
     expect(activation_state.active_count <= 2, "should activate at most 2 slots (entities in viewport)");
 
-    std::size_t active_count = 0;
-    for (const auto& slot : runtime_slots) {
-        if (slot.mapped_object_ptr != 0) {
-            active_count++;
-        }
-    }
+    const auto active_count = std::count_if(runtime_slots.begin(), runtime_slots.end(),
+                                            [](const auto& slot) { return slot.mapped_object_ptr != 0; });
     expect(active_count <= 2, "should have at most 2 active runtime slots");
 }
 

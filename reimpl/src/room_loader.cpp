@@ -17,7 +17,7 @@ std::optional<FrdataRoomEntry> decode_frdata_room_entry(
     std::size_t offset) {
     constexpr std::size_t kFrdataRoomEntrySize = 6;
 
-    if (offset > bytes.size() || (bytes.size() - offset) < kFrdataRoomEntrySize) {
+    if (bytes.size() < kFrdataRoomEntrySize || offset > bytes.size() - kFrdataRoomEntrySize) {
         return std::nullopt;
     }
 
@@ -44,31 +44,6 @@ std::optional<std::vector<std::uint16_t>> build_room_row_pointer_table(
             static_cast<std::uint16_t>(decoded_room_bytes[off] | (decoded_room_bytes[off + 1] << 8));
     }
     return row_pointers;
-}
-
-std::optional<RoomTileGrid> build_room_tile_grid(
-    std::span<const std::uint8_t> decoded_room_bytes,
-    const FrdataRoomEntry& room_entry) {
-    std::optional<std::vector<std::uint16_t>> row_pointers =
-        build_room_row_pointer_table(decoded_room_bytes, room_entry.tile_h);
-    if (!row_pointers.has_value()) {
-        return std::nullopt;
-    }
-
-    for (std::uint16_t y = 0; y < room_entry.tile_h; ++y) {
-        const std::size_t row_base = (*row_pointers)[y];
-        if (row_base > decoded_room_bytes.size() ||
-            decoded_room_bytes.size() - row_base < room_entry.tile_w) {
-            return std::nullopt;
-        }
-    }
-
-    RoomTileGrid grid;
-    grid.tile_w = room_entry.tile_w;
-    grid.tile_h = room_entry.tile_h;
-    grid.row_pointers = std::move(*row_pointers);
-    grid.tile_data.assign(decoded_room_bytes.begin(), decoded_room_bytes.end());
-    return grid;
 }
 
 }  // namespace comic2

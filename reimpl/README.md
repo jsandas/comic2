@@ -1,6 +1,15 @@
-# Phase 7 Reimplementation Starter
+# Phase 7 Reimplementation
 
-This directory contains the initial C++ scaffolding for Phase 7.
+This directory contains the C++ reimplementation of Captain Comic II: Fractured Reality.
+
+## Documentation
+
+See the [`docs/`](docs/) folder for comprehensive documentation:
+
+- **[Quick Start](docs/SDL2_QUICKSTART.md)** - Get started with SDL2 visual presenter
+- **[SDL2 Integration](docs/SDL2_INTEGRATION.md)** - Complete SDL2 documentation
+- **[Phase 7.6 Summary](docs/PHASE_7.6_SUMMARY.md)** - Rendering implementation details
+- **[All Docs](docs/README.md)** - Documentation index
 
 ## What is implemented
 
@@ -18,16 +27,28 @@ This directory contains the initial C++ scaffolding for Phase 7.
 
 ## Build
 
+### Headless (Default)
 ```bash
 cmake -S reimpl -B reimpl/build
 cmake --build reimpl/build
 ```
+
+### With SDL2 Visual Output
+```bash
+# Install SDL2 first (e.g., brew install sdl2)
+cmake -S reimpl -B reimpl/build -DENABLE_SDL2=ON
+cmake --build reimpl/build
+```
+
+See [docs/SDL2_QUICKSTART.md](docs/SDL2_QUICKSTART.md) for details.
 
 ## Run tests
 
 ```bash
 ctest --test-dir reimpl/build --output-on-failure
 ```
+
+All tests pass in both headless and SDL2 modes.
 
 ## Run validator against original files
 
@@ -36,3 +57,15 @@ ctest --test-dir reimpl/build --output-on-failure
 ```
 
 Expected: each FRPAK file decodes with row span `0x1f40`.
+
+## Run renderer demo
+
+```bash
+# Headless mode (prints frame data)
+./reimpl/build/comic2_renderer_demo
+
+# Visual mode (shows window, requires SDL2 build)
+./reimpl/build/comic2_renderer_demo
+```
+
+Press ESC to close the demo window.
