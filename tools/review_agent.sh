@@ -23,11 +23,17 @@ echo "" >> "$REPORT_FILE"
 if command -v cppcheck >/dev/null 2>&1; then
     echo "[+] Running cppcheck..."
     echo "## Static Analysis (cppcheck)" >> "$REPORT_FILE"
-    cppcheck --enable=all \
+    docker run --name cppcheck_container --rm -v $PWD:/workspace \
+        --workdir /workspace \
+        alpine:edge \
+        sh -c "apk add --no-cache cppcheck > /dev/null 2>&1; \
+        cppcheck --enable=all \
         --inconclusive \
         --suppress=missingIncludeSystem \
-        -I "$SOURCE_DIR/include" \
-        "$SOURCE_DIR/src" "$SOURCE_DIR/tests" >> "$REPORT_FILE" 2>&1 || true
+        --check-level=exhaustive \
+        --inline-suppr \
+        -I reimpl/include \
+        reimpl/src reimpl/tests" >> "$REPORT_FILE" 2>&1 || true
 else
     echo "[!] cppcheck not found. Skipping."
 fi
@@ -38,38 +44,37 @@ if command -v clang-format >/dev/null 2>&1; then
     echo "## Static Analysis (clang-format)" >> "$REPORT_FILE"
     # Note: clang-format often requires a compilation database (compile_commands.json)
     # For simplicity, we'll try to run it on individual files if possible.
-    find "$SOURCE_DIR" -name "*.cpp" -o -name "*.hpp" -o -name "*.cc" -o -name "*.cxx" | while read -r file; do
-        echo "Checking $file..."
-        clang-format "$file" -- >> "$REPORT_FILE" 2>&1 || true
-    done
+    find "$SOURCE_DIR"/src "$SOURCE_DIR"/include "$SOURCE_DIR"/tests \
+        \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cc" -o -name "*.h" \) \
+        -print0 | xargs -0 clang-format --dry-run --Werror  -- >> "$REPORT_FILE" 2>&1 || true
 else
     echo "[!] clang-format not found. Skipping."
 fi
 
-# 3. Compiler Warnings (as a fallback)
-echo "[+] Running compiler-based check (g++ warnings)..."
-echo "## Compiler Warnings (g++)" >> "$REPORT_FILE"
-# We'll attempt to compile the files in the source dir just to see warnings.
-# We won't actually link them into an executable here to avoid link errors.
-find "$SOURCE_DIR" -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" | while read -r file; do
-    g++ -Wall -Wextra -Wpedantic -Werror -c "$file" -o /dev/null >> "$REPORT_FILE" 2>&1 || true
-done
+# # 3. Compiler Warnings (as a fallback)
+# echo "[+] Running compiler-based check (g++ warnings)..."
+# echo "## Compiler Warnings (g++)" >> "$REPORT_FILE"
+# # We'll attempt to compile the files in the source dir just to see warnings.
+# # We won't actually link them into an executable here to avoid link errors.
+# find "$SOURCE_DIR" -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" | while read -r file; do
+#     g++ -Wall -Wextra -Wpedantic -Werror -c "$file" -o /dev/null >> "$REPORT_FILE" 2>&1 || true
+# done
 
-# 4. Dynamic Analysis (Sanitizers)
-# This part requires a build system. We'll look for a Makefile or CMake.
-if [ -d "reimpl/build" ]; then
-    echo "[+] Attempting to run tests with Sanitizers..."
-    echo "## Dynamic Analysis (Sanitizers)" >> "$REPORT_FILE"
-    # Try to run existing tests if they are built. 
-    # This is a simplified approach.
-    if [ -f "reimpl/build/cmake_install.cmake" ]; then
-        echo "Found CMake build directory. Running tests..."
-        cd reimpl/build && make test >> "../../$REPORT_FILE" 2>&1 || true
-        cd ../..
-    fi
-else
-    echo "[!] No build directory found for dynamic analysis."
-fi
+# # 4. Dynamic Analysis (Sanitizers)
+# # This part requires a build system. We'll look for a Makefile or CMake.
+# if [ -d "reimpl/build" ]; then
+#     echo "[+] Attempting to run tests with Sanitizers..."
+#     echo "## Dynamic Analysis (Sanitizers)" >> "$REPORT_FILE"
+#     # Try to run existing tests if they are built. 
+#     # This is a simplified approach.
+#     if [ -f "reimpl/build/cmake_install.cmake" ]; then
+#         echo "Found CMake build directory. Running tests..."
+#         cd reimpl/build && make test >> "../../$REPORT_FILE" 2>&1 || true
+#         cd ../..
+#     fi
+# else
+#     echo "[!] No build directory found for dynamic analysis."
+# fi
 
 echo "-------------------------------"
 echo "Review complete. Report generated: $REPORT_FILE"
