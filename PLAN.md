@@ -249,6 +249,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 - [x] FRDATA header/room-offset schema documented with field-level semantics used by loader
 - [x] FRPAK `.001`..`.007` validated as direct full-file 4-plane streams (no directory walk in confirmed paths)
 - [x] `.SHP` / `.EGA`-equivalent payload contracts finalized from sprite and RLE blit routines
+- [x] Phase 7.7 Gate A (Unit) integration tests pass with deterministic replay checks (8 comprehensive tests)
 
 ---
 
@@ -356,7 +357,7 @@ Status note: Phase 7.4 baseline is now implemented with room-grid tile lookup, t
   - EGA palette mapping implemented with standard 16-color palette
 
 #### 7.7 Integration Gates and Oracle Verification
-- [ ] Gate A (Unit): all module tests pass in CI (`ctest`) with deterministic replay checks
+- [x] Gate A (Unit): all module tests pass in CI (`ctest`) with deterministic replay checks
 - [ ] Gate B (Frame): scripted input sequences produce stable dispatcher-stage traces
 - [ ] Gate C (State): key state vectors (`x/y/vel/state flags`) match expected snapshots per tick
 - [ ] Gate D (Visual): selected rooms produce matching planar frame hashes against oracle captures
