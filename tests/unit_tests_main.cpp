@@ -5,14 +5,21 @@
 #include <stdexcept>
 #include <vector>
 
-#include "comic2/game_state.hpp"
-#include "comic2/dispatcher.hpp"
 #include "comic2/default_handlers.hpp"
-#include "comic2/projectiles.hpp"
+#include "comic2/dispatcher.hpp"
 #include "comic2/entity_runtime.hpp"
-#include "comic2/tile_collision.hpp"
-#include "comic2/room_loader.hpp"
+#include "comic2/game_state.hpp"
+#include "comic2/projectiles.hpp"
 #include "comic2/resource_formats.hpp"
+#include "comic2/room_loader.hpp"
+#include "comic2/tile_collision.hpp"
+
+extern void run_dispatcher_tests();
+extern void run_player_controller_tests();
+extern void run_renderer_tests();
+extern void run_renderer_validation_tests();
+extern void run_subsystem_scaffold_tests();
+extern void run_tile_collision_tests();
 
 namespace {
 
@@ -76,14 +83,14 @@ void test_comprehensive_deterministic_tick_replay() {
   state.player.is_physics_active = false;
   state.player.is_animation_active = false;
   state.player.is_attack_active = false;
-  
+
   comic2::GameDispatcher dispatcher;
   comic2::install_default_stage_hooks(dispatcher);
-  
-  auto result1 = dispatcher.run_tick(state);
-  auto result2 = dispatcher.run_tick(state);
-  
-  expect(result1.stage == result2.stage, "Gate A tick stage mismatch");
+
+  const auto result1 = dispatcher.run_tick(state);
+  const auto result2_stage = dispatcher.run_tick(state).stage;
+
+  expect(result1.stage == result2_stage, "Gate A tick stage mismatch");
   expect(state.player.x == 100, "Gate A tick x mismatch");
 }
 
@@ -91,7 +98,7 @@ void test_projectile_deterministic_spawn_and_update() {
   std::vector<comic2::ProjectileState> projectiles;
   comic2::spawn_projectile(projectiles, 10, 10, 1, 0);
   comic2::spawn_projectile(projectiles, 20, 20, 2, 1);
-  
+
   expect(projectiles.size() == 2, "Gate A projectile count mismatch");
   expect(projectiles[0].x == 10, "Gate A projectile x mismatch");
   expect(projectiles[1].x == 20, "Gate A projectile x mismatch");
@@ -101,16 +108,19 @@ void test_entity_runtime_deterministic_activation() {
   std::vector<comic2::MappedObject12> mapped_objects;
   std::vector<comic2::ActiveEntity8> active_entities;
   comic2::EntityActivationState activation_state;
-  
-  comic2::ent_build_room_entity_list(mapped_objects, 10, 10, active_entities, activation_state);
-  
-  expect(activation_state.active_count == 0, "Gate A activation count mismatch");
+
+  comic2::ent_build_room_entity_list(mapped_objects, 10, 10, active_entities,
+                                     activation_state);
+
+  expect(activation_state.active_count == 0,
+         "Gate A activation count mismatch");
 }
 
 void test_tile_collision_deterministic_query() {
   comic2::TileCollisionConfig config;
   expect(comic2::tile_meets_threshold(0x01, 0x01), "Gate A threshold mismatch");
-  expect(!comic2::tile_meets_threshold(0x00, 0x01), "Gate A threshold mismatch");
+  expect(!comic2::tile_meets_threshold(0x00, 0x01),
+         "Gate A threshold mismatch");
   expect(comic2::is_hazard_tile(0xF0, config), "Gate A hazard mismatch");
   expect(!comic2::is_hazard_tile(0x80, config), "Gate A hazard mismatch");
 }
@@ -126,14 +136,14 @@ void test_stage_trace_determinism() {
   state.player.is_physics_active = false;
   state.player.is_animation_active = false;
   state.player.is_attack_active = false;
-  
+
   comic2::GameDispatcher dispatcher;
   comic2::install_default_stage_hooks(dispatcher);
   dispatcher.set_trace_enabled(true);
   dispatcher.clear_trace();
-  
+
   dispatcher.run_tick(state);
-  
+
   const auto &trace = dispatcher.trace_log();
   expect(trace.size() > 0, "Gate A trace empty");
 }
@@ -149,13 +159,14 @@ void test_full_dispatcher_integration() {
   state.player.is_physics_active = false;
   state.player.is_animation_active = false;
   state.player.is_attack_active = false;
-  
+
   comic2::GameDispatcher dispatcher;
   comic2::install_default_stage_hooks(dispatcher);
-  
+
   auto result = dispatcher.run_tick(state);
-  
-  expect(result.stage == comic2::DispatchStage::InputHandling, "Gate A stage mismatch");
+
+  expect(result.stage == comic2::DispatchStage::InputHandling,
+         "Gate A stage mismatch");
 }
 
 void test_physics_determinism_with_collision() {
@@ -170,15 +181,16 @@ void test_physics_determinism_with_collision() {
   state.player.is_physics_active = false;
   state.player.is_animation_active = false;
   state.player.is_attack_active = false;
-  
+
   // Empty room grid should return no floor support
-  expect(!comic2::has_floor_support(state, config), "Gate A floor support mismatch");
+  expect(!comic2::has_floor_support(state, config),
+         "Gate A floor support mismatch");
 }
 
 void test_room_loader_determinism() {
   const std::vector<std::uint8_t> encoded = {0x01, 0x02, 0x03, 0x04};
   auto result = comic2::decode_frdata_room_entry(std::span(encoded), 0);
-  
+
   if (result.has_value()) {
     expect(result.value().tile_w == 1, "Gate A room tile_w mismatch");
     expect(result.value().tile_h == 2, "Gate A room tile_h mismatch");
@@ -199,6 +211,12 @@ int main() {
     test_full_dispatcher_integration();
     test_physics_determinism_with_collision();
     test_room_loader_determinism();
+    run_dispatcher_tests();
+    run_player_controller_tests();
+    run_renderer_tests();
+    run_renderer_validation_tests();
+    run_subsystem_scaffold_tests();
+    run_tile_collision_tests();
     std::cout << "comic2_unit_tests: OK\n";
     return 0;
   } catch (const std::exception &ex) {
