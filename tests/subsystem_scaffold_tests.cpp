@@ -22,6 +22,21 @@ void expect_eq(std::size_t actual, std::size_t expected, const char *message) {
   }
 }
 
+std::vector<std::uint8_t>
+encode_literal_signed_rle(const std::vector<std::uint8_t> &bytes) {
+  std::vector<std::uint8_t> encoded;
+  std::size_t offset = 0;
+  while (offset < bytes.size()) {
+    const std::size_t chunk = std::min<std::size_t>(127, bytes.size() - offset);
+    encoded.push_back(static_cast<std::uint8_t>(chunk));
+    encoded.insert(encoded.end(), bytes.begin() + static_cast<std::ptrdiff_t>(offset),
+                   bytes.begin() + static_cast<std::ptrdiff_t>(offset + chunk));
+    offset += chunk;
+  }
+  encoded.push_back(0x00);
+  return encoded;
+}
+
 void test_entity_runtime_prunes_inactive_slots() {
   std::vector<comic2::RuntimeEntitySlot32> slots(2);
   slots[0].mapped_object_ptr = 0x1234;
@@ -363,6 +378,58 @@ void test_room_loader_rejects_huge_offset() {
   expect(!entry.has_value(), "decode should reject oversized offsets safely");
 }
 
+void test_room_loader_populates_runtime_state_from_resource_buffer() {
+  std::vector<std::uint8_t> decoded_room_bytes(0x2C4, 0x00);
+  decoded_room_bytes[0] = 0x11;
+  decoded_room_bytes[1] = 0x22;
+  decoded_room_bytes[2] = 0x33;
+  decoded_room_bytes[3] = 0x44;
+  decoded_room_bytes[4] = 0x55;
+  decoded_room_bytes[5] = 0x66;
+
+  decoded_room_bytes[0x2A0] = 0x00;
+  decoded_room_bytes[0x2A1] = 0x00;
+  decoded_room_bytes[0x2A2] = 0x04;
+  decoded_room_bytes[0x2A3] = 0x00;
+  decoded_room_bytes[0x2A4] = 0x08;
+  decoded_room_bytes[0x2A5] = 0x00;
+
+  const std::vector<std::uint8_t> encoded_room_bytes =
+      encode_literal_signed_rle(decoded_room_bytes);
+
+  std::vector<std::uint8_t> resource_bytes(0x20, 0x00);
+  resource_bytes[2] = 0x03;
+  resource_bytes[3] = 0x00;
+
+  resource_bytes.resize(0x20, 0x00);
+  resource_bytes.resize(0x20 + encoded_room_bytes.size(), 0x00);
+  std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
+            resource_bytes.begin() + 0x20);
+
+  resource_bytes[0x04] = 0x04;
+  resource_bytes[0x05] = 0x00;
+  resource_bytes[0x06] = 0x03;
+  resource_bytes[0x07] = 0x00;
+  resource_bytes[0x08] = 0x20;
+  resource_bytes[0x09] = 0x00;
+
+  comic2::RuntimeState state;
+  const bool loaded = comic2::load_room_tilemap_from_resource_buffer(
+      state, resource_bytes, 3, 0);
+
+  expect(loaded, "room loader should populate runtime state from resource");
+  expect(state.current_level == 3, "room loader should set current level");
+  expect(state.current_room == 0, "room loader should set current room");
+  expect(state.room_entry.tile_w == 4, "room entry tile_w should be stored");
+  expect(state.room_entry.tile_h == 3, "room entry tile_h should be stored");
+  expect(state.room_grid.tile_w == 4, "room grid tile_w should match entry");
+  expect(state.room_grid.tile_h == 3, "room grid tile_h should match entry");
+  expect(state.room_grid.row_pointers == std::vector<std::uint16_t>{0, 4, 8},
+         "room loader should build row pointer table");
+  expect(state.room_grid.tile_data == decoded_room_bytes,
+         "room loader should store decoded room bytes");
+}
+
 } // namespace
 
 void run_subsystem_scaffold_tests() {
@@ -380,4 +447,5 @@ void run_subsystem_scaffold_tests() {
   test_ent_activation_pipeline_integration();
   test_room_loader_decodes_frdata_entry();
   test_room_loader_rejects_huge_offset();
+  test_room_loader_populates_runtime_state_from_resource_buffer();
 }

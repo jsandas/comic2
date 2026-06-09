@@ -52,6 +52,7 @@ struct DispatcherFlags {
 struct RuntimeState {
   std::uint16_t current_level = 0;
   std::uint16_t current_room = 0;
+  FrdataRoomEntry room_entry{};
 
   RoomTileGrid room_grid;
 
