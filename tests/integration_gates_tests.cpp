@@ -101,10 +101,51 @@ void expect_hash_eq(std::uint64_t actual, std::uint64_t expected,
   throw std::runtime_error(oss.str());
 }
 
+std::vector<comic2::DispatchStage>
+capture_dispatcher_trace(comic2::GameDispatcher &dispatcher,
+                         comic2::RuntimeState &state,
+                         const std::vector<comic2::InputState> &inputs) {
+  dispatcher.clear_trace();
+  dispatcher.set_trace_enabled(true);
+
+  for (const auto &input : inputs) {
+    state.input = input;
+    dispatcher.run_tick(state);
+  }
+
+  return dispatcher.trace_log();
+}
+
+void expect_dispatcher_trace_matches_oracle(
+    const std::vector<comic2::DispatchStage> &actual,
+    const std::vector<comic2::DispatchStage> &expected,
+    const char *context) {
+  if (actual == expected) {
+    return;
+  }
+
+  std::ostringstream oss;
+  oss << context << " expected trace [";
+  for (std::size_t i = 0; i < expected.size(); ++i) {
+    if (i > 0) {
+      oss << ", ";
+    }
+    oss << comic2::to_string(expected[i]);
+  }
+  oss << "] but got [";
+  for (std::size_t i = 0; i < actual.size(); ++i) {
+    if (i > 0) {
+      oss << ", ";
+    }
+    oss << comic2::to_string(actual[i]);
+  }
+  oss << "]";
+  throw std::runtime_error(oss.str());
+}
+
 void test_gate_b_scripted_trace_matches_oracle() {
   comic2::GameDispatcher dispatcher;
   comic2::install_default_stage_hooks(dispatcher);
-  dispatcher.set_trace_enabled(true);
 
   comic2::RuntimeState state;
   state.player.jump_counter = 2;
@@ -124,10 +165,7 @@ void test_gate_b_scripted_trace_matches_oracle() {
       comic2::InputState{},
   };
 
-  for (const auto &input : sequence) {
-    state.input = input;
-    dispatcher.run_tick(state);
-  }
+  const auto actual = capture_dispatcher_trace(dispatcher, state, sequence);
 
   const std::vector<comic2::DispatchStage> expected = {
       comic2::DispatchStage::InputHandling,
@@ -137,23 +175,46 @@ void test_gate_b_scripted_trace_matches_oracle() {
       comic2::DispatchStage::AirbornePhysics,
       comic2::DispatchStage::AirbornePhysics,
   };
-  expect(dispatcher.trace_log() == expected,
-         "Gate B oracle trace mismatch for scripted input sequence");
+      expect_dispatcher_trace_matches_oracle(
+        actual, expected, "Gate B oracle trace mismatch for scripted input");
 
   comic2::GameDispatcher replay_dispatcher;
   comic2::install_default_stage_hooks(replay_dispatcher);
-  replay_dispatcher.set_trace_enabled(true);
 
   comic2::RuntimeState replay_state;
   replay_state.player.jump_counter = 2;
-  for (const auto &input : sequence) {
-    replay_state.input = input;
-    replay_dispatcher.run_tick(replay_state);
-  }
+      const auto replay = capture_dispatcher_trace(replay_dispatcher, replay_state,
+                            sequence);
 
-  expect(replay_dispatcher.trace_log() == dispatcher.trace_log(),
-         "Gate B replay trace must be stable");
+      expect_dispatcher_trace_matches_oracle(
+        replay, actual, "Gate B replay trace must be stable");
 }
+
+    void test_gate_b_oracle_stage_sequence_rotation() {
+      comic2::GameDispatcher dispatcher;
+      comic2::install_default_stage_hooks(dispatcher);
+
+      comic2::RuntimeState state;
+      state.flags.level_transition_pending = true;
+      state.player.is_airborne = true;
+
+      const std::vector<comic2::InputState> sequence = {
+        comic2::InputState{},
+        comic2::InputState{},
+        comic2::InputState{},
+      };
+
+      const auto actual = capture_dispatcher_trace(dispatcher, state, sequence);
+      const std::vector<comic2::DispatchStage> expected = {
+        comic2::DispatchStage::LevelTransition,
+        comic2::DispatchStage::AirbornePhysics,
+        comic2::DispatchStage::AirbornePhysics,
+      };
+
+      expect_dispatcher_trace_matches_oracle(
+        actual, expected,
+        "Gate B oracle stage sequence rotation mismatch");
+    }
 
 void test_gate_c_state_vectors_match_snapshots() {
   comic2::GameDispatcher dispatcher;
@@ -354,6 +415,7 @@ void test_gate_e_projectile_collision_outcome() {
 
 void run_integration_gate_tests() {
   test_gate_b_scripted_trace_matches_oracle();
+  test_gate_b_oracle_stage_sequence_rotation();
 
   test_gate_c_state_vectors_match_snapshots();
   test_gate_c_hazard_flag_snapshot_progression();
