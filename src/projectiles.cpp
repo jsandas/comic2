@@ -88,4 +88,12 @@ void update_projectiles(std::vector<ProjectileState> &projectiles,
   }
 }
 
+void advance_runtime_projectiles(RuntimeState &state,
+                                 const ProjectileBounds &bounds,
+                                 std::int16_t viewport_min_x,
+                                 std::int16_t viewport_min_y) {
+  update_projectiles(state.projectiles, bounds, state.room_grid, viewport_min_x,
+                     viewport_min_y);
+}
+
 } // namespace comic2

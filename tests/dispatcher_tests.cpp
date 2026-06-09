@@ -348,6 +348,67 @@ void test_input_fallback_arms_grounded_physics_for_next_tick() {
          "second tick should execute grounded physics after arming");
 }
 
+comic2::RoomTileGrid make_projectile_floor_grid(std::uint8_t tile_id) {
+  comic2::RoomTileGrid grid;
+  grid.tile_w = 2;
+  grid.tile_h = 2;
+  grid.row_pointers = {0, 2};
+  grid.tile_data = {0x00, 0x00, tile_id, tile_id};
+  return grid;
+}
+
+void test_projectile_scripted_tick_updates_deterministically() {
+  const auto run_sequence = [](const std::vector<comic2::InputState> &inputs) {
+    comic2::GameDispatcher dispatcher;
+    comic2::install_default_stage_hooks(dispatcher);
+
+    comic2::RuntimeState state;
+    state.projectiles.push_back(
+        comic2::ProjectileState{.x = 10, .y = 10, .x_vel = 1, .y_vel = 0,
+                                .anim_frame = 0, .active = true});
+
+    for (const auto &input : inputs) {
+      state.input = input;
+      dispatcher.run_tick(state);
+    }
+
+    return state.projectiles;
+  };
+
+  const std::vector<comic2::InputState> sequence = {
+      comic2::InputState{},
+      comic2::InputState{},
+      comic2::InputState{},
+  };
+
+  const auto first = run_sequence(sequence);
+  const auto replay = run_sequence(sequence);
+
+  expect(first == replay,
+         "projectile scripted tick replay should be deterministic");
+  expect(first.size() == 1, "scripted projectile tick should keep one entry");
+  expect(first[0].x == 13, "projectile should advance one pixel per tick");
+  expect(first[0].anim_frame == 3,
+         "projectile animation frame should advance modulo 8 each tick");
+}
+
+void test_projectile_scripted_tick_deactivates_on_tile_collision() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  comic2::RuntimeState state;
+  state.room_grid = make_projectile_floor_grid(0x01);
+  state.projectiles.push_back(
+      comic2::ProjectileState{.x = 13, .y = 13, .x_vel = 0, .y_vel = 0,
+                              .anim_frame = 0, .active = true});
+
+  const auto result = dispatcher.run_tick(state);
+  expect(result.stage == comic2::DispatchStage::InputHandling,
+         "projectile tick should run through input handling stage");
+  expect(!state.projectiles[0].active,
+         "projectile should deactivate on tile collision during scripted tick");
+}
+
 } // namespace
 
 void run_dispatcher_tests() {
@@ -361,4 +422,6 @@ void run_dispatcher_tests() {
   test_tile_hazard_stage_consumes_hp();
   test_stage_flags_are_consumed_by_default_handlers();
   test_input_fallback_arms_grounded_physics_for_next_tick();
+  test_projectile_scripted_tick_updates_deterministically();
+  test_projectile_scripted_tick_deactivates_on_tile_collision();
 }

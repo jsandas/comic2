@@ -7,6 +7,8 @@
 
 namespace comic2 {
 
+struct RuntimeState;
+
 struct ProjectileState {
   std::int16_t x = 0;
   std::int16_t y = 0;
@@ -46,6 +48,11 @@ void update_projectiles(std::vector<ProjectileState> &projectiles,
                         const RoomTileGrid &room_grid,
                         std::int16_t viewport_min_x,
                         std::int16_t viewport_min_y);
+
+void advance_runtime_projectiles(RuntimeState &state,
+                                 const ProjectileBounds &bounds,
+                                 std::int16_t viewport_min_x,
+                                 std::int16_t viewport_min_y);
 
 bool check_projectile_tile_collision(const ProjectileState &projectile,
                                      const RoomTileGrid &room_grid);
