@@ -358,10 +358,19 @@ Status note: Phase 7.4 baseline is now implemented with room-grid tile lookup, t
 
 #### 7.7 Integration Gates and Oracle Verification
 - [x] Gate A (Unit): all module tests pass in CI (`ctest`) with deterministic replay checks
-- [ ] Gate B (Frame): scripted input sequences produce stable dispatcher-stage traces
-- [ ] Gate C (State): key state vectors (`x/y/vel/state flags`) match expected snapshots per tick
-- [ ] Gate D (Visual): selected rooms produce matching planar frame hashes against oracle captures
-- [ ] Gate E (Behavior): death/hazard, room transition, and projectile interactions match expected outcomes
+- [x] Gate B (Frame): scripted input sequences produce stable dispatcher-stage traces
+- [x] Gate C (State): key state vectors (`x/y/vel/state flags`) match expected snapshots per tick
+- [x] Gate D (Visual): selected rooms produce matching planar frame hashes against oracle captures
+- [x] Gate E (Behavior): death/hazard, room transition, and projectile interactions match expected outcomes
+
+##### 7.7 Oracle Fixture Appendix
+- Canonical integration test entrypoint: `run_integration_gate_tests` in `tests/integration_gates_tests.cpp`
+- Gate B oracle fixture: scripted dispatcher-stage trace sequence validated in `test_gate_b_scripted_trace_matches_oracle`
+- Gate C oracle fixture: per-tick state vector snapshots validated in `test_gate_c_state_vectors_match_snapshots`
+- Gate D oracle fixture alpha hash: `0x16e2201b96f48c65` validated in `test_gate_d_room_fixture_alpha_hash_matches_oracle`
+- Gate D oracle fixture beta hash: `0x22ecbb9529f6165` validated in `test_gate_d_room_fixture_beta_hash_matches_oracle`
+- Gate E oracle fixtures: hazard death routing, room transition boundaries, and projectile collision outcomes validated by `test_gate_e_*` integration tests
+- Revalidation command: `cmake --build build && ctest --test-dir build --output-on-failure`
 
 #### 7.8 Immediate Next Execution Order
 - [ ] 1) Implement `tile_collision` service and replace physics stubs with tile-aware checks

@@ -15,6 +15,7 @@
 #include "comic2/tile_collision.hpp"
 
 extern void run_dispatcher_tests();
+extern void run_integration_gate_tests();
 extern void run_player_controller_tests();
 extern void run_renderer_tests();
 extern void run_renderer_validation_tests();
@@ -212,6 +213,7 @@ int main() {
     test_physics_determinism_with_collision();
     test_room_loader_determinism();
     run_dispatcher_tests();
+    run_integration_gate_tests();
     run_player_controller_tests();
     run_renderer_tests();
     run_renderer_validation_tests();

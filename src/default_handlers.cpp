@@ -10,6 +10,7 @@ namespace comic2 {
 namespace {
 
 constexpr PlayerMotionConfig kDefaultMotion{};
+constexpr std::int16_t kViewportWidthPixels = 320;
 constexpr TileCollisionConfig kDefaultCollision{
     .ground_y = 0,
     .solid_tile_threshold = 0x01,
@@ -17,19 +18,43 @@ constexpr TileCollisionConfig kDefaultCollision{
     .hazard_tile_max = 0xFF,
 };
 
+void update_room_transition_from_player_bounds(RuntimeState &state) {
+  if (state.player.x < 0) {
+    if (state.current_room == 0) {
+      state.player.x = 0;
+      return;
+    }
+
+    --state.current_room;
+    state.player.x = static_cast<std::int16_t>(kViewportWidthPixels - 1);
+    state.flags.level_transition_pending = true;
+    return;
+  }
+
+  if (state.player.x >= kViewportWidthPixels) {
+    ++state.current_room;
+    state.player.x = 0;
+    state.flags.level_transition_pending = true;
+  }
+}
+
 void apply_default_airborne_physics(RuntimeState &state) {
   apply_airborne_physics_tick(state, kDefaultMotion, kDefaultCollision);
+  update_room_transition_from_player_bounds(state);
   update_player_hazard_state(state, kDefaultCollision);
 }
 
 void apply_default_grounded_physics(RuntimeState &state) {
   apply_grounded_physics_tick(state, kDefaultMotion, kDefaultCollision);
+  update_room_transition_from_player_bounds(state);
   update_player_hazard_state(state, kDefaultCollision);
 }
 
 } // namespace
 
-void handle_level_transition(RuntimeState &state) { (void)state; }
+void handle_level_transition(RuntimeState &state) {
+  state.flags.level_transition_pending = false;
+}
 
 void handle_special_logic1(RuntimeState &state) { (void)state; }
 
@@ -55,6 +80,9 @@ void handle_tile_hazard(RuntimeState &state) {
   if (state.player.hp > 0) {
     --state.player.hp;
   }
+  if (state.player.hp == 0) {
+    state.flags.player_special_state_active = true;
+  }
   state.flags.tile_hazard_triggered = false;
 }
 
@@ -62,6 +90,7 @@ void handle_player_special_state(RuntimeState &state) { (void)state; }
 
 void handle_input_fallback(RuntimeState &state) {
   apply_input_tick(state, kDefaultMotion);
+  update_room_transition_from_player_bounds(state);
 }
 
 void install_default_stage_hooks(GameDispatcher &dispatcher) {
