@@ -89,9 +89,12 @@ void test_comprehensive_deterministic_tick_replay() {
   comic2::install_default_stage_hooks(dispatcher);
 
   const auto result1 = dispatcher.run_tick(state);
-  const auto result2_stage = dispatcher.run_tick(state).stage;
+  const auto result2 = dispatcher.run_tick(state);
 
-  expect(result1.stage == result2_stage, "Gate A tick stage mismatch");
+  expect(result1.stage == comic2::DispatchStage::InputHandling,
+         "Gate A first tick should run input handling");
+  expect(result2.stage == comic2::DispatchStage::GroundedPhysics,
+         "Gate A second tick should run grounded physics after input arm");
   expect(state.player.x == 100, "Gate A tick x mismatch");
 }
 

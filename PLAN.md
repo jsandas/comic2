@@ -374,7 +374,7 @@ Status note: Phase 7.4 baseline is now implemented with room-grid tile lookup, t
 
 #### 7.8 Immediate Next Execution Order
 - [x] 1) Implement `tile_collision` service and replace physics stubs with tile-aware checks
-- [ ] 2) Implement grounded + airborne handlers using documented priority and state flags
+- [x] 2) Implement grounded + airborne handlers using documented priority and state flags
 - [ ] 3) Implement room-loader integration (`load_resource` equivalent path) into runtime state
 - [ ] 4) Implement projectile update path and add deterministic scripted tick tests
 - [ ] 5) Add dispatcher trace capture and compare against oracle-driven expected stage sequences

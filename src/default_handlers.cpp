@@ -56,25 +56,39 @@ void handle_level_transition(RuntimeState &state) {
   state.flags.level_transition_pending = false;
 }
 
-void handle_special_logic1(RuntimeState &state) { (void)state; }
+void handle_special_logic1(RuntimeState &state) {
+  state.flags.special_logic1_active = false;
+}
 
-void handle_special_logic2(RuntimeState &state) { (void)state; }
+void handle_special_logic2(RuntimeState &state) {
+  state.flags.special_logic2_active = false;
+}
 
 void handle_airborne_movement(RuntimeState &state) {
   apply_default_airborne_physics(state);
+  state.player.is_physics_active = state.player.is_airborne;
 }
 
-void handle_timed_overlay(RuntimeState &state) { (void)state; }
+void handle_timed_overlay(RuntimeState &state) {
+  state.flags.timed_overlay_pending = false;
+}
 
 void handle_grounded_physics(RuntimeState &state) {
   apply_default_grounded_physics(state);
+  state.player.is_physics_active = state.player.is_airborne;
 }
 
-void handle_player_animation(RuntimeState &state) { (void)state; }
+void handle_player_animation(RuntimeState &state) {
+  state.player.is_animation_active = false;
+}
 
-void handle_attack_animation(RuntimeState &state) { (void)state; }
+void handle_attack_animation(RuntimeState &state) {
+  state.player.is_attack_active = false;
+}
 
-void handle_distance_interaction(RuntimeState &state) { (void)state; }
+void handle_distance_interaction(RuntimeState &state) {
+  state.flags.distance_interaction_active = false;
+}
 
 void handle_tile_hazard(RuntimeState &state) {
   if (state.player.hp > 0) {
@@ -91,6 +105,13 @@ void handle_player_special_state(RuntimeState &state) { (void)state; }
 void handle_input_fallback(RuntimeState &state) {
   apply_input_tick(state, kDefaultMotion);
   update_room_transition_from_player_bounds(state);
+  update_player_hazard_state(state, kDefaultCollision);
+
+  // Keep grounded physics in the dispatch chain while on-foot so ledge/floor
+  // transitions are evaluated via the documented stage priority path.
+  if (!state.player.is_airborne) {
+    state.player.is_physics_active = true;
+  }
 }
 
 void install_default_stage_hooks(GameDispatcher &dispatcher) {

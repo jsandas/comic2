@@ -258,6 +258,96 @@ void test_tile_hazard_stage_consumes_hp() {
          "tile hazard handler should clear hazard flag after handling");
 }
 
+void test_stage_flags_are_consumed_by_default_handlers() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  {
+    comic2::RuntimeState state;
+    state.flags.special_logic1_active = true;
+    const auto first = dispatcher.run_tick(state);
+    expect(first.stage == comic2::DispatchStage::SpecialLogic1,
+           "special logic1 stage should run when flagged");
+    const auto second = dispatcher.run_tick(state);
+    expect(second.stage == comic2::DispatchStage::InputHandling,
+           "special logic1 flag should be consumed after handler");
+  }
+
+  {
+    comic2::RuntimeState state;
+    state.flags.special_logic2_active = true;
+    const auto first = dispatcher.run_tick(state);
+    expect(first.stage == comic2::DispatchStage::SpecialLogic2,
+           "special logic2 stage should run when flagged");
+    const auto second = dispatcher.run_tick(state);
+    expect(second.stage == comic2::DispatchStage::InputHandling,
+           "special logic2 flag should be consumed after handler");
+  }
+
+  {
+    comic2::RuntimeState state;
+    state.flags.timed_overlay_pending = true;
+    const auto first = dispatcher.run_tick(state);
+    expect(first.stage == comic2::DispatchStage::TimedOverlay,
+           "timed overlay stage should run when flagged");
+    const auto second = dispatcher.run_tick(state);
+    expect(second.stage == comic2::DispatchStage::InputHandling,
+           "timed overlay flag should be consumed after handler");
+  }
+
+  {
+    comic2::RuntimeState state;
+    state.player.is_animation_active = true;
+    const auto first = dispatcher.run_tick(state);
+    expect(first.stage == comic2::DispatchStage::PlayerAnimation,
+           "player animation stage should run when flagged");
+    const auto second = dispatcher.run_tick(state);
+    expect(second.stage == comic2::DispatchStage::InputHandling,
+           "player animation flag should be consumed after handler");
+  }
+
+  {
+    comic2::RuntimeState state;
+    state.player.is_attack_active = true;
+    const auto first = dispatcher.run_tick(state);
+    expect(first.stage == comic2::DispatchStage::AttackAnimation,
+           "attack animation stage should run when flagged");
+    const auto second = dispatcher.run_tick(state);
+    expect(second.stage == comic2::DispatchStage::InputHandling,
+           "attack animation flag should be consumed after handler");
+  }
+
+  {
+    comic2::RuntimeState state;
+    state.flags.distance_interaction_active = true;
+    const auto first = dispatcher.run_tick(state);
+    expect(first.stage == comic2::DispatchStage::DistanceInteraction,
+           "distance interaction stage should run when flagged");
+    const auto second = dispatcher.run_tick(state);
+    expect(second.stage == comic2::DispatchStage::InputHandling,
+           "distance interaction flag should be consumed after handler");
+  }
+}
+
+void test_input_fallback_arms_grounded_physics_for_next_tick() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  comic2::RuntimeState state;
+  state.player.is_airborne = false;
+  state.player.is_physics_active = false;
+
+  const auto first = dispatcher.run_tick(state);
+  expect(first.stage == comic2::DispatchStage::InputHandling,
+         "first tick should run input fallback");
+  expect(state.player.is_physics_active,
+         "input fallback should arm grounded physics for next tick");
+
+  const auto second = dispatcher.run_tick(state);
+  expect(second.stage == comic2::DispatchStage::GroundedPhysics,
+         "second tick should execute grounded physics after arming");
+}
+
 } // namespace
 
 void run_dispatcher_tests() {
@@ -269,4 +359,6 @@ void run_dispatcher_tests() {
   test_dispatcher_trace_log();
   test_default_stage_hook_coverage();
   test_tile_hazard_stage_consumes_hp();
+  test_stage_flags_are_consumed_by_default_handlers();
+  test_input_fallback_arms_grounded_physics_for_next_tick();
 }
