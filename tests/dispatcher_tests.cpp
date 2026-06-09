@@ -240,9 +240,9 @@ void test_tile_hazard_stage_consumes_hp() {
   state.player.is_physics_active = true;
 
   state.room_grid.tile_w = 1;
-  state.room_grid.tile_h = 1;
-  state.room_grid.row_pointers = {0};
-  state.room_grid.tile_data = {0xF4};
+  state.room_grid.tile_h = 2;
+  state.room_grid.row_pointers = {0, 1};
+  state.room_grid.tile_data = {0xF4, 0xF4};
 
   const auto first = dispatcher.run_tick(state);
   expect(first.stage == comic2::DispatchStage::GroundedPhysics,

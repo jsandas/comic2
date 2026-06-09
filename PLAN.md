@@ -373,7 +373,7 @@ Status note: Phase 7.4 baseline is now implemented with room-grid tile lookup, t
 - Revalidation command: `cmake --build build && ctest --test-dir build --output-on-failure`
 
 #### 7.8 Immediate Next Execution Order
-- [ ] 1) Implement `tile_collision` service and replace physics stubs with tile-aware checks
+- [x] 1) Implement `tile_collision` service and replace physics stubs with tile-aware checks
 - [ ] 2) Implement grounded + airborne handlers using documented priority and state flags
 - [ ] 3) Implement room-loader integration (`load_resource` equivalent path) into runtime state
 - [ ] 4) Implement projectile update path and add deterministic scripted tick tests

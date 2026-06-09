@@ -10,6 +10,20 @@ void expect(bool condition, const char *message) {
   }
 }
 
+comic2::RoomTileGrid make_flat_floor_grid() {
+  comic2::RoomTileGrid grid;
+  grid.tile_w = 2;
+  grid.tile_h = 2;
+  grid.row_pointers = {0, 2};
+  grid.tile_data = {
+                0x00,
+                0x00,
+                0x02,
+                0x02,
+  };
+  return grid;
+}
+
 void test_apply_input_tick_moves_right() {
   comic2::RuntimeState state;
   state.input.right_pressed = true;
@@ -29,28 +43,29 @@ void test_apply_input_tick_consumes_jump_counter() {
 
   expect(state.player.y_vel == -5, "jump input should apply jump impulse");
   expect(state.player.jump_counter == 0,
-         "jump input should consume jump counter");
+    "jump input should consume jump counter");
   expect(state.player.is_physics_active, "jump input should activate physics");
   expect(state.player.is_airborne, "jump input should enter airborne state");
 }
 
 void test_apply_physics_tick_lands_on_ground() {
   comic2::RuntimeState state;
+  state.room_grid = make_flat_floor_grid();
   state.player.y = -1;
   state.player.y_vel = 2;
   state.player.is_airborne = true;
   state.player.is_physics_active = true;
 
   comic2::apply_physics_tick(state, comic2::PlayerMotionConfig{},
-                             comic2::TileCollisionConfig{});
+                        comic2::TileCollisionConfig{});
 
   expect(state.player.y == 0, "physics tick should clamp y to ground");
   expect(state.player.y_vel == 0,
-         "physics tick should zero vertical velocity on ground");
+    "physics tick should zero vertical velocity on ground");
   expect(!state.player.is_airborne,
-         "physics tick should clear airborne on ground contact");
+    "physics tick should clear airborne on ground contact");
   expect(!state.player.is_physics_active,
-         "physics tick should clear physics active on ground contact");
+    "physics tick should clear physics active on ground contact");
 }
 
 void test_jump_while_moving_left_and_right() {
@@ -63,10 +78,10 @@ void test_jump_while_moving_left_and_right() {
 
   expect(left_state.player.x == -2, "left+jump should move left by walk step");
   expect(left_state.player.x_vel == -2,
-         "left+jump should set negative x velocity");
+    "left+jump should set negative x velocity");
   expect(left_state.player.y_vel == -5, "left+jump should apply jump impulse");
   expect(left_state.player.jump_counter == 0,
-         "left+jump should consume jump counter");
+    "left+jump should consume jump counter");
 
   comic2::RuntimeState right_state;
   right_state.input.right_pressed = true;
@@ -76,13 +91,13 @@ void test_jump_while_moving_left_and_right() {
   comic2::apply_input_tick(right_state, comic2::PlayerMotionConfig{});
 
   expect(right_state.player.x == 2,
-         "right+jump should move right by walk step");
+    "right+jump should move right by walk step");
   expect(right_state.player.x_vel == 2,
-         "right+jump should set positive x velocity");
+    "right+jump should set positive x velocity");
   expect(right_state.player.y_vel == -5,
-         "right+jump should apply jump impulse");
+    "right+jump should apply jump impulse");
   expect(right_state.player.jump_counter == 0,
-         "right+jump should consume jump counter");
+    "right+jump should consume jump counter");
 }
 
 void test_short_hop_vs_full_jump_counter_usage() {
@@ -93,10 +108,10 @@ void test_short_hop_vs_full_jump_counter_usage() {
   comic2::apply_input_tick(short_hop, comic2::PlayerMotionConfig{});
   short_hop.input.jump_pressed = false;
   comic2::apply_airborne_physics_tick(short_hop, comic2::PlayerMotionConfig{},
-                                      comic2::TileCollisionConfig{});
+                                 comic2::TileCollisionConfig{});
 
   expect(short_hop.player.jump_counter == 1,
-         "short-hop should consume exactly one jump counter unit");
+    "short-hop should consume exactly one jump counter unit");
 
   comic2::RuntimeState full_jump;
   full_jump.player.jump_counter = 2;
@@ -104,11 +119,11 @@ void test_short_hop_vs_full_jump_counter_usage() {
 
   comic2::apply_input_tick(full_jump, comic2::PlayerMotionConfig{});
   comic2::apply_airborne_physics_tick(full_jump, comic2::PlayerMotionConfig{},
-                                      comic2::TileCollisionConfig{});
+                                 comic2::TileCollisionConfig{});
 
   expect(full_jump.player.jump_counter == 0,
-         "holding jump during airborne rise should consume additional jump "
-         "counter");
+    "holding jump during airborne rise should consume additional jump "
+    "counter");
 }
 
 void test_ledge_walk_off_transitions_into_fall() {
@@ -125,17 +140,17 @@ void test_ledge_walk_off_transitions_into_fall() {
 
   comic2::apply_input_tick(state, comic2::PlayerMotionConfig{});
   expect(state.player.x == 6,
-         "input tick should move player past platform edge");
+    "input tick should move player past platform edge");
 
   comic2::apply_grounded_physics_tick(state, comic2::PlayerMotionConfig{},
-                                      collision);
+                                 collision);
 
   expect(state.player.is_airborne,
-         "walking off ledge should enter airborne state");
+    "walking off ledge should enter airborne state");
   expect(state.player.is_physics_active,
-         "walking off ledge should keep physics active");
+    "walking off ledge should keep physics active");
   expect(state.player.y_vel > 0,
-         "walking off ledge should start downward fall velocity");
+    "walking off ledge should start downward fall velocity");
 }
 
 } // namespace

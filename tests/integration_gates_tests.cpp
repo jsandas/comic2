@@ -39,6 +39,15 @@ comic2::RoomTileGrid make_single_tile_grid(std::uint8_t tile_id) {
   return grid;
 }
 
+comic2::RoomTileGrid make_hazard_floor_grid(std::uint8_t tile_id) {
+  comic2::RoomTileGrid grid;
+  grid.tile_w = 1;
+  grid.tile_h = 2;
+  grid.row_pointers = {0, 1};
+  grid.tile_data = {tile_id, tile_id};
+  return grid;
+}
+
 StateSnapshot capture_snapshot(const comic2::RuntimeState &state) {
   return StateSnapshot{
       .x = state.player.x,
@@ -222,7 +231,7 @@ void test_gate_c_hazard_flag_snapshot_progression() {
   comic2::RuntimeState state;
   state.player.hp = 2;
   state.player.is_physics_active = true;
-  state.room_grid = make_single_tile_grid(0xF4);
+  state.room_grid = make_hazard_floor_grid(0xF4);
 
   const auto first = dispatcher.run_tick(state);
   expect(first.stage == comic2::DispatchStage::GroundedPhysics,
