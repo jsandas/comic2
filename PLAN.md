@@ -363,8 +363,24 @@ Status note: Phase 7.4 baseline is now implemented with room-grid tile lookup, t
 - [ ] Gate E (Behavior): death/hazard, room transition, and projectile interactions match expected outcomes
 
 #### 7.8 Immediate Next Execution Order
-- [ ] 1) Implement `tile_collision` service and replace physics stubs with tile-aware checks
-- [ ] 2) Implement grounded + airborne handlers using documented priority and state flags
-- [ ] 3) Implement room-loader integration (`load_resource` equivalent path) into runtime state
-- [ ] 4) Implement projectile update path and add deterministic scripted tick tests
-- [ ] 5) Add dispatcher trace capture and compare against oracle-driven expected stage sequences
+- [x] 1) Implement `tile_collision` service and replace physics stubs with tile-aware checks
+- [x] 2) Implement grounded + airborne handlers using documented priority and state flags
+- [x] 3) Implement room-loader integration (`load_resource` equivalent path) into runtime state
+- [x] 4) Implement projectile update path and add deterministic scripted tick tests
+- [x] 5) Add dispatcher trace capture and compare against oracle-driven expected stage sequences
+
+#### 7.9 Main Bootstrap Wiring
+- [ ] 1) Convert `src/main.cpp` from a FRPAK validator into the game startup bootstrap
+- [ ] 2) Initialize `comic2::RuntimeState` with core runtime containers and confirmed defaults
+- [ ] 3) Load initial resources needed before the first tick:
+  - level/room metadata
+  - room tile grid
+  - sprite/tile resource data
+- [ ] 4) Construct `comic2::GameDispatcher` and assign stage hooks in the known game-loop order
+- [ ] 5) Add a small main loop around `dispatcher.run_tick(state)` with input polling and render invocation
+- [ ] 6) Wire one subsystem at a time through `main()`:
+  - input capture
+  - tick dispatch
+  - grounded physics
+  - rendering placeholder output
+- [ ] 7) Keep `main()` as orchestration only; delegate game logic to subsystem modules and handler hooks
