@@ -403,7 +403,7 @@ void test_gate_e_projectile_collision_outcome() {
           .min_y = 0,
           .max_y = 199,
       },
-      grid, 0, 0);
+      grid, 0, 0, 200, 152);
 
   expect(projectiles.size() == 1,
          "Gate E projectile interaction should keep projectile storage stable");

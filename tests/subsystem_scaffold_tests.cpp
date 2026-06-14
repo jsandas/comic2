@@ -198,7 +198,7 @@ void test_projectile_updates_and_despawns_out_of_bounds() {
       projectiles,
       comic2::ProjectileBounds{
           .min_x = 0, .max_x = 11, .min_y = 0, .max_y = 50},
-      comic2::RoomTileGrid{}, 0, 0);
+      comic2::RoomTileGrid{}, 0, 0, 200, 152);
 
   expect(projectiles.size() == 1, "spawn should append one projectile");
   expect(!projectiles[0].active,
@@ -276,7 +276,7 @@ void test_projectile_viewport_culling() {
       projectiles,
       comic2::ProjectileBounds{
           .min_x = 0, .max_x = 319, .min_y = 0, .max_y = 199},
-      empty_grid, 100, 0);
+      empty_grid, 100, 0, 200, 152);
 
   expect(!projectiles[0].active, "projectile should deactivate when outside "
                                  "viewport bounds (x < viewport_min_x - 8)");
@@ -295,7 +295,7 @@ void test_projectile_anim_frame_cycles() {
         projectiles,
         comic2::ProjectileBounds{
             .min_x = 0, .max_x = 319, .min_y = 0, .max_y = 199},
-        empty_grid, 0, 0);
+        empty_grid, 0, 0, 200, 152);
   }
 
   expect(projectiles[0].anim_frame == 2, "anim_frame should cycle modulo 8");
