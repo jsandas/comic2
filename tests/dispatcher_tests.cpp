@@ -84,7 +84,7 @@ void test_default_handlers_basic_movement_and_jump() {
   const auto first = dispatcher.run_tick(state);
   expect(first.stage == comic2::DispatchStage::InputHandling,
          "first tick should handle input");
-  expect(state.player.x == 2, "right input should advance x");
+  expect(state.player.x == 8, "right input should advance x");
   expect(state.player.y_vel == -5, "jump should apply impulse");
   expect(state.player.is_physics_active, "jump should enable physics");
 
@@ -253,6 +253,7 @@ void test_tile_hazard_stage_consumes_hp() {
 
   comic2::RuntimeState state;
   state.player.hp = 3;
+  state.player.y = -16;
   state.player.is_physics_active = true;
 
   state.room_grid.tile_w = 1;

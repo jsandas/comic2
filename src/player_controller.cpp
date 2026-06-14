@@ -61,6 +61,12 @@ void apply_grounded_physics_tick(RuntimeState &state,
     return;
   }
 
+  if (state.player.y_vel < 0) {
+    state.player.is_airborne = true;
+    state.player.is_physics_active = true;
+    return;
+  }
+
   if (detail::trigger_fall_if_no_support(state, collision, motion)) {
     return;
   }

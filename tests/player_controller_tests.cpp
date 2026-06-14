@@ -27,8 +27,8 @@ comic2::RoomTileGrid make_flat_floor_grid() {
 comic2::RoomTileGrid make_three_row_floor_grid() {
   comic2::RoomTileGrid grid;
   grid.tile_w = 2;
-  grid.tile_h = 3;
-  grid.row_pointers = {0, 2, 4};
+  grid.tile_h = 4;
+  grid.row_pointers = {0, 2, 4, 6};
   grid.tile_data = {
                 0x00,
                 0x00,
@@ -48,8 +48,8 @@ void test_apply_input_tick_moves_right() {
 
   comic2::apply_input_tick(state, comic2::PlayerMotionConfig{});
 
-  expect(state.player.x == 2, "right input should move x by walk step");
-  expect(state.player.x_vel == 2, "right input should set x_vel");
+  expect(state.player.x == 8, "right input should move x by walk step");
+  expect(state.player.x_vel == 8, "right input should set x_vel");
 }
 
 void test_apply_input_tick_consumes_jump_counter() {
@@ -69,7 +69,7 @@ void test_apply_input_tick_consumes_jump_counter() {
 void test_apply_physics_tick_lands_on_ground() {
   comic2::RuntimeState state;
   state.room_grid = make_flat_floor_grid();
-  state.player.y = -1;
+  state.player.y = -3;
   state.player.y_vel = 2;
   state.player.is_airborne = true;
   state.player.is_physics_active = true;
@@ -77,7 +77,7 @@ void test_apply_physics_tick_lands_on_ground() {
   comic2::apply_physics_tick(state, comic2::PlayerMotionConfig{},
                         comic2::TileCollisionConfig{});
 
-  expect(state.player.y == 0, "physics tick should clamp y to ground");
+  expect(state.player.y == -16, "physics tick should snap player to tile floor");
   expect(state.player.y_vel == 0,
     "physics tick should zero vertical velocity on ground");
   expect(!state.player.is_airborne,
@@ -94,8 +94,8 @@ void test_jump_while_moving_left_and_right() {
 
   comic2::apply_input_tick(left_state, comic2::PlayerMotionConfig{});
 
-  expect(left_state.player.x == -2, "left+jump should move left by walk step");
-  expect(left_state.player.x_vel == -2,
+  expect(left_state.player.x == -8, "left+jump should move left by walk step");
+  expect(left_state.player.x_vel == -8,
     "left+jump should set negative x velocity");
   expect(left_state.player.y_vel == -5, "left+jump should apply jump impulse");
   expect(left_state.player.jump_counter == 0,
@@ -108,9 +108,9 @@ void test_jump_while_moving_left_and_right() {
 
   comic2::apply_input_tick(right_state, comic2::PlayerMotionConfig{});
 
-  expect(right_state.player.x == 2,
+  expect(right_state.player.x == 8,
     "right+jump should move right by walk step");
-  expect(right_state.player.x_vel == 2,
+  expect(right_state.player.x_vel == 8,
     "right+jump should set positive x velocity");
   expect(right_state.player.y_vel == -5,
     "right+jump should apply jump impulse");
@@ -157,7 +157,7 @@ void test_ledge_walk_off_transitions_into_fall() {
   };
 
   comic2::apply_input_tick(state, comic2::PlayerMotionConfig{});
-  expect(state.player.x == 6,
+  expect(state.player.x == 12,
     "input tick should move player past platform edge");
 
   comic2::apply_grounded_physics_tick(state, comic2::PlayerMotionConfig{},
@@ -198,6 +198,33 @@ void test_grounded_physics_respects_tile_height_without_ground_y() {
     "grounded physics should clear physics-active state when supported");
 }
 
+void test_grounded_physics_does_not_snap_when_rising() {
+  comic2::RuntimeState state;
+  state.room_grid = make_three_row_floor_grid();
+  state.player.x = 0;
+  state.player.y = 0;
+  state.player.y_vel = -3;
+  state.player.is_airborne = false;
+  state.player.is_physics_active = true;
+
+  const comic2::TileCollisionConfig collision{
+      .ground_y = 0,
+      .solid_tile_threshold = 2,
+  };
+
+  comic2::apply_grounded_physics_tick(state, comic2::PlayerMotionConfig{},
+                                 collision);
+
+  expect(state.player.y == 0,
+    "rising motion should preserve player y when not landing");
+  expect(state.player.y_vel == -3,
+    "rising motion should preserve upward velocity");
+  expect(state.player.is_airborne,
+    "rising motion should remain in airborne state");
+  expect(state.player.is_physics_active,
+    "rising motion should keep physics active");
+}
+
 } // namespace
 
 void run_player_controller_tests() {
@@ -207,4 +234,6 @@ void run_player_controller_tests() {
   test_jump_while_moving_left_and_right();
   test_short_hop_vs_full_jump_counter_usage();
   test_ledge_walk_off_transitions_into_fall();
+  test_grounded_physics_respects_tile_height_without_ground_y();
+  test_grounded_physics_does_not_snap_when_rising();
 }

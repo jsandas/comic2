@@ -244,35 +244,35 @@ void test_gate_c_state_vectors_match_snapshots() {
   }
 
   const std::vector<StateSnapshot> expected = {
-      StateSnapshot{.x = 2,
+      StateSnapshot{.x = 8,
                     .y = 0,
-                    .x_vel = 2,
+                    .x_vel = 8,
                     .y_vel = -5,
                     .is_airborne = true,
                     .is_physics_active = true,
                     .tile_hazard_triggered = false},
-      StateSnapshot{.x = 2,
+      StateSnapshot{.x = 8,
                     .y = -5,
                     .x_vel = 0,
                     .y_vel = -4,
                     .is_airborne = true,
                     .is_physics_active = true,
                     .tile_hazard_triggered = false},
-      StateSnapshot{.x = 2,
+      StateSnapshot{.x = 8,
                     .y = -9,
                     .x_vel = 0,
                     .y_vel = -3,
                     .is_airborne = true,
                     .is_physics_active = true,
                     .tile_hazard_triggered = false},
-      StateSnapshot{.x = 2,
+      StateSnapshot{.x = 8,
                     .y = -12,
                     .x_vel = 0,
                     .y_vel = -2,
                     .is_airborne = true,
                     .is_physics_active = true,
                     .tile_hazard_triggered = false},
-      StateSnapshot{.x = 2,
+      StateSnapshot{.x = 8,
                     .y = -14,
                     .x_vel = 0,
                     .y_vel = -1,
@@ -291,6 +291,7 @@ void test_gate_c_hazard_flag_snapshot_progression() {
 
   comic2::RuntimeState state;
   state.player.hp = 2;
+  state.player.y = -16;
   state.player.is_physics_active = true;
   state.room_grid = make_hazard_floor_grid(0xF4);
 
