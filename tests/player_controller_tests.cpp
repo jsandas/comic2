@@ -152,9 +152,7 @@ void test_ledge_walk_off_transitions_into_fall() {
   state.player.is_physics_active = true;
   state.input.right_pressed = true;
 
-  const comic2::TileCollisionConfig collision{
-      .ground_y = 0,
-  };
+  const comic2::TileCollisionConfig collision{};
 
   comic2::apply_input_tick(state, comic2::PlayerMotionConfig{});
   expect(state.player.x == 12,
@@ -181,7 +179,6 @@ void test_grounded_physics_respects_tile_height_without_ground_y() {
   state.player.is_physics_active = true;
 
   const comic2::TileCollisionConfig collision{
-      .ground_y = 0,
       .solid_tile_threshold = 2,
   };
 
@@ -208,7 +205,6 @@ void test_grounded_physics_does_not_snap_when_rising() {
   state.player.is_physics_active = true;
 
   const comic2::TileCollisionConfig collision{
-      .ground_y = 0,
       .solid_tile_threshold = 2,
   };
 

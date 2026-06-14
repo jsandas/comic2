@@ -13,7 +13,6 @@ namespace {
 constexpr PlayerMotionConfig kDefaultMotion{};
 constexpr std::int16_t kViewportWidthPixels = 320;
 constexpr TileCollisionConfig kDefaultCollision{
-    .ground_y = 0,
     .solid_tile_threshold = 0x01,
     .hazard_tile_min = 0xF0,
     .hazard_tile_max = 0xFF,
