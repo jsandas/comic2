@@ -128,12 +128,8 @@ void handle_distance_interaction(RuntimeState &state) {
 }
 
 void handle_tile_hazard(RuntimeState &state) {
-  if (state.player.hp > 0) {
-    --state.player.hp;
-  }
-  if (state.player.hp == 0) {
-    state.flags.player_special_state_active = true;
-  }
+  state.player.hp = 0;
+  state.flags.player_special_state_active = true;
   state.flags.tile_hazard_triggered = false;
   advance_runtime_projectiles(state, kDefaultProjectileBounds,
                               kDefaultViewportMinX, kDefaultViewportMinY,

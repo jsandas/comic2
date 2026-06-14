@@ -247,7 +247,7 @@ void test_default_stage_hook_coverage() {
   }
 }
 
-void test_tile_hazard_stage_consumes_hp() {
+void test_tile_hazard_stage_instantly_kills_player() {
   comic2::GameDispatcher dispatcher;
   comic2::install_default_stage_hooks(dispatcher);
 
@@ -270,7 +270,9 @@ void test_tile_hazard_stage_consumes_hp() {
   const auto second = dispatcher.run_tick(state);
   expect(second.stage == comic2::DispatchStage::TileHazard,
          "hazard flag should route dispatcher to tile hazard stage");
-  expect(state.player.hp == 2, "tile hazard handler should decrement hp once");
+  expect(state.player.hp == 0, "tile hazard handler should kill the player immediately");
+  expect(state.flags.player_special_state_active,
+         "tile hazard handler should enter the death/special state path");
   expect(!state.flags.tile_hazard_triggered,
          "tile hazard handler should clear hazard flag after handling");
 }
@@ -481,7 +483,7 @@ void run_dispatcher_tests() {
   test_deterministic_tick_replay();
   test_dispatcher_trace_log();
   test_default_stage_hook_coverage();
-  test_tile_hazard_stage_consumes_hp();
+  test_tile_hazard_stage_instantly_kills_player();
   test_stage_flags_are_consumed_by_default_handlers();
   test_input_fallback_arms_grounded_physics_for_next_tick();
   test_projectile_scripted_tick_updates_deterministically();

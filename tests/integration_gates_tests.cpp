@@ -304,7 +304,9 @@ void test_gate_c_hazard_flag_snapshot_progression() {
   const auto second = dispatcher.run_tick(state);
   expect(second.stage == comic2::DispatchStage::TileHazard,
          "Gate C hazard resolution tick should route to tile hazard stage");
-  expect(state.player.hp == 1, "Gate C hazard tick should decrement hp");
+  expect(state.player.hp == 0, "Gate C hazard tick should kill the player immediately");
+  expect(state.flags.player_special_state_active,
+         "Gate C hazard tick should enter the death path");
   expect(!state.flags.tile_hazard_triggered,
          "Gate C hazard tick should clear hazard flag");
 }
