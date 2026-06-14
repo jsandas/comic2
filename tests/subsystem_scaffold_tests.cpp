@@ -241,8 +241,8 @@ void test_spawn_player_projectile_airborne_adjustment() {
   comic2::spawn_player_projectile(projectiles, params);
 
   expect_eq(projectiles.size(), 1, "should spawn one projectile");
-  expect(projectiles[0].x_vel == 0, "projectile x_vel should be 0 when facing "
-                                    "left and airborne (adjustment cancels)");
+  expect(projectiles[0].x_vel == -0x0020,
+         "projectile x_vel should be -0x0020 when facing left and airborne");
   expect(projectiles[0].y == 54,
          "projectile y should be player y + 4 when airborne");
 }
