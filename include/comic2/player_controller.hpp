@@ -8,7 +8,7 @@
 namespace comic2 {
 
 struct PlayerMotionConfig {
-  std::int16_t walk_step = 2;
+  std::int16_t walk_step = 8;
   std::int16_t jump_impulse = -5;
   std::int16_t air_drift_step = 1;
   std::int16_t gravity_per_tick = 1;
