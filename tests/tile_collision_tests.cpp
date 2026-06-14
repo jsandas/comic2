@@ -161,6 +161,25 @@ void test_tile_threshold_and_hazard_checks() {
     "above hazard band should fail");
 }
 
+void test_update_player_hazard_state_checks_feet_for_hazards() {
+  comic2::RuntimeState state;
+  state.room_grid = make_grid_fixture();
+  state.player.x = 0;
+  state.player.y = 16 - 1;
+
+  comic2::TileCollisionConfig config;
+  config.hazard_tile_min = 5;
+  config.hazard_tile_max = 5;
+
+  state.room_grid.tile_data[20] = 5;
+  state.flags.tile_hazard_triggered = false;
+
+  expect(comic2::update_player_hazard_state(state, config),
+    "hazard should be triggered by tile under player feet");
+  expect(state.flags.tile_hazard_triggered,
+    "tile hazard flag should be set when feet probe is hazardous");
+}
+
 } // namespace
 
 void run_tile_collision_tests() {

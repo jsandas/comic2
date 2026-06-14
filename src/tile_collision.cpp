@@ -26,6 +26,14 @@ bool is_solid_at_pixels(const RoomTileGrid &grid, std::int16_t pixel_x,
          tile_meets_threshold(*tile_id, config.solid_tile_threshold);
 }
 
+bool is_hazard_at_pixels(const RoomTileGrid &grid, std::int16_t pixel_x,
+                         std::int16_t pixel_y,
+                         const TileCollisionConfig &config) {
+  const std::optional<std::uint8_t> tile_id =
+      get_tile_at_pixels(grid, pixel_x, pixel_y);
+  return tile_id.has_value() && is_hazard_tile(*tile_id, config);
+}
+
 } // namespace
 
 std::optional<std::uint8_t> get_tile_at_pixels(const RoomTileGrid &grid,
@@ -70,13 +78,24 @@ bool is_hazard_tile(std::uint8_t tile_id, const TileCollisionConfig &config) {
 
 bool update_player_hazard_state(RuntimeState &state,
                                 const TileCollisionConfig &config) {
-  const std::optional<std::uint8_t> tile_id =
-      get_tile_at_pixels(state.room_grid, state.player.x, state.player.y);
-  if (!tile_id.has_value()) {
+  if (!has_valid_room_grid(state.room_grid)) {
     state.flags.tile_hazard_triggered = false;
     return false;
   }
-  state.flags.tile_hazard_triggered = is_hazard_tile(*tile_id, config);
+
+  const std::int16_t probe_y =
+      static_cast<std::int16_t>(state.player.y + kPlayerHeightPixels);
+  const std::int16_t left_probe_x =
+      static_cast<std::int16_t>(state.player.x + kFootProbeInsetPixels);
+  const std::int16_t right_probe_x = static_cast<std::int16_t>(
+      state.player.x + kPlayerWidthPixels - 1 - kFootProbeInsetPixels);
+
+  const bool left_hazard =
+      is_hazard_at_pixels(state.room_grid, left_probe_x, probe_y, config);
+  const bool right_hazard =
+      is_hazard_at_pixels(state.room_grid, right_probe_x, probe_y, config);
+
+  state.flags.tile_hazard_triggered = left_hazard || right_hazard;
   return state.flags.tile_hazard_triggered;
 }
 
