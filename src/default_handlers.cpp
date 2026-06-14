@@ -101,8 +101,7 @@ void handle_tile_hazard(RuntimeState &state) {
   state.flags.tile_hazard_triggered = false;
 }
 
-void handle_player_special_state(RuntimeState &state) {
-}
+void handle_player_special_state(const RuntimeState &state) { (void)state; }
 
 void handle_input_fallback(RuntimeState &state) {
   apply_input_tick(state, kDefaultMotion);
@@ -138,7 +137,7 @@ void install_default_stage_hooks(GameDispatcher &dispatcher) {
   dispatcher.set_tile_hazard_hook(
       [](RuntimeState &state) { handle_tile_hazard(state); });
   dispatcher.set_player_special_state_hook(
-      [](RuntimeState &state) { handle_player_special_state(state); });
+      [](const RuntimeState &state) { handle_player_special_state(state); });
   dispatcher.set_input_handling_hook(
       [](RuntimeState &state) { handle_input_fallback(state); });
 }

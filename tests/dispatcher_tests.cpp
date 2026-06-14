@@ -20,7 +20,8 @@ encode_literal_signed_rle(const std::vector<std::uint8_t> &bytes) {
   while (offset < bytes.size()) {
     const std::size_t chunk = std::min<std::size_t>(127, bytes.size() - offset);
     encoded.push_back(static_cast<std::uint8_t>(chunk));
-    encoded.insert(encoded.end(), bytes.begin() + static_cast<std::ptrdiff_t>(offset),
+    encoded.insert(encoded.end(),
+                   bytes.begin() + static_cast<std::ptrdiff_t>(offset),
                    bytes.begin() + static_cast<std::ptrdiff_t>(offset + chunk));
     offset += chunk;
   }
@@ -270,7 +271,8 @@ void test_tile_hazard_stage_instantly_kills_player() {
   const auto second = dispatcher.run_tick(state);
   expect(second.stage == comic2::DispatchStage::TileHazard,
          "hazard flag should route dispatcher to tile hazard stage");
-  expect(state.player.hp == 0, "tile hazard handler should kill the player immediately");
+  expect(state.player.hp == 0,
+         "tile hazard handler should kill the player immediately");
   expect(state.flags.player_special_state_active,
          "tile hazard handler should enter the death/special state path");
   expect(!state.flags.tile_hazard_triggered,
@@ -389,7 +391,7 @@ void test_level_transition_loads_room_tilemap() {
   state.room_resource_bytes[3] = 0x00;
   state.room_resource_bytes[0x04] = 0x04;
   state.room_resource_bytes[0x05] = 0x00;
-  state.room_resource_bytes[0x06] = 0x00;
+  state.room_resource_bytes[0x06] = 0x03;
   state.room_resource_bytes[0x07] = 0x00;
   state.room_resource_bytes[0x08] = 0x20;
   state.room_resource_bytes[0x09] = 0x00;
@@ -427,9 +429,12 @@ void test_projectile_scripted_tick_updates_deterministically() {
     comic2::install_default_stage_hooks(dispatcher);
 
     comic2::RuntimeState state;
-    state.projectiles.push_back(
-        comic2::ProjectileState{.x = 10, .y = 10, .x_vel = 1, .y_vel = 0,
-                                .anim_frame = 0, .active = true});
+    state.projectiles.push_back(comic2::ProjectileState{.x = 10,
+                                                        .y = 10,
+                                                        .x_vel = 1,
+                                                        .y_vel = 0,
+                                                        .anim_frame = 0,
+                                                        .active = true});
 
     for (const auto &input : inputs) {
       state.input = input;
@@ -448,12 +453,34 @@ void test_projectile_scripted_tick_updates_deterministically() {
   const auto first = run_sequence(sequence);
   const auto replay = run_sequence(sequence);
 
-  expect(first == replay,
-         "projectile scripted tick replay should be deterministic");
+  expect(first.size() == replay.size(),
+         "projectile scripted tick replay should keep identical sequence size");
+  for (std::size_t i = 0; i < first.size(); ++i) {
+    expect(first[i].x == replay[i].x,
+           "projectile replay mismatch: x should be deterministic");
+    expect(first[i].y == replay[i].y,
+           "projectile replay mismatch: y should be deterministic");
+    expect(first[i].x_vel == replay[i].x_vel,
+           "projectile replay mismatch: x velocity should be deterministic");
+    expect(first[i].y_vel == replay[i].y_vel,
+           "projectile replay mismatch: y velocity should be deterministic");
+    expect(first[i].anim_frame == replay[i].anim_frame,
+           "projectile replay mismatch: animation should be deterministic");
+    expect(first[i].active == replay[i].active,
+           "projectile replay mismatch: active flag should be deterministic");
+  }
+
   expect(first.size() == 1, "scripted projectile tick should keep one entry");
   expect(first[0].x == 13, "projectile should advance one pixel per tick");
   expect(first[0].anim_frame == 3,
          "projectile animation frame should advance modulo 8 each tick");
+  expect(replay.size() == 1,
+         "replayed scripted projectile tick should keep one entry");
+  expect(replay[0].x == 13,
+         "replayed projectile should advance one pixel per tick");
+  expect(
+      replay[0].anim_frame == 3,
+      "replayed projectile animation frame should advance modulo 8 each tick");
 }
 
 void test_projectile_scripted_tick_deactivates_on_tile_collision() {
@@ -462,9 +489,12 @@ void test_projectile_scripted_tick_deactivates_on_tile_collision() {
 
   comic2::RuntimeState state;
   state.room_grid = make_projectile_floor_grid(0x01);
-  state.projectiles.push_back(
-      comic2::ProjectileState{.x = 13, .y = 13, .x_vel = 0, .y_vel = 0,
-                              .anim_frame = 0, .active = true});
+  state.projectiles.push_back(comic2::ProjectileState{.x = 13,
+                                                      .y = 13,
+                                                      .x_vel = 0,
+                                                      .y_vel = 0,
+                                                      .anim_frame = 0,
+                                                      .active = true});
 
   const auto result = dispatcher.run_tick(state);
   expect(result.stage == comic2::DispatchStage::InputHandling,
@@ -486,6 +516,7 @@ void run_dispatcher_tests() {
   test_tile_hazard_stage_instantly_kills_player();
   test_stage_flags_are_consumed_by_default_handlers();
   test_input_fallback_arms_grounded_physics_for_next_tick();
+  test_level_transition_loads_room_tilemap();
   test_projectile_scripted_tick_updates_deterministically();
   test_projectile_scripted_tick_deactivates_on_tile_collision();
 }

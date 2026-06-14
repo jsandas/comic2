@@ -141,8 +141,8 @@ bool resolve_ground_contact(RuntimeState &state,
     return false;
   }
 
-  const std::int16_t tile_top = static_cast<std::int16_t>(
-      (probe_y / kTileSizePixels) * kTileSizePixels);
+  const std::int16_t tile_top =
+      static_cast<std::int16_t>((probe_y / kTileSizePixels) * kTileSizePixels);
   state.player.y = static_cast<std::int16_t>(tile_top - kPlayerHeightPixels);
   state.player.y_vel = 0;
   state.player.is_airborne = false;

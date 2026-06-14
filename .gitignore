@@ -1,9 +1,11 @@
 reference/original
+Testing
 *.obj
 *.exe
 *.com
 *.map
 *.lst
+*.log
 tools/djlink/djlink
 tools/djlink/objdump
 tools/djlink/bindiff

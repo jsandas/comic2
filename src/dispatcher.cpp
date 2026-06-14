@@ -96,8 +96,7 @@ DispatchResult GameDispatcher::run_tick(RuntimeState &state) const {
 
   advance_runtime_projectiles(state, kDefaultProjectileBounds,
                               kDefaultViewportMinX, kDefaultViewportMinY,
-                              kDefaultViewportWidth,
-                              kDefaultViewportHeight);
+                              kDefaultViewportWidth, kDefaultViewportHeight);
 
   return DispatchResult{.stage = stage, .hook_executed = hook_executed};
 }
