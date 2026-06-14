@@ -55,6 +55,7 @@ struct RuntimeState {
   FrdataRoomEntry room_entry{};
 
   RoomTileGrid room_grid;
+  std::vector<std::uint8_t> room_resource_bytes;
 
   PlayerState player;
   InputState input;

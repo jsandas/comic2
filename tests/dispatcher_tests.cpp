@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <stdexcept>
 #include <vector>
 
@@ -10,6 +11,21 @@ void expect(bool condition, const char *message) {
   if (!condition) {
     throw std::runtime_error(message);
   }
+}
+
+std::vector<std::uint8_t>
+encode_literal_signed_rle(const std::vector<std::uint8_t> &bytes) {
+  std::vector<std::uint8_t> encoded;
+  std::size_t offset = 0;
+  while (offset < bytes.size()) {
+    const std::size_t chunk = std::min<std::size_t>(127, bytes.size() - offset);
+    encoded.push_back(static_cast<std::uint8_t>(chunk));
+    encoded.insert(encoded.end(), bytes.begin() + static_cast<std::ptrdiff_t>(offset),
+                   bytes.begin() + static_cast<std::ptrdiff_t>(offset + chunk));
+    offset += chunk;
+  }
+  encoded.push_back(0x00);
+  return encoded;
 }
 
 void test_priority_order() {
@@ -346,6 +362,51 @@ void test_input_fallback_arms_grounded_physics_for_next_tick() {
   const auto second = dispatcher.run_tick(state);
   expect(second.stage == comic2::DispatchStage::GroundedPhysics,
          "second tick should execute grounded physics after arming");
+}
+
+void test_level_transition_loads_room_tilemap() {
+  comic2::RuntimeState state;
+  state.current_level = 1;
+  state.current_room = 0;
+  state.flags.level_transition_pending = true;
+
+  std::vector<std::uint8_t> decoded_room_bytes(0x2C4, 0x00);
+  decoded_room_bytes[0x2A0] = 0x00;
+  decoded_room_bytes[0x2A1] = 0x00;
+  decoded_room_bytes[0x2A2] = 0x04;
+  decoded_room_bytes[0x2A3] = 0x00;
+  decoded_room_bytes[0x2A4] = 0x08;
+  decoded_room_bytes[0x2A5] = 0x00;
+
+  const std::vector<std::uint8_t> encoded_room_bytes =
+      encode_literal_signed_rle(decoded_room_bytes);
+
+  state.room_resource_bytes.resize(0x20 + encoded_room_bytes.size(), 0x00);
+  state.room_resource_bytes[2] = 0x01;
+  state.room_resource_bytes[3] = 0x00;
+  state.room_resource_bytes[0x04] = 0x04;
+  state.room_resource_bytes[0x05] = 0x00;
+  state.room_resource_bytes[0x06] = 0x00;
+  state.room_resource_bytes[0x07] = 0x00;
+  state.room_resource_bytes[0x08] = 0x20;
+  state.room_resource_bytes[0x09] = 0x00;
+  std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
+            state.room_resource_bytes.begin() + 0x20);
+
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  const auto result = dispatcher.run_tick(state);
+  expect(result.stage == comic2::DispatchStage::LevelTransition,
+         "level transition should select level transition stage");
+  expect(!state.flags.level_transition_pending,
+         "level transition handler should clear its pending flag");
+  expect(state.room_grid.tile_w == 4,
+         "level transition should load the new room tile width");
+  expect(state.room_grid.tile_h == 3,
+         "level transition should load the new room tile height");
+  expect(state.room_grid.row_pointers == std::vector<std::uint16_t>{0, 4, 8},
+         "level transition should build the row pointer table");
 }
 
 comic2::RoomTileGrid make_projectile_floor_grid(std::uint8_t tile_id) {

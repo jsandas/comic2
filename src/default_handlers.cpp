@@ -3,6 +3,7 @@
 #include <limits>
 
 #include "comic2/player_controller.hpp"
+#include "comic2/room_loader.hpp"
 #include "comic2/tile_collision.hpp"
 
 namespace comic2 {
@@ -65,6 +66,11 @@ void apply_default_grounded_physics(RuntimeState &state) {
 
 void handle_level_transition(RuntimeState &state) {
   state.flags.level_transition_pending = false;
+  if (!state.room_resource_bytes.empty()) {
+    load_room_tilemap_from_resource_buffer(state, state.room_resource_bytes,
+                                           state.current_level,
+                                           state.current_room);
+  }
   advance_runtime_projectiles(state, kDefaultProjectileBounds,
                               kDefaultViewportMinX, kDefaultViewportMinY,
                               kDefaultViewportWidth, kDefaultViewportHeight);
