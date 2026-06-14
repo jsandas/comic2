@@ -4,6 +4,7 @@ reference/original
 *.com
 *.map
 *.lst
+*.log
 tools/djlink/djlink
 tools/djlink/objdump
 tools/djlink/bindiff

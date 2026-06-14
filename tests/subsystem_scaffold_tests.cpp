@@ -29,7 +29,8 @@ encode_literal_signed_rle(const std::vector<std::uint8_t> &bytes) {
   while (offset < bytes.size()) {
     const std::size_t chunk = std::min<std::size_t>(127, bytes.size() - offset);
     encoded.push_back(static_cast<std::uint8_t>(chunk));
-    encoded.insert(encoded.end(), bytes.begin() + static_cast<std::ptrdiff_t>(offset),
+    encoded.insert(encoded.end(),
+                   bytes.begin() + static_cast<std::ptrdiff_t>(offset),
                    bytes.begin() + static_cast<std::ptrdiff_t>(offset + chunk));
     offset += chunk;
   }
@@ -241,8 +242,9 @@ void test_spawn_player_projectile_airborne_adjustment() {
   comic2::spawn_player_projectile(projectiles, params);
 
   expect_eq(projectiles.size(), 1, "should spawn one projectile");
-  expect(projectiles[0].x_vel == -0x0010,
-         "projectile x_vel should remain -0x0010 when facing left and airborne");
+  expect(
+      projectiles[0].x_vel == -0x0010,
+      "projectile x_vel should remain -0x0010 when facing left and airborne");
   expect(projectiles[0].y == 54,
          "projectile y should be player y + 4 when airborne");
 }
@@ -390,8 +392,8 @@ void test_room_loader_rejects_out_of_bounds_room_index() {
   bytes[0x09] = 0x00;
 
   comic2::RuntimeState state;
-  const bool loaded = comic2::load_room_tilemap_from_resource_buffer(
-      state, bytes, 3, 1);
+  const bool loaded =
+      comic2::load_room_tilemap_from_resource_buffer(state, bytes, 3, 1);
   expect(!loaded,
          "room loader should reject a room index that is outside the table");
 }
@@ -465,5 +467,6 @@ void run_subsystem_scaffold_tests() {
   test_ent_activation_pipeline_integration();
   test_room_loader_decodes_frdata_entry();
   test_room_loader_rejects_huge_offset();
+  test_room_loader_rejects_out_of_bounds_room_index();
   test_room_loader_populates_runtime_state_from_resource_buffer();
 }

@@ -14,7 +14,7 @@ void handle_player_animation(RuntimeState &state);
 void handle_attack_animation(RuntimeState &state);
 void handle_distance_interaction(RuntimeState &state);
 void handle_tile_hazard(RuntimeState &state);
-void handle_player_special_state(RuntimeState &state);
+void handle_player_special_state(const RuntimeState &state);
 void handle_input_fallback(RuntimeState &state);
 
 void install_default_stage_hooks(GameDispatcher &dispatcher);

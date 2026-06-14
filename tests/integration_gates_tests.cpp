@@ -64,10 +64,10 @@ std::uint64_t make_room_fixture_alpha_hash() {
   comic2::EgaPlanarSurface frame(320, 200);
   frame.clear(0x00);
 
-  const auto base = comic2::validation::make_8x8_solid_image(0x11, 0x22, 0x44,
-                                                              0x88);
-  const auto overlay = comic2::validation::make_8x8_solid_image(
-      0x0F, 0xF0, 0x33, 0xCC);
+  const auto base =
+      comic2::validation::make_8x8_solid_image(0x11, 0x22, 0x44, 0x88);
+  const auto overlay =
+      comic2::validation::make_8x8_solid_image(0x0F, 0xF0, 0x33, 0xCC);
 
   comic2::gfx_rle_blit_opaque_4plane(frame, 0, 0, base);
   comic2::gfx_rle_blit_masked_or_4plane(frame, 16, 4, overlay);
@@ -80,8 +80,8 @@ std::uint64_t make_room_fixture_beta_hash() {
   frame.clear(0xAA);
 
   const auto patterned = comic2::validation::make_16x16_patterned_image();
-  const auto overlay = comic2::validation::make_8x8_solid_image(0x01, 0x02,
-                                                                 0x04, 0x08);
+  const auto overlay =
+      comic2::validation::make_8x8_solid_image(0x01, 0x02, 0x04, 0x08);
 
   comic2::gfx_rle_blit_opaque_4plane(frame, 32, 10, patterned);
   comic2::gfx_rle_blit_masked_or_4plane(frame, 32, 10, overlay);
@@ -96,8 +96,8 @@ void expect_hash_eq(std::uint64_t actual, std::uint64_t expected,
   }
 
   std::ostringstream oss;
-  oss << context << " expected hash 0x" << std::hex << expected
-      << " but got 0x" << actual;
+  oss << context << " expected hash 0x" << std::hex << expected << " but got 0x"
+      << actual;
   throw std::runtime_error(oss.str());
 }
 
@@ -118,8 +118,7 @@ capture_dispatcher_trace(comic2::GameDispatcher &dispatcher,
 
 void expect_dispatcher_trace_matches_oracle(
     const std::vector<comic2::DispatchStage> &actual,
-    const std::vector<comic2::DispatchStage> &expected,
-    const char *context) {
+    const std::vector<comic2::DispatchStage> &expected, const char *context) {
   if (actual == expected) {
     return;
   }
@@ -175,46 +174,45 @@ void test_gate_b_scripted_trace_matches_oracle() {
       comic2::DispatchStage::AirbornePhysics,
       comic2::DispatchStage::AirbornePhysics,
   };
-      expect_dispatcher_trace_matches_oracle(
-        actual, expected, "Gate B oracle trace mismatch for scripted input");
+  expect_dispatcher_trace_matches_oracle(
+      actual, expected, "Gate B oracle trace mismatch for scripted input");
 
   comic2::GameDispatcher replay_dispatcher;
   comic2::install_default_stage_hooks(replay_dispatcher);
 
   comic2::RuntimeState replay_state;
   replay_state.player.jump_counter = 2;
-      const auto replay = capture_dispatcher_trace(replay_dispatcher, replay_state,
-                            sequence);
+  const auto replay =
+      capture_dispatcher_trace(replay_dispatcher, replay_state, sequence);
 
-      expect_dispatcher_trace_matches_oracle(
-        replay, actual, "Gate B replay trace must be stable");
+  expect_dispatcher_trace_matches_oracle(replay, actual,
+                                         "Gate B replay trace must be stable");
 }
 
-    void test_gate_b_oracle_stage_sequence_rotation() {
-      comic2::GameDispatcher dispatcher;
-      comic2::install_default_stage_hooks(dispatcher);
+void test_gate_b_oracle_stage_sequence_rotation() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
 
-      comic2::RuntimeState state;
-      state.flags.level_transition_pending = true;
-      state.player.is_airborne = true;
+  comic2::RuntimeState state;
+  state.flags.level_transition_pending = true;
+  state.player.is_airborne = true;
 
-      const std::vector<comic2::InputState> sequence = {
-        comic2::InputState{},
-        comic2::InputState{},
-        comic2::InputState{},
-      };
+  const std::vector<comic2::InputState> sequence = {
+      comic2::InputState{},
+      comic2::InputState{},
+      comic2::InputState{},
+  };
 
-      const auto actual = capture_dispatcher_trace(dispatcher, state, sequence);
-      const std::vector<comic2::DispatchStage> expected = {
-        comic2::DispatchStage::LevelTransition,
-        comic2::DispatchStage::AirbornePhysics,
-        comic2::DispatchStage::AirbornePhysics,
-      };
+  const auto actual = capture_dispatcher_trace(dispatcher, state, sequence);
+  const std::vector<comic2::DispatchStage> expected = {
+      comic2::DispatchStage::LevelTransition,
+      comic2::DispatchStage::AirbornePhysics,
+      comic2::DispatchStage::AirbornePhysics,
+  };
 
-      expect_dispatcher_trace_matches_oracle(
-        actual, expected,
-        "Gate B oracle stage sequence rotation mismatch");
-    }
+  expect_dispatcher_trace_matches_oracle(
+      actual, expected, "Gate B oracle stage sequence rotation mismatch");
+}
 
 void test_gate_c_state_vectors_match_snapshots() {
   comic2::GameDispatcher dispatcher;
@@ -304,7 +302,8 @@ void test_gate_c_hazard_flag_snapshot_progression() {
   const auto second = dispatcher.run_tick(state);
   expect(second.stage == comic2::DispatchStage::TileHazard,
          "Gate C hazard resolution tick should route to tile hazard stage");
-  expect(state.player.hp == 0, "Gate C hazard tick should kill the player immediately");
+  expect(state.player.hp == 0,
+         "Gate C hazard tick should kill the player immediately");
   expect(state.flags.player_special_state_active,
          "Gate C hazard tick should enter the death path");
   expect(!state.flags.tile_hazard_triggered,
@@ -372,25 +371,25 @@ void test_gate_e_room_transition_boundary_sequence() {
          "Gate E level transition hook should clear pending flag");
 }
 
-  void test_gate_e_left_boundary_clamps_at_room_zero() {
-    comic2::GameDispatcher dispatcher;
-    comic2::install_default_stage_hooks(dispatcher);
+void test_gate_e_left_boundary_clamps_at_room_zero() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
 
-    comic2::RuntimeState state;
-    state.current_room = 0;
-    state.player.x = 0;
-    state.input.left_pressed = true;
+  comic2::RuntimeState state;
+  state.current_room = 0;
+  state.player.x = 0;
+  state.input.left_pressed = true;
 
-    const auto tick = dispatcher.run_tick(state);
-    expect(tick.stage == comic2::DispatchStage::InputHandling,
-      "Gate E left boundary clamp should run via input stage");
-    expect(state.player.x == 0,
-      "Gate E left boundary at room zero should clamp player x to zero");
-    expect(state.current_room == 0,
-      "Gate E left boundary at room zero should not change room index");
-    expect(!state.flags.level_transition_pending,
-      "Gate E left boundary at room zero should not set transition pending");
-  }
+  const auto tick = dispatcher.run_tick(state);
+  expect(tick.stage == comic2::DispatchStage::InputHandling,
+         "Gate E left boundary clamp should run via input stage");
+  expect(state.player.x == 0,
+         "Gate E left boundary at room zero should clamp player x to zero");
+  expect(state.current_room == 0,
+         "Gate E left boundary at room zero should not change room index");
+  expect(!state.flags.level_transition_pending,
+         "Gate E left boundary at room zero should not set transition pending");
+}
 
 void test_gate_e_projectile_collision_outcome() {
   std::vector<comic2::ProjectileState> projectiles;
@@ -398,15 +397,14 @@ void test_gate_e_projectile_collision_outcome() {
 
   comic2::RoomTileGrid grid = make_single_tile_grid(0x02);
 
-  comic2::update_projectiles(
-      projectiles,
-      comic2::ProjectileBounds{
-          .min_x = 0,
-          .max_x = 319,
-          .min_y = 0,
-          .max_y = 199,
-      },
-      grid, 0, 0, 200, 152);
+  comic2::update_projectiles(projectiles,
+                             comic2::ProjectileBounds{
+                                 .min_x = 0,
+                                 .max_x = 319,
+                                 .min_y = 0,
+                                 .max_y = 199,
+                             },
+                             grid, 0, 0, 200, 152);
 
   expect(projectiles.size() == 1,
          "Gate E projectile interaction should keep projectile storage stable");
