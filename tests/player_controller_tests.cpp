@@ -24,6 +24,24 @@ comic2::RoomTileGrid make_flat_floor_grid() {
   return grid;
 }
 
+comic2::RoomTileGrid make_three_row_floor_grid() {
+  comic2::RoomTileGrid grid;
+  grid.tile_w = 2;
+  grid.tile_h = 3;
+  grid.row_pointers = {0, 2, 4};
+  grid.tile_data = {
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x02,
+                0x00,
+  };
+  return grid;
+}
+
 void test_apply_input_tick_moves_right() {
   comic2::RuntimeState state;
   state.input.right_pressed = true;
@@ -151,6 +169,33 @@ void test_ledge_walk_off_transitions_into_fall() {
     "walking off ledge should keep physics active");
   expect(state.player.y_vel > 0,
     "walking off ledge should start downward fall velocity");
+}
+
+void test_grounded_physics_respects_tile_height_without_ground_y() {
+  comic2::RuntimeState state;
+  state.room_grid = make_three_row_floor_grid();
+  state.player.x = 0;
+  state.player.y = 18;
+  state.player.y_vel = 0;
+  state.player.is_airborne = false;
+  state.player.is_physics_active = true;
+
+  const comic2::TileCollisionConfig collision{
+      .ground_y = 0,
+      .solid_tile_threshold = 2,
+  };
+
+  comic2::apply_grounded_physics_tick(state, comic2::PlayerMotionConfig{},
+                                 collision);
+
+  expect(state.player.y == 16,
+    "grounded physics should align player to the actual tile top");
+  expect(state.player.y_vel == 0,
+    "grounded physics should zero vertical velocity after snapping");
+  expect(!state.player.is_airborne,
+    "grounded physics should clear airborne state when supported");
+  expect(!state.player.is_physics_active,
+    "grounded physics should clear physics-active state when supported");
 }
 
 } // namespace
