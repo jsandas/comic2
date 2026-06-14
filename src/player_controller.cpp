@@ -71,14 +71,7 @@ void apply_grounded_physics_tick(RuntimeState &state,
     return;
   }
 
-  if (resolve_ground_contact(state, collision)) {
-    return;
-  }
-
-  state.player.y = collision.ground_y;
-  state.player.y_vel = 0;
-  state.player.is_airborne = false;
-  state.player.is_physics_active = false;
+  resolve_ground_contact(state, collision);
 }
 
 void apply_airborne_physics_tick(RuntimeState &state,
