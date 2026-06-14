@@ -29,15 +29,15 @@ See the [`docs/`](docs/) folder for comprehensive documentation:
 
 ### Headless (Default)
 ```bash
-cmake -S reimpl -B reimpl/build
-cmake --build reimpl/build
+cmake -S . -B build
+cmake --build build
 ```
 
 ### With SDL2 Visual Output
 ```bash
 # Install SDL2 first (e.g., brew install sdl2)
-cmake -S reimpl -B reimpl/build -DENABLE_SDL2=ON
-cmake --build reimpl/build
+cmake -S . -B build -DENABLE_SDL2=ON
+cmake --build build
 ```
 
 See [docs/SDL2_QUICKSTART.md](docs/SDL2_QUICKSTART.md) for details.
@@ -45,7 +45,7 @@ See [docs/SDL2_QUICKSTART.md](docs/SDL2_QUICKSTART.md) for details.
 ## Run tests
 
 ```bash
-ctest --test-dir reimpl/build --output-on-failure
+ctest --test-dir build --output-on-failure
 ```
 
 All tests pass in both headless and SDL2 modes.
@@ -53,7 +53,7 @@ All tests pass in both headless and SDL2 modes.
 ## Run validator against original files
 
 ```bash
-./reimpl/build/comic2_reimpl reference/original
+./build/comic2_reimpl reference/original
 ```
 
 Expected: each FRPAK file decodes with row span `0x1f40`.
@@ -62,10 +62,9 @@ Expected: each FRPAK file decodes with row span `0x1f40`.
 
 ```bash
 # Headless mode (prints frame data)
-./reimpl/build/comic2_renderer_demo
+./build/comic2_renderer_demo
 
 # Visual mode (shows window, requires SDL2 build)
-./reimpl/build/comic2_renderer_demo
-```
+./build/comic2_renderer_demo
 
 Press ESC to close the demo window.

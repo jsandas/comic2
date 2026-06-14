@@ -378,7 +378,6 @@ Status note: Phase 7.4 baseline is now implemented with room-grid tile lookup, t
 - [x] 3) Implement room-loader integration (`load_resource` equivalent path) into runtime state
 - [x] 4) Implement projectile update path and add deterministic scripted tick tests
 - [x] 5) Add dispatcher trace capture and compare against oracle-driven expected stage sequences
-- [x] 5) Add dispatcher trace capture and compare against oracle-driven expected stage sequences
 
 #### 7.9 Main Bootstrap Wiring
 - [ ] 1) Convert `src/main.cpp` from a FRPAK validator into the game startup bootstrap

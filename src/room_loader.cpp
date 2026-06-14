@@ -83,8 +83,12 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
     return false;
   }
 
-  const SignedRleResult decoded =
-      decode_signed_rle(bytes.subspan(room_entry->rle_data_off));
+  SignedRleResult decoded;
+  try {
+    decoded = decode_signed_rle(bytes.subspan(room_entry->rle_data_off));
+  } catch (...) {
+    return false;
+  }
   const std::optional<std::vector<std::uint16_t>> row_pointers =
       build_room_row_pointer_table(decoded.bytes, room_entry->tile_h);
   if (!row_pointers.has_value()) {
