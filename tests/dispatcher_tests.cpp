@@ -453,6 +453,23 @@ void test_projectile_scripted_tick_updates_deterministically() {
   const auto first = run_sequence(sequence);
   const auto replay = run_sequence(sequence);
 
+  expect(first.size() == replay.size(),
+         "projectile scripted tick replay should keep identical sequence size");
+  for (std::size_t i = 0; i < first.size(); ++i) {
+    expect(first[i].x == replay[i].x,
+           "projectile replay mismatch: x should be deterministic");
+    expect(first[i].y == replay[i].y,
+           "projectile replay mismatch: y should be deterministic");
+    expect(first[i].x_vel == replay[i].x_vel,
+           "projectile replay mismatch: x velocity should be deterministic");
+    expect(first[i].y_vel == replay[i].y_vel,
+           "projectile replay mismatch: y velocity should be deterministic");
+    expect(first[i].anim_frame == replay[i].anim_frame,
+           "projectile replay mismatch: animation should be deterministic");
+    expect(first[i].active == replay[i].active,
+           "projectile replay mismatch: active flag should be deterministic");
+  }
+
   expect(first.size() == 1, "scripted projectile tick should keep one entry");
   expect(first[0].x == 13, "projectile should advance one pixel per tick");
   expect(first[0].anim_frame == 3,
