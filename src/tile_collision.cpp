@@ -9,7 +9,7 @@ namespace {
 
 constexpr std::int16_t kTileSizePixels = 16;
 constexpr std::int16_t kPlayerWidthPixels = 16;
-constexpr std::int16_t kPlayerHeightPixels = 16;
+constexpr std::int16_t kPlayerHeightPixels = 32;
 constexpr std::int16_t kFootProbeInsetPixels = 2;
 
 bool has_valid_room_grid(const RoomTileGrid &grid) {

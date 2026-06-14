@@ -76,17 +76,17 @@ void test_has_floor_support_tile_grid_only() {
   config.solid_tile_threshold = 2;
 
   // feet probe at y=31 maps to tile row 1, id=5 (solid)
-  state.player.y = 16 - 1;
+  state.player.y = -1;
   expect(comic2::has_floor_support(state, config),
     "should have support on solid tile");
 
-  // feet probe at y=47 maps to tile row 2, id=9 (solid)
-  state.player.y = 32 - 1;
+  // feet probe at y=32 maps to tile row 2, id=9 (solid)
+  state.player.y = 0;
   expect(comic2::has_floor_support(state, config),
     "should have support on lower solid tile");
 
   // feet probe at y=0 maps to tile row 0, id=1 (below threshold)
-  state.player.y = -16;
+  state.player.y = -32;
   expect(!comic2::has_floor_support(state, config),
     "should not have support below threshold");
 
@@ -165,7 +165,7 @@ void test_update_player_hazard_state_checks_feet_for_hazards() {
   comic2::RuntimeState state;
   state.room_grid = make_grid_fixture();
   state.player.x = 0;
-  state.player.y = 16 - 1;
+  state.player.y = -1;
 
   comic2::TileCollisionConfig config;
   config.hazard_tile_min = 5;
