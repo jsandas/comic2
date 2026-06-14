@@ -87,6 +87,7 @@ endif()
 
 add_executable(comic2_unit_tests
     tests/dispatcher_tests.cpp
+    tests/integration_gates_tests.cpp
     tests/player_controller_tests.cpp
     tests/renderer_tests.cpp
     tests/renderer_validation_tests.cpp

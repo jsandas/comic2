@@ -8,7 +8,7 @@ This project reverse-engineers **Captain Comic II: Fractured Reality** (1990) by
 
 ✅ Phase 1-5: Analysis, mapping, and annotation complete  
 ✅ Phase 6: Data Structure & Resource Format Documentation complete  
-🔄 Phase 7: C++ reimplementation scaffold started (`reimpl/`)  
+🔄 Phase 7: C++ reimplementation scaffold started 
 ⏸️ Behavioral verification expansion (DOSBox oracle testing)  
 
 ## Source Files

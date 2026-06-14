@@ -12,10 +12,7 @@ void spawn_projectile(std::vector<ProjectileState> &projectiles, std::int16_t x,
 
 void spawn_player_projectile(std::vector<ProjectileState> &projectiles,
                              const ProjectileSpawnParams &params) {
-  std::int16_t x_vel = params.facing_right ? 0x0010 : -0x0010;
-  if (!params.facing_right && params.is_airborne) {
-    x_vel += 0x0010;
-  }
+  const std::int16_t x_vel = params.facing_right ? 0x0010 : -0x0010;
 
   std::int16_t y = params.y + 4;
   if (!params.is_airborne) {
@@ -51,9 +48,11 @@ void update_projectiles(std::vector<ProjectileState> &projectiles,
                         const ProjectileBounds &bounds,
                         const RoomTileGrid &room_grid,
                         std::int16_t viewport_min_x,
-                        std::int16_t viewport_min_y) {
-  const std::int16_t viewport_max_x = viewport_min_x + 200;
-  const std::int16_t viewport_max_y = viewport_min_y + 152;
+                        std::int16_t viewport_min_y,
+                        std::int16_t viewport_width_pixels,
+                        std::int16_t viewport_height_pixels) {
+  const std::int16_t viewport_max_x = viewport_min_x + viewport_width_pixels;
+  const std::int16_t viewport_max_y = viewport_min_y + viewport_height_pixels;
 
   for (auto &projectile : projectiles) {
     if (!projectile.active) {
@@ -86,6 +85,17 @@ void update_projectiles(std::vector<ProjectileState> &projectiles,
       projectile.active = false;
     }
   }
+}
+
+void advance_runtime_projectiles(RuntimeState &state,
+                                 const ProjectileBounds &bounds,
+                                 std::int16_t viewport_min_x,
+                                 std::int16_t viewport_min_y,
+                                 std::int16_t viewport_width_pixels,
+                                 std::int16_t viewport_height_pixels) {
+  update_projectiles(state.projectiles, bounds, state.room_grid, viewport_min_x,
+                     viewport_min_y, viewport_width_pixels,
+                     viewport_height_pixels);
 }
 
 } // namespace comic2

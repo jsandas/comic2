@@ -9,7 +9,6 @@
 namespace comic2 {
 
 struct TileCollisionConfig {
-  std::int16_t ground_y = 0;
   std::uint8_t solid_tile_threshold = 0x01;
   std::uint8_t hazard_tile_min = 0xF0;
   std::uint8_t hazard_tile_max = 0xFF;

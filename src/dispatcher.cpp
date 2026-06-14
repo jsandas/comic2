@@ -2,6 +2,14 @@
 
 namespace comic2 {
 
+namespace {
+constexpr ProjectileBounds kDefaultProjectileBounds{};
+constexpr std::int16_t kDefaultViewportMinX = 0;
+constexpr std::int16_t kDefaultViewportMinY = 0;
+constexpr std::int16_t kDefaultViewportWidth = 200;
+constexpr std::int16_t kDefaultViewportHeight = 152;
+} // namespace
+
 DispatchStage GameDispatcher::choose_stage(const RuntimeState &state) {
   const auto &flags = state.flags;
   const auto &player = state.player;
@@ -85,6 +93,11 @@ DispatchResult GameDispatcher::run_tick(RuntimeState &state) const {
     hook_executed = call_hook(input_handling_hook_, state);
     break;
   }
+
+  advance_runtime_projectiles(state, kDefaultProjectileBounds,
+                              kDefaultViewportMinX, kDefaultViewportMinY,
+                              kDefaultViewportWidth,
+                              kDefaultViewportHeight);
 
   return DispatchResult{.stage = stage, .hook_executed = hook_executed};
 }

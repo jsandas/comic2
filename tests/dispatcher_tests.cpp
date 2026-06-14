@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <stdexcept>
 #include <vector>
 
@@ -10,6 +11,21 @@ void expect(bool condition, const char *message) {
   if (!condition) {
     throw std::runtime_error(message);
   }
+}
+
+std::vector<std::uint8_t>
+encode_literal_signed_rle(const std::vector<std::uint8_t> &bytes) {
+  std::vector<std::uint8_t> encoded;
+  std::size_t offset = 0;
+  while (offset < bytes.size()) {
+    const std::size_t chunk = std::min<std::size_t>(127, bytes.size() - offset);
+    encoded.push_back(static_cast<std::uint8_t>(chunk));
+    encoded.insert(encoded.end(), bytes.begin() + static_cast<std::ptrdiff_t>(offset),
+                   bytes.begin() + static_cast<std::ptrdiff_t>(offset + chunk));
+    offset += chunk;
+  }
+  encoded.push_back(0x00);
+  return encoded;
 }
 
 void test_priority_order() {
@@ -68,7 +84,7 @@ void test_default_handlers_basic_movement_and_jump() {
   const auto first = dispatcher.run_tick(state);
   expect(first.stage == comic2::DispatchStage::InputHandling,
          "first tick should handle input");
-  expect(state.player.x == 2, "right input should advance x");
+  expect(state.player.x == 8, "right input should advance x");
   expect(state.player.y_vel == -5, "jump should apply impulse");
   expect(state.player.is_physics_active, "jump should enable physics");
 
@@ -231,18 +247,19 @@ void test_default_stage_hook_coverage() {
   }
 }
 
-void test_tile_hazard_stage_consumes_hp() {
+void test_tile_hazard_stage_instantly_kills_player() {
   comic2::GameDispatcher dispatcher;
   comic2::install_default_stage_hooks(dispatcher);
 
   comic2::RuntimeState state;
   state.player.hp = 3;
+  state.player.y = -16;
   state.player.is_physics_active = true;
 
   state.room_grid.tile_w = 1;
-  state.room_grid.tile_h = 1;
-  state.room_grid.row_pointers = {0};
-  state.room_grid.tile_data = {0xF4};
+  state.room_grid.tile_h = 2;
+  state.room_grid.row_pointers = {0, 1};
+  state.room_grid.tile_data = {0xF4, 0xF4};
 
   const auto first = dispatcher.run_tick(state);
   expect(first.stage == comic2::DispatchStage::GroundedPhysics,
@@ -253,9 +270,207 @@ void test_tile_hazard_stage_consumes_hp() {
   const auto second = dispatcher.run_tick(state);
   expect(second.stage == comic2::DispatchStage::TileHazard,
          "hazard flag should route dispatcher to tile hazard stage");
-  expect(state.player.hp == 2, "tile hazard handler should decrement hp once");
+  expect(state.player.hp == 0, "tile hazard handler should kill the player immediately");
+  expect(state.flags.player_special_state_active,
+         "tile hazard handler should enter the death/special state path");
   expect(!state.flags.tile_hazard_triggered,
          "tile hazard handler should clear hazard flag after handling");
+}
+
+void test_stage_flags_are_consumed_by_default_handlers() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  {
+    comic2::RuntimeState state;
+    state.flags.special_logic1_active = true;
+    const auto first = dispatcher.run_tick(state);
+    expect(first.stage == comic2::DispatchStage::SpecialLogic1,
+           "special logic1 stage should run when flagged");
+    const auto second = dispatcher.run_tick(state);
+    expect(second.stage == comic2::DispatchStage::InputHandling,
+           "special logic1 flag should be consumed after handler");
+  }
+
+  {
+    comic2::RuntimeState state;
+    state.flags.special_logic2_active = true;
+    const auto first = dispatcher.run_tick(state);
+    expect(first.stage == comic2::DispatchStage::SpecialLogic2,
+           "special logic2 stage should run when flagged");
+    const auto second = dispatcher.run_tick(state);
+    expect(second.stage == comic2::DispatchStage::InputHandling,
+           "special logic2 flag should be consumed after handler");
+  }
+
+  {
+    comic2::RuntimeState state;
+    state.flags.timed_overlay_pending = true;
+    const auto first = dispatcher.run_tick(state);
+    expect(first.stage == comic2::DispatchStage::TimedOverlay,
+           "timed overlay stage should run when flagged");
+    const auto second = dispatcher.run_tick(state);
+    expect(second.stage == comic2::DispatchStage::InputHandling,
+           "timed overlay flag should be consumed after handler");
+  }
+
+  {
+    comic2::RuntimeState state;
+    state.player.is_animation_active = true;
+    const auto first = dispatcher.run_tick(state);
+    expect(first.stage == comic2::DispatchStage::PlayerAnimation,
+           "player animation stage should run when flagged");
+    const auto second = dispatcher.run_tick(state);
+    expect(second.stage == comic2::DispatchStage::InputHandling,
+           "player animation flag should be consumed after handler");
+  }
+
+  {
+    comic2::RuntimeState state;
+    state.player.is_attack_active = true;
+    const auto first = dispatcher.run_tick(state);
+    expect(first.stage == comic2::DispatchStage::AttackAnimation,
+           "attack animation stage should run when flagged");
+    const auto second = dispatcher.run_tick(state);
+    expect(second.stage == comic2::DispatchStage::InputHandling,
+           "attack animation flag should be consumed after handler");
+  }
+
+  {
+    comic2::RuntimeState state;
+    state.flags.distance_interaction_active = true;
+    const auto first = dispatcher.run_tick(state);
+    expect(first.stage == comic2::DispatchStage::DistanceInteraction,
+           "distance interaction stage should run when flagged");
+    const auto second = dispatcher.run_tick(state);
+    expect(second.stage == comic2::DispatchStage::InputHandling,
+           "distance interaction flag should be consumed after handler");
+  }
+}
+
+void test_input_fallback_arms_grounded_physics_for_next_tick() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  comic2::RuntimeState state;
+  state.player.is_airborne = false;
+  state.player.is_physics_active = false;
+
+  const auto first = dispatcher.run_tick(state);
+  expect(first.stage == comic2::DispatchStage::InputHandling,
+         "first tick should run input fallback");
+  expect(state.player.is_physics_active,
+         "input fallback should arm grounded physics for next tick");
+
+  const auto second = dispatcher.run_tick(state);
+  expect(second.stage == comic2::DispatchStage::GroundedPhysics,
+         "second tick should execute grounded physics after arming");
+}
+
+void test_level_transition_loads_room_tilemap() {
+  comic2::RuntimeState state;
+  state.current_level = 1;
+  state.current_room = 0;
+  state.flags.level_transition_pending = true;
+
+  std::vector<std::uint8_t> decoded_room_bytes(0x2C4, 0x00);
+  decoded_room_bytes[0x2A0] = 0x00;
+  decoded_room_bytes[0x2A1] = 0x00;
+  decoded_room_bytes[0x2A2] = 0x04;
+  decoded_room_bytes[0x2A3] = 0x00;
+  decoded_room_bytes[0x2A4] = 0x08;
+  decoded_room_bytes[0x2A5] = 0x00;
+
+  const std::vector<std::uint8_t> encoded_room_bytes =
+      encode_literal_signed_rle(decoded_room_bytes);
+
+  state.room_resource_bytes.resize(0x20 + encoded_room_bytes.size(), 0x00);
+  state.room_resource_bytes[2] = 0x01;
+  state.room_resource_bytes[3] = 0x00;
+  state.room_resource_bytes[0x04] = 0x04;
+  state.room_resource_bytes[0x05] = 0x00;
+  state.room_resource_bytes[0x06] = 0x00;
+  state.room_resource_bytes[0x07] = 0x00;
+  state.room_resource_bytes[0x08] = 0x20;
+  state.room_resource_bytes[0x09] = 0x00;
+  std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
+            state.room_resource_bytes.begin() + 0x20);
+
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  const auto result = dispatcher.run_tick(state);
+  expect(result.stage == comic2::DispatchStage::LevelTransition,
+         "level transition should select level transition stage");
+  expect(!state.flags.level_transition_pending,
+         "level transition handler should clear its pending flag");
+  expect(state.room_grid.tile_w == 4,
+         "level transition should load the new room tile width");
+  expect(state.room_grid.tile_h == 3,
+         "level transition should load the new room tile height");
+  expect(state.room_grid.row_pointers == std::vector<std::uint16_t>{0, 4, 8},
+         "level transition should build the row pointer table");
+}
+
+comic2::RoomTileGrid make_projectile_floor_grid(std::uint8_t tile_id) {
+  comic2::RoomTileGrid grid;
+  grid.tile_w = 2;
+  grid.tile_h = 2;
+  grid.row_pointers = {0, 2};
+  grid.tile_data = {0x00, 0x00, tile_id, tile_id};
+  return grid;
+}
+
+void test_projectile_scripted_tick_updates_deterministically() {
+  const auto run_sequence = [](const std::vector<comic2::InputState> &inputs) {
+    comic2::GameDispatcher dispatcher;
+    comic2::install_default_stage_hooks(dispatcher);
+
+    comic2::RuntimeState state;
+    state.projectiles.push_back(
+        comic2::ProjectileState{.x = 10, .y = 10, .x_vel = 1, .y_vel = 0,
+                                .anim_frame = 0, .active = true});
+
+    for (const auto &input : inputs) {
+      state.input = input;
+      dispatcher.run_tick(state);
+    }
+
+    return state.projectiles;
+  };
+
+  const std::vector<comic2::InputState> sequence = {
+      comic2::InputState{},
+      comic2::InputState{},
+      comic2::InputState{},
+  };
+
+  const auto first = run_sequence(sequence);
+  const auto replay = run_sequence(sequence);
+
+  expect(first == replay,
+         "projectile scripted tick replay should be deterministic");
+  expect(first.size() == 1, "scripted projectile tick should keep one entry");
+  expect(first[0].x == 13, "projectile should advance one pixel per tick");
+  expect(first[0].anim_frame == 3,
+         "projectile animation frame should advance modulo 8 each tick");
+}
+
+void test_projectile_scripted_tick_deactivates_on_tile_collision() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  comic2::RuntimeState state;
+  state.room_grid = make_projectile_floor_grid(0x01);
+  state.projectiles.push_back(
+      comic2::ProjectileState{.x = 13, .y = 13, .x_vel = 0, .y_vel = 0,
+                              .anim_frame = 0, .active = true});
+
+  const auto result = dispatcher.run_tick(state);
+  expect(result.stage == comic2::DispatchStage::InputHandling,
+         "projectile tick should run through input handling stage");
+  expect(!state.projectiles[0].active,
+         "projectile should deactivate on tile collision during scripted tick");
 }
 
 } // namespace
@@ -268,5 +483,9 @@ void run_dispatcher_tests() {
   test_deterministic_tick_replay();
   test_dispatcher_trace_log();
   test_default_stage_hook_coverage();
-  test_tile_hazard_stage_consumes_hp();
+  test_tile_hazard_stage_instantly_kills_player();
+  test_stage_flags_are_consumed_by_default_handlers();
+  test_input_fallback_arms_grounded_physics_for_next_tick();
+  test_projectile_scripted_tick_updates_deterministically();
+  test_projectile_scripted_tick_deactivates_on_tile_collision();
 }

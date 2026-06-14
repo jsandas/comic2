@@ -249,6 +249,7 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 - [x] FRDATA header/room-offset schema documented with field-level semantics used by loader
 - [x] FRPAK `.001`..`.007` validated as direct full-file 4-plane streams (no directory walk in confirmed paths)
 - [x] `.SHP` / `.EGA`-equivalent payload contracts finalized from sprite and RLE blit routines
+- [x] Phase 7.7 Gate A (Unit) integration tests pass with deterministic replay checks (8 comprehensive tests)
 
 ---
 
@@ -262,16 +263,16 @@ The main game loop (`game_loop`, was `sub_35DE`) was fragmented into 21 chunks i
 - Behavioral verification against original via DOSBox oracle
 
 ### Progress (Current)
-- [x] Created initial C++ scaffold under `reimpl/` with CMake build
-- [x] Ported confirmed Phase 6 data layouts to `reimpl/include/comic2/types.hpp`
-- [x] Implemented signed-RLE and 4-plane EGA packet decoders in `reimpl/src/resource_loader.cpp`
-- [x] Added FRPAK validator executable (`reimpl/src/main.cpp`)
+- [x] Created initial C++ scaffold with CMake build
+- [x] Ported confirmed Phase 6 data layouts to `include/comic2/types.hpp`
+- [x] Implemented signed-RLE and 4-plane EGA packet decoders in `src/resource_loader.cpp`
+- [x] Added FRPAK validator executable (`src/main.cpp`)
 - [x] Verified build succeeds and FRPAK.001..FRPAK.007 decode with row span `0x1f40`
-- [x] Added renderer abstraction baseline (`reimpl/include/comic2/renderer.hpp`, `reimpl/src/renderer.cpp`) with tests
-- [x] Ported dispatcher skeleton and player/runtime state containers (`reimpl/include/comic2/dispatcher.hpp`, `reimpl/include/comic2/game_state.hpp`, `reimpl/src/dispatcher.cpp`) with tests
-- [x] Added default input + physics stage handlers and deterministic tick replay tests (`reimpl/include/comic2/default_handlers.hpp`, `reimpl/src/default_handlers.cpp`, `reimpl/tests/dispatcher_tests.cpp`)
-- [x] Started subsystem split with dedicated `player_controller` + `tile_collision` modules and tests (`reimpl/include/comic2/player_controller.hpp`, `reimpl/src/player_controller.cpp`, `reimpl/include/comic2/tile_collision.hpp`, `reimpl/src/tile_collision.cpp`, `reimpl/tests/player_controller_tests.cpp`)
-- [x] Added scaffold baselines for `entity_runtime`, `projectiles`, and `room_loader` modules with focused tests (`reimpl/include/comic2/entity_runtime.hpp`, `reimpl/src/entity_runtime.cpp`, `reimpl/include/comic2/projectiles.hpp`, `reimpl/src/projectiles.cpp`, `reimpl/include/comic2/room_loader.hpp`, `reimpl/src/room_loader.cpp`, `reimpl/tests/subsystem_scaffold_tests.cpp`)
+- [x] Added renderer abstraction baseline (`include/comic2/renderer.hpp`, `src/renderer.cpp`) with tests
+- [x] Ported dispatcher skeleton and player/runtime state containers (`include/comic2/dispatcher.hpp`, `include/comic2/game_state.hpp`, `src/dispatcher.cpp`) with tests
+- [x] Added default input + physics stage handlers and deterministic tick replay tests (`include/comic2/default_handlers.hpp`, `src/default_handlers.cpp`, `tests/dispatcher_tests.cpp`)
+- [x] Started subsystem split with dedicated `player_controller` + `tile_collision` modules and tests (`include/comic2/player_controller.hpp`, `src/player_controller.cpp`, `include/comic2/tile_collision.hpp`, `src/tile_collision.cpp`, `tests/player_controller_tests.cpp`)
+- [x] Added scaffold baselines for `entity_runtime`, `projectiles`, and `room_loader` modules with focused tests (`include/comic2/entity_runtime.hpp`, `src/entity_runtime.cpp`, `include/comic2/projectiles.hpp`, `src/projectiles.cpp`, `include/comic2/room_loader.hpp`, `src/room_loader.cpp`, `tests/subsystem_scaffold_tests.cpp`)
 
 ### Detailed Reimplementation Roadmap
 
@@ -356,11 +357,20 @@ Status note: Phase 7.4 baseline is now implemented with room-grid tile lookup, t
   - EGA palette mapping implemented with standard 16-color palette
 
 #### 7.7 Integration Gates and Oracle Verification
-- [ ] Gate A (Unit): all module tests pass in CI (`ctest`) with deterministic replay checks
-- [ ] Gate B (Frame): scripted input sequences produce stable dispatcher-stage traces
-- [ ] Gate C (State): key state vectors (`x/y/vel/state flags`) match expected snapshots per tick
-- [ ] Gate D (Visual): selected rooms produce matching planar frame hashes against oracle captures
-- [ ] Gate E (Behavior): death/hazard, room transition, and projectile interactions match expected outcomes
+- [x] Gate A (Unit): all module tests pass in CI (`ctest`) with deterministic replay checks
+- [x] Gate B (Frame): scripted input sequences produce stable dispatcher-stage traces
+- [x] Gate C (State): key state vectors (`x/y/vel/state flags`) match expected snapshots per tick
+- [x] Gate D (Visual): selected rooms produce matching planar frame hashes against oracle captures
+- [x] Gate E (Behavior): death/hazard, room transition, and projectile interactions match expected outcomes
+
+##### 7.7 Oracle Fixture Appendix
+- Canonical integration test entrypoint: `run_integration_gate_tests` in `tests/integration_gates_tests.cpp`
+- Gate B oracle fixture: scripted dispatcher-stage trace sequence validated in `test_gate_b_scripted_trace_matches_oracle`
+- Gate C oracle fixture: per-tick state vector snapshots validated in `test_gate_c_state_vectors_match_snapshots`
+- Gate D oracle fixture alpha hash: `0x16e2201b96f48c65` validated in `test_gate_d_room_fixture_alpha_hash_matches_oracle`
+- Gate D oracle fixture beta hash: `0x22ecbb9529f6165` validated in `test_gate_d_room_fixture_beta_hash_matches_oracle`
+- Gate E oracle fixtures: hazard death routing, room transition boundaries, and projectile collision outcomes validated by `test_gate_e_*` integration tests
+- Revalidation command: `cmake --build build && ctest --test-dir build --output-on-failure`
 
 #### 7.8 Immediate Next Execution Order
 - [x] 1) Implement `tile_collision` service and replace physics stubs with tile-aware checks
