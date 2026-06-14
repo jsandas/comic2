@@ -2,9 +2,9 @@ name: Code Quality
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - '*'
+  push:
+    branches:
+      - '*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
