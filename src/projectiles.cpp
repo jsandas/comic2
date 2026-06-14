@@ -12,10 +12,7 @@ void spawn_projectile(std::vector<ProjectileState> &projectiles, std::int16_t x,
 
 void spawn_player_projectile(std::vector<ProjectileState> &projectiles,
                              const ProjectileSpawnParams &params) {
-  std::int16_t x_vel = params.facing_right ? 0x0010 : -0x0010;
-  if (!params.facing_right && params.is_airborne) {
-    x_vel -= 0x0010;
-  }
+  const std::int16_t x_vel = params.facing_right ? 0x0010 : -0x0010;
 
   std::int16_t y = params.y + 4;
   if (!params.is_airborne) {
