@@ -391,7 +391,7 @@ void test_level_transition_loads_room_tilemap() {
   state.room_resource_bytes[3] = 0x00;
   state.room_resource_bytes[0x04] = 0x04;
   state.room_resource_bytes[0x05] = 0x00;
-       state.room_resource_bytes[0x06] = 0x03;
+  state.room_resource_bytes[0x06] = 0x03;
   state.room_resource_bytes[0x07] = 0x00;
   state.room_resource_bytes[0x08] = 0x20;
   state.room_resource_bytes[0x09] = 0x00;
