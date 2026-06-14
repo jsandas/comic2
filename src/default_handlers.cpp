@@ -17,11 +17,6 @@ constexpr TileCollisionConfig kDefaultCollision{
     .hazard_tile_min = 0xF0,
     .hazard_tile_max = 0xFF,
 };
-constexpr ProjectileBounds kDefaultProjectileBounds{};
-constexpr std::int16_t kDefaultViewportMinX = 0;
-constexpr std::int16_t kDefaultViewportMinY = 0;
-constexpr std::int16_t kDefaultViewportWidth = 200;
-constexpr std::int16_t kDefaultViewportHeight = 152;
 
 void update_room_transition_from_player_bounds(RuntimeState &state) {
   if (state.player.x < 0) {
@@ -47,18 +42,12 @@ void apply_default_airborne_physics(RuntimeState &state) {
   apply_airborne_physics_tick(state, kDefaultMotion, kDefaultCollision);
   update_room_transition_from_player_bounds(state);
   update_player_hazard_state(state, kDefaultCollision);
-  advance_runtime_projectiles(state, kDefaultProjectileBounds,
-                              kDefaultViewportMinX, kDefaultViewportMinY,
-                              kDefaultViewportWidth, kDefaultViewportHeight);
 }
 
 void apply_default_grounded_physics(RuntimeState &state) {
   apply_grounded_physics_tick(state, kDefaultMotion, kDefaultCollision);
   update_room_transition_from_player_bounds(state);
   update_player_hazard_state(state, kDefaultCollision);
-  advance_runtime_projectiles(state, kDefaultProjectileBounds,
-                              kDefaultViewportMinX, kDefaultViewportMinY,
-                              kDefaultViewportWidth, kDefaultViewportHeight);
 }
 
 } // namespace
@@ -70,23 +59,14 @@ void handle_level_transition(RuntimeState &state) {
                                            state.current_level,
                                            state.current_room);
   }
-  advance_runtime_projectiles(state, kDefaultProjectileBounds,
-                              kDefaultViewportMinX, kDefaultViewportMinY,
-                              kDefaultViewportWidth, kDefaultViewportHeight);
 }
 
 void handle_special_logic1(RuntimeState &state) {
   state.flags.special_logic1_active = false;
-  advance_runtime_projectiles(state, kDefaultProjectileBounds,
-                              kDefaultViewportMinX, kDefaultViewportMinY,
-                              kDefaultViewportWidth, kDefaultViewportHeight);
 }
 
 void handle_special_logic2(RuntimeState &state) {
   state.flags.special_logic2_active = false;
-  advance_runtime_projectiles(state, kDefaultProjectileBounds,
-                              kDefaultViewportMinX, kDefaultViewportMinY,
-                              kDefaultViewportWidth, kDefaultViewportHeight);
 }
 
 void handle_airborne_movement(RuntimeState &state) {
@@ -96,9 +76,6 @@ void handle_airborne_movement(RuntimeState &state) {
 
 void handle_timed_overlay(RuntimeState &state) {
   state.flags.timed_overlay_pending = false;
-  advance_runtime_projectiles(state, kDefaultProjectileBounds,
-                              kDefaultViewportMinX, kDefaultViewportMinY,
-                              kDefaultViewportWidth, kDefaultViewportHeight);
 }
 
 void handle_grounded_physics(RuntimeState &state) {
@@ -108,38 +85,23 @@ void handle_grounded_physics(RuntimeState &state) {
 
 void handle_player_animation(RuntimeState &state) {
   state.player.is_animation_active = false;
-  advance_runtime_projectiles(state, kDefaultProjectileBounds,
-                              kDefaultViewportMinX, kDefaultViewportMinY,
-                              kDefaultViewportWidth, kDefaultViewportHeight);
 }
 
 void handle_attack_animation(RuntimeState &state) {
   state.player.is_attack_active = false;
-  advance_runtime_projectiles(state, kDefaultProjectileBounds,
-                              kDefaultViewportMinX, kDefaultViewportMinY,
-                              kDefaultViewportWidth, kDefaultViewportHeight);
 }
 
 void handle_distance_interaction(RuntimeState &state) {
   state.flags.distance_interaction_active = false;
-  advance_runtime_projectiles(state, kDefaultProjectileBounds,
-                              kDefaultViewportMinX, kDefaultViewportMinY,
-                              kDefaultViewportWidth, kDefaultViewportHeight);
 }
 
 void handle_tile_hazard(RuntimeState &state) {
   state.player.hp = 0;
   state.flags.player_special_state_active = true;
   state.flags.tile_hazard_triggered = false;
-  advance_runtime_projectiles(state, kDefaultProjectileBounds,
-                              kDefaultViewportMinX, kDefaultViewportMinY,
-                              kDefaultViewportWidth, kDefaultViewportHeight);
 }
 
 void handle_player_special_state(RuntimeState &state) {
-  advance_runtime_projectiles(state, kDefaultProjectileBounds,
-                              kDefaultViewportMinX, kDefaultViewportMinY,
-                              kDefaultViewportWidth, kDefaultViewportHeight);
 }
 
 void handle_input_fallback(RuntimeState &state) {
@@ -152,9 +114,6 @@ void handle_input_fallback(RuntimeState &state) {
   if (!state.player.is_airborne) {
     state.player.is_physics_active = true;
   }
-  advance_runtime_projectiles(state, kDefaultProjectileBounds,
-                              kDefaultViewportMinX, kDefaultViewportMinY,
-                              kDefaultViewportWidth, kDefaultViewportHeight);
 }
 
 void install_default_stage_hooks(GameDispatcher &dispatcher) {
