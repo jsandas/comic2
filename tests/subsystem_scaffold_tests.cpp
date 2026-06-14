@@ -378,6 +378,24 @@ void test_room_loader_rejects_huge_offset() {
   expect(!entry.has_value(), "decode should reject oversized offsets safely");
 }
 
+void test_room_loader_rejects_out_of_bounds_room_index() {
+  std::vector<std::uint8_t> bytes(0x0A, 0x00);
+  bytes[2] = 0x03;
+  bytes[3] = 0x00;
+  bytes[0x04] = 0x04;
+  bytes[0x05] = 0x00;
+  bytes[0x06] = 0x03;
+  bytes[0x07] = 0x00;
+  bytes[0x08] = 0x20;
+  bytes[0x09] = 0x00;
+
+  comic2::RuntimeState state;
+  const bool loaded = comic2::load_room_tilemap_from_resource_buffer(
+      state, bytes, 3, 1);
+  expect(!loaded,
+         "room loader should reject a room index that is outside the table");
+}
+
 void test_room_loader_populates_runtime_state_from_resource_buffer() {
   std::vector<std::uint8_t> decoded_room_bytes(0x2C4, 0x00);
   decoded_room_bytes[0] = 0x11;

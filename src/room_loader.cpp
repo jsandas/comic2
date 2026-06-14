@@ -72,6 +72,10 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
 
   const std::size_t room_entry_offset =
       kRoomTableOffset + static_cast<std::size_t>(room) * kRoomEntrySize;
+  if (room_entry_offset > bytes.size() - kRoomEntrySize) {
+    return false;
+  }
+
   const std::optional<FrdataRoomEntry> room_entry =
       decode_frdata_room_entry(bytes, room_entry_offset);
   if (!room_entry.has_value() || room_entry->tile_w == 0 ||
