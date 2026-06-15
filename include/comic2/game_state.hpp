@@ -49,6 +49,8 @@ struct DispatcherFlags {
   bool operator==(const DispatcherFlags &) const = default;
 };
 
+RuntimeState make_default_runtime_state();
+
 struct RuntimeState {
   std::uint16_t current_level = 0;
   std::uint16_t current_room = 0;

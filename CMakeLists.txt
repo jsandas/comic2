@@ -46,6 +46,7 @@ add_library(comic2_core
     src/default_handlers.cpp
     src/dispatcher.cpp
     src/entity_runtime.cpp
+    src/game_state.cpp
     src/player_controller.cpp
     src/projectiles.cpp
     src/renderer.cpp

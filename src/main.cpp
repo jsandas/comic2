@@ -13,13 +13,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Starting comic2 bootstrap from: " << root.string() << "\n";
 
-    comic2::RuntimeState state{};
-    state.current_level = 0;
-    state.current_room = 0;
-    state.player.x = 64;
-    state.player.y = 96;
-    state.player.is_airborne = false;
-    state.player.is_physics_active = true;
+    auto state = comic2::make_default_runtime_state();
 
     comic2::GameDispatcher dispatcher;
     comic2::install_default_stage_hooks(dispatcher);
