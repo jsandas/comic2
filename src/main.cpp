@@ -1,30 +1,36 @@
 #include <filesystem>
 #include <iostream>
-#include <string>
-#include <vector>
 
-#include "comic2/resource_loader.hpp"
+#include "comic2/default_handlers.hpp"
+#include "comic2/dispatcher.hpp"
+#include "comic2/game_state.hpp"
 
 int main(int argc, char **argv) {
   try {
-    std::filesystem::path root = std::filesystem::current_path();
-    if (argc > 1) {
-      root = argv[1];
-    }
+    const std::filesystem::path root =
+        (argc > 1) ? std::filesystem::path(argv[1])
+                   : std::filesystem::current_path();
 
-    const std::vector<std::string> frpak_files = {
-        "FRPAK.001", "FRPAK.002", "FRPAK.003", "FRPAK.004",
-        "FRPAK.005", "FRPAK.006", "FRPAK.007",
-    };
+    std::cout << "Starting comic2 bootstrap from: " << root.string() << "\n";
 
-    std::cout << "Validating FRPAK streams under: " << root.string() << "\n";
-    for (const auto &name : frpak_files) {
-      const auto file = root / name;
-      const auto image = comic2::load_frpak_fullscreen_image(file);
-      std::cout << name << ": row_span=0x" << std::hex << image.row_span_bytes
-                << std::dec << " plane_bytes=" << image.planes[0].size()
-                << "\n";
-    }
+    comic2::RuntimeState state{};
+    state.current_level = 0;
+    state.current_room = 0;
+    state.player.x = 64;
+    state.player.y = 96;
+    state.player.is_airborne = false;
+    state.player.is_physics_active = true;
+
+    comic2::GameDispatcher dispatcher;
+    comic2::install_default_stage_hooks(dispatcher);
+    dispatcher.set_trace_enabled(true);
+
+    const auto result = dispatcher.run_tick(state);
+    std::cout << "Bootstrap tick stage=" << comic2::to_string(result.stage)
+              << " hook_executed=" << std::boolalpha << result.hook_executed
+              << std::noboolalpha << "\n";
+    std::cout << "Bootstrap ready: level=" << state.current_level
+              << " room=" << state.current_room << "\n";
 
     return 0;
   } catch (const std::exception &ex) {
