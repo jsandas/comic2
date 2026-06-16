@@ -43,6 +43,7 @@ if(ENABLE_SDL2)
 endif()
 
 add_library(comic2_core
+    src/bootstrap.cpp
     src/default_handlers.cpp
     src/dispatcher.cpp
     src/entity_runtime.cpp
@@ -87,6 +88,7 @@ if(ENABLE_SDL2 AND SDL2_TARGET)
 endif()
 
 add_executable(comic2_unit_tests
+    tests/bootstrap_wiring_tests.cpp
     tests/dispatcher_tests.cpp
     tests/integration_gates_tests.cpp
     tests/player_controller_tests.cpp

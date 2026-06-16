@@ -18,5 +18,6 @@ void handle_player_special_state(const RuntimeState &state);
 void handle_input_fallback(RuntimeState &state);
 
 void install_default_stage_hooks(GameDispatcher &dispatcher);
+GameDispatcher make_default_game_dispatcher();
 
 } // namespace comic2

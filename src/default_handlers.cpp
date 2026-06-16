@@ -116,6 +116,8 @@ void handle_input_fallback(RuntimeState &state) {
 }
 
 void install_default_stage_hooks(GameDispatcher &dispatcher) {
+  // Keep the hook chain in DispatchStage order so the runtime path stays
+  // explicit and matches the known game-loop priority sequence.
   dispatcher.set_level_transition_hook(
       [](RuntimeState &state) { handle_level_transition(state); });
   dispatcher.set_special_logic1_hook(
@@ -140,6 +142,12 @@ void install_default_stage_hooks(GameDispatcher &dispatcher) {
       [](const RuntimeState &state) { handle_player_special_state(state); });
   dispatcher.set_input_handling_hook(
       [](RuntimeState &state) { handle_input_fallback(state); });
+}
+
+GameDispatcher make_default_game_dispatcher() {
+  GameDispatcher dispatcher;
+  install_default_stage_hooks(dispatcher);
+  return dispatcher;
 }
 
 } // namespace comic2

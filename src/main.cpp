@@ -1,32 +1,15 @@
+#include <exception>
 #include <filesystem>
 #include <iostream>
 
-#include "comic2/default_handlers.hpp"
-#include "comic2/dispatcher.hpp"
-#include "comic2/game_state.hpp"
+#include "comic2/bootstrap.hpp"
 
 int main(int argc, char **argv) {
   try {
     const std::filesystem::path root =
         (argc > 1) ? std::filesystem::path(argv[1])
                    : std::filesystem::current_path();
-
-    std::cout << "Starting comic2 bootstrap from: " << root.string() << "\n";
-
-    auto state = comic2::make_default_runtime_state();
-
-    comic2::GameDispatcher dispatcher;
-    comic2::install_default_stage_hooks(dispatcher);
-    dispatcher.set_trace_enabled(true);
-
-    const auto result = dispatcher.run_tick(state);
-    std::cout << "Bootstrap tick stage=" << comic2::to_string(result.stage)
-              << " hook_executed=" << std::boolalpha << result.hook_executed
-              << std::noboolalpha << "\n";
-    std::cout << "Bootstrap ready: level=" << state.current_level
-              << " room=" << state.current_room << "\n";
-
-    return 0;
+    return comic2::run_bootstrap_entry(root);
   } catch (const std::exception &ex) {
     std::cerr << "error: " << ex.what() << "\n";
     return 1;

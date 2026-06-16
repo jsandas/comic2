@@ -1,8 +1,11 @@
 #include "comic2/resource_loader.hpp"
 
+#include <array>
 #include <fstream>
 #include <stdexcept>
 #include <string>
+
+#include "comic2/room_loader.hpp"
 
 namespace comic2 {
 namespace {
@@ -13,6 +16,14 @@ std::uint16_t read_u16(std::span<const std::uint8_t> bytes, std::size_t off) {
   }
   return static_cast<std::uint16_t>(
       bytes[off] | (static_cast<std::uint16_t>(bytes[off + 1]) << 8));
+}
+
+} // namespace
+
+namespace {
+
+bool path_exists(const std::filesystem::path &path) {
+  return std::filesystem::exists(path) && std::filesystem::is_regular_file(path);
 }
 
 } // namespace
@@ -121,6 +132,57 @@ Ega4PlaneImage decode_ega_4plane_rle(std::span<const std::uint8_t> encoded,
   }
 
   return image;
+}
+
+BootstrapLoadSummary load_initial_bootstrap_resources(RuntimeState &state,
+                                                      const std::filesystem::path &root) {
+  BootstrapLoadSummary summary{};
+
+  const std::array metadata_candidates = {
+      root / "FRDATA.0",
+      root / "FRDATA.1",
+  };
+  const std::array sprite_candidates = {
+      root / "FRPAK.001", root / "FRPAK.002", root / "FRPAK.003",
+      root / "FRPAK.004", root / "FRPAK.005", root / "FRPAK.006",
+      root / "FRPAK.007",
+  };
+
+  for (const auto &candidate : metadata_candidates) {
+    ++summary.metadata_files_tried;
+    if (!path_exists(candidate)) {
+      continue;
+    }
+
+    try {
+      const auto bytes = load_file_bytes(candidate);
+      state.level_metadata_bytes = bytes;
+      state.room_resource_bytes = bytes;
+      if (load_room_tilemap_from_resource_buffer(state, bytes, 0, 0)) {
+        summary.room_grid_loaded = true;
+        break;
+      }
+    } catch (const std::exception &) {
+      // Keep the bootstrap non-fatal and fall through to the next candidate.
+    }
+  }
+
+  for (const auto &candidate : sprite_candidates) {
+    ++summary.sprite_files_tried;
+    if (!path_exists(candidate)) {
+      continue;
+    }
+
+    try {
+      const auto bytes = load_file_bytes(candidate);
+      state.sprite_resource_bytes.insert(state.sprite_resource_bytes.end(),
+                                         bytes.begin(), bytes.end());
+    } catch (const std::exception &) {
+      // Missing or unreadable FRPAK payloads should not stop bootstrap.
+    }
+  }
+
+  return summary;
 }
 
 Ega4PlaneImage load_frpak_fullscreen_image(const std::filesystem::path &path) {
