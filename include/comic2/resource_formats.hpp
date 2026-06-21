@@ -8,6 +8,8 @@
 
 namespace comic2 {
 
+inline constexpr std::size_t kEgaPlaneCount = 4;
+
 #pragma pack(push, 1)
 
 struct EgaRle4PlaneHeader {
@@ -34,7 +36,7 @@ struct Ega4PlaneImage {
       0; // row stride in bytes (must be set by caller for blitting)
   std::uint16_t height_rows =
       0; // image height in rows (must be set by caller for blitting)
-  std::array<std::vector<std::uint8_t>, 4> planes;
+  std::array<std::vector<std::uint8_t>, kEgaPlaneCount> planes;
 };
 
 struct SignedRleResult {

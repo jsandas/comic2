@@ -7,7 +7,7 @@ namespace comic2 {
 void handle_level_transition(RuntimeState &state);
 void handle_special_logic1(RuntimeState &state);
 void handle_special_logic2(RuntimeState &state);
-void handle_airborne_movement(RuntimeState &state);
+void handle_airborne_physics(RuntimeState &state);
 void handle_timed_overlay(RuntimeState &state);
 void handle_grounded_physics(RuntimeState &state);
 void handle_player_animation(RuntimeState &state);
@@ -18,5 +18,6 @@ void handle_player_special_state(const RuntimeState &state);
 void handle_input_fallback(RuntimeState &state);
 
 void install_default_stage_hooks(GameDispatcher &dispatcher);
+GameDispatcher make_default_game_dispatcher();
 
 } // namespace comic2

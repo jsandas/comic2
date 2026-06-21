@@ -1,11 +1,18 @@
 #include "comic2/resource_loader.hpp"
 
+#include <array>
 #include <fstream>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
+#include "comic2/bootstrap.hpp"
+#include "comic2/room_loader.hpp"
+
 namespace comic2 {
 namespace {
+
+constexpr std::size_t kMaxDecodedBytes = 0x10000;
 
 std::uint16_t read_u16(std::span<const std::uint8_t> bytes, std::size_t off) {
   if (off + 1 >= bytes.size()) {
@@ -15,24 +22,37 @@ std::uint16_t read_u16(std::span<const std::uint8_t> bytes, std::size_t off) {
       bytes[off] | (static_cast<std::uint16_t>(bytes[off + 1]) << 8));
 }
 
+bool path_exists(const std::filesystem::path &path) {
+  return std::filesystem::exists(path) &&
+         std::filesystem::is_regular_file(path);
+}
+
 } // namespace
 
-std::vector<std::uint8_t> load_file_bytes(const std::filesystem::path &path) {
+std::optional<std::vector<std::uint8_t>>
+load_file_bytes(const std::filesystem::path &path) {
   std::ifstream input(path, std::ios::binary);
   if (!input) {
-    throw std::runtime_error("failed to open file: " + path.string());
+    return std::nullopt;
   }
 
   input.seekg(0, std::ios::end);
-  const auto size = static_cast<std::size_t>(input.tellg());
+  const auto end_pos = input.tellg();
+  if (end_pos < 0) {
+    return std::nullopt;
+  }
+  const auto size = static_cast<std::size_t>(end_pos);
   input.seekg(0, std::ios::beg);
+  if (!input) {
+    return std::nullopt;
+  }
 
   std::vector<std::uint8_t> bytes(size);
   if (size > 0) {
     input.read(reinterpret_cast<char *>(bytes.data()),
                static_cast<std::streamsize>(size));
     if (!input) {
-      throw std::runtime_error("failed to read file: " + path.string());
+      return std::nullopt;
     }
   }
   return bytes;
@@ -54,6 +74,9 @@ SignedRleResult decode_signed_rle(std::span<const std::uint8_t> encoded) {
       }
       const auto value = encoded[i++];
       const auto count = static_cast<std::size_t>(-control);
+      if (out.bytes.size() > kMaxDecodedBytes - count) {
+        throw std::runtime_error("signed-rle decoded output too large");
+      }
       out.bytes.insert(out.bytes.end(), count, value);
       continue;
     }
@@ -61,6 +84,9 @@ SignedRleResult decode_signed_rle(std::span<const std::uint8_t> encoded) {
     const auto count = static_cast<std::size_t>(control);
     if (i + count > encoded.size()) {
       throw std::runtime_error("signed-rle truncated literal");
+    }
+    if (out.bytes.size() > kMaxDecodedBytes - count) {
+      throw std::runtime_error("signed-rle decoded output too large");
     }
     out.bytes.insert(out.bytes.end(),
                      encoded.begin() + static_cast<std::ptrdiff_t>(i),
@@ -82,6 +108,13 @@ Ega4PlaneImage decode_ega_4plane_rle(std::span<const std::uint8_t> encoded,
   if (image.row_span_bytes == 0) {
     throw std::runtime_error("ega-rle row span cannot be zero");
   }
+  // row_span_bytes is u16 (max 65535), so it can never exceed kMaxDecodedBytes
+  // (65536). Check for unreasonable values with a u16-safe threshold.
+  constexpr std::uint16_t kMaxRowSpan =
+      0x7FFF; // 32768 - reasonable upper bound
+  if (image.row_span_bytes > kMaxRowSpan) {
+    throw std::runtime_error("ega-rle row span too large");
+  }
 
   std::size_t i = sizeof(EgaRle4PlaneHeader);
   for (std::size_t plane = 0; plane < image.planes.size(); ++plane) {
@@ -98,6 +131,9 @@ Ega4PlaneImage decode_ega_4plane_rle(std::span<const std::uint8_t> encoded,
         if (i + count > encoded.size()) {
           throw std::runtime_error("ega-rle truncated literal packet");
         }
+        if (out.size() > kMaxDecodedBytes - count) {
+          throw std::runtime_error("ega-rle decoded output too large");
+        }
         out.insert(out.end(), encoded.begin() + static_cast<std::ptrdiff_t>(i),
                    encoded.begin() + static_cast<std::ptrdiff_t>(i + count));
         i += count;
@@ -107,6 +143,9 @@ Ega4PlaneImage decode_ega_4plane_rle(std::span<const std::uint8_t> encoded,
           throw std::runtime_error("ega-rle truncated run packet");
         }
         const auto value = encoded[i++];
+        if (out.size() > kMaxDecodedBytes - count) {
+          throw std::runtime_error("ega-rle decoded output too large");
+        }
         out.insert(out.end(), count, value);
       }
 
@@ -123,13 +162,66 @@ Ega4PlaneImage decode_ega_4plane_rle(std::span<const std::uint8_t> encoded,
   return image;
 }
 
-Ega4PlaneImage load_frpak_fullscreen_image(const std::filesystem::path &path) {
-  const auto bytes = load_file_bytes(path);
-  auto image = decode_ega_4plane_rle(bytes, true);
-  // FRPAK fullscreen images are always 320x200 EGA: 40 bytes/row, 200 rows
-  image.width_bytes = 40;
-  image.height_rows = 200;
-  return image;
+BootstrapLoadSummary
+load_initial_bootstrap_resources(RuntimeState &state,
+                                 const std::filesystem::path &root) {
+  BootstrapLoadSummary summary{};
+
+  const std::array metadata_candidates = {
+      root / "FRDATA.0",
+      root / "FRDATA.1",
+  };
+  const std::array sprite_candidates = {
+      root / "FRPAK.001", root / "FRPAK.002", root / "FRPAK.003",
+      root / "FRPAK.004", root / "FRPAK.005", root / "FRPAK.006",
+      root / "FRPAK.007",
+  };
+
+  for (const auto &candidate : metadata_candidates) {
+    ++summary.metadata_files_tried;
+    if (!path_exists(candidate)) {
+      continue;
+    }
+
+    try {
+      const auto bytes = load_file_bytes(candidate);
+      if (!bytes.has_value()) {
+        continue;
+      }
+
+      state.level_metadata_bytes = *bytes;
+      state.room_resource_bytes = *bytes;
+      // The FRDATA payload feeds both the metadata snapshot and the room
+      // resource bytes in this bootstrap path.
+      if (load_room_tilemap_from_resource_buffer(state, *bytes, 0, 0)) {
+        summary.room_grid_loaded = true;
+        break;
+      }
+    } catch (const std::exception &) {
+      // Keep the bootstrap non-fatal and fall through to the next candidate.
+    }
+  }
+
+  for (const auto &candidate : sprite_candidates) {
+    ++summary.sprite_files_tried;
+    if (!path_exists(candidate)) {
+      continue;
+    }
+
+    try {
+      const auto bytes = load_file_bytes(candidate);
+      if (!bytes.has_value()) {
+        continue;
+      }
+
+      state.sprite_resource_bytes.insert(state.sprite_resource_bytes.end(),
+                                         bytes->begin(), bytes->end());
+    } catch (const std::exception &) {
+      // Missing or unreadable FRPAK payloads should not stop bootstrap.
+    }
+  }
+
+  return summary;
 }
 
 } // namespace comic2

@@ -56,6 +56,8 @@ struct RuntimeState {
 
   RoomTileGrid room_grid;
   std::vector<std::uint8_t> room_resource_bytes;
+  std::vector<std::uint8_t> level_metadata_bytes;
+  std::vector<std::uint8_t> sprite_resource_bytes;
 
   PlayerState player;
   InputState input;
@@ -71,5 +73,7 @@ struct RuntimeState {
 
   bool operator==(const RuntimeState &) const = default;
 };
+
+RuntimeState make_default_runtime_state();
 
 } // namespace comic2
