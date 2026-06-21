@@ -209,13 +209,11 @@ void test_default_runtime_state_factory() {
   expect(state.current_room == 0, "default room should start at 0");
   expect(state.player.x == 64, "default player x should be 64");
   expect(state.player.y == 96, "default player y should be 96");
-  expect(!state.player.is_airborne,
-         "default player should start grounded");
+  expect(!state.player.is_airborne, "default player should start grounded");
   expect(state.player.is_physics_active,
          "default player physics should be active");
   expect(state.player.hp == 12, "default player hp should be 12");
-  expect(state.player.firepower == 1,
-         "default player firepower should be 1");
+  expect(state.player.firepower == 1, "default player firepower should be 1");
   expect(state.activation_toggle == 1,
          "default activation toggle should start at 1");
   expect(state.mapped_objects.empty(), "mapped object list should be empty");

@@ -18,8 +18,9 @@ struct BootstrapLoadSummary {
 };
 
 std::vector<std::uint8_t> load_file_bytes(const std::filesystem::path &path);
-BootstrapLoadSummary load_initial_bootstrap_resources(RuntimeState &state,
-                                                      const std::filesystem::path &root);
+BootstrapLoadSummary
+load_initial_bootstrap_resources(RuntimeState &state,
+                                 const std::filesystem::path &root);
 
 Ega4PlaneImage load_frpak_fullscreen_image(const std::filesystem::path &path);
 

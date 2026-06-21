@@ -23,7 +23,8 @@ std::uint16_t read_u16(std::span<const std::uint8_t> bytes, std::size_t off) {
 namespace {
 
 bool path_exists(const std::filesystem::path &path) {
-  return std::filesystem::exists(path) && std::filesystem::is_regular_file(path);
+  return std::filesystem::exists(path) &&
+         std::filesystem::is_regular_file(path);
 }
 
 } // namespace
@@ -134,8 +135,9 @@ Ega4PlaneImage decode_ega_4plane_rle(std::span<const std::uint8_t> encoded,
   return image;
 }
 
-BootstrapLoadSummary load_initial_bootstrap_resources(RuntimeState &state,
-                                                      const std::filesystem::path &root) {
+BootstrapLoadSummary
+load_initial_bootstrap_resources(RuntimeState &state,
+                                 const std::filesystem::path &root) {
   BootstrapLoadSummary summary{};
 
   const std::array metadata_candidates = {

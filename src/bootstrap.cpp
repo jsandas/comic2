@@ -19,7 +19,7 @@ constexpr int kDefaultBootstrapTicks = 2;
 bool read_bootstrap_bool_env(const char *name) {
   const char *value = std::getenv(name);
   return value != nullptr && (*value == '1' || *value == 't' || *value == 'T' ||
-                               *value == 'y' || *value == 'Y');
+                              *value == 'y' || *value == 'Y');
 }
 
 int read_bootstrap_tick_budget(int default_ticks) {
@@ -30,8 +30,9 @@ int read_bootstrap_tick_budget(int default_ticks) {
 
   try {
     const int parsed = std::stoi(value);
-    return parsed > 0 ? parsed : (default_ticks > 0 ? default_ticks
-                                                     : kDefaultBootstrapTicks);
+    return parsed > 0
+               ? parsed
+               : (default_ticks > 0 ? default_ticks : kDefaultBootstrapTicks);
   } catch (const std::exception &) {
     return default_ticks > 0 ? default_ticks : kDefaultBootstrapTicks;
   }
@@ -76,8 +77,7 @@ int run_bootstrap_entry(const std::filesystem::path &root) {
             << bootstrap.room_grid_loaded << std::noboolalpha << "\n";
   std::cout << "Loaded metadata bytes=" << state.level_metadata_bytes.size()
             << " room_bytes=" << state.room_resource_bytes.size()
-            << " sprite_bytes=" << state.sprite_resource_bytes.size()
-            << "\n";
+            << " sprite_bytes=" << state.sprite_resource_bytes.size() << "\n";
 
   auto dispatcher = make_default_game_dispatcher();
   dispatcher.set_trace_enabled(true);
@@ -90,9 +90,8 @@ int run_bootstrap_entry(const std::filesystem::path &root) {
 
     std::cout << "Bootstrap tick " << (tick + 1) << "/" << tick_budget
               << " stage=" << to_string(summary.stage)
-              << " input_captured=" << std::boolalpha
-              << summary.input_captured << std::noboolalpha
-              << " frame_presented=" << std::boolalpha
+              << " input_captured=" << std::boolalpha << summary.input_captured
+              << std::noboolalpha << " frame_presented=" << std::boolalpha
               << summary.frame_presented << std::noboolalpha
               << " input_left=" << state.input.left_pressed
               << " input_right=" << state.input.right_pressed
@@ -102,8 +101,8 @@ int run_bootstrap_entry(const std::filesystem::path &root) {
 
   std::cout << "Bootstrap ready: level=" << state.current_level
             << " room=" << state.current_room
-            << " frame_captured=" << std::boolalpha
-            << presenter.has_frame() << std::noboolalpha << "\n";
+            << " frame_captured=" << std::boolalpha << presenter.has_frame()
+            << std::noboolalpha << "\n";
 
   return 0;
 }
@@ -118,9 +117,8 @@ BootstrapTickSummary run_bootstrap_tick(RuntimeState &state,
   const auto result = dispatcher.run_tick(state);
   render_bootstrap_frame(presenter, state);
 
-  return BootstrapTickSummary{.stage = result.stage,
-                               .input_captured = true,
-                               .frame_presented = true};
+  return BootstrapTickSummary{
+      .stage = result.stage, .input_captured = true, .frame_presented = true};
 }
 
 } // namespace comic2

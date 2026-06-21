@@ -35,9 +35,11 @@ void test_bootstrap_entry_runs_without_crashing() {
   setenv("COMIC2_INPUT_JUMP", "0", 1);
   setenv("COMIC2_INPUT_DOWN", "0", 1);
 
-  const int exit_code = comic2::run_bootstrap_entry(std::filesystem::current_path());
+  const int exit_code =
+      comic2::run_bootstrap_entry(std::filesystem::current_path());
 
-  expect(exit_code == 0, "bootstrap entry should return success for headless bootstrap run");
+  expect(exit_code == 0,
+         "bootstrap entry should return success for headless bootstrap run");
 }
 
 void test_bootstrap_tick_wires_input_dispatch_and_render() {
@@ -53,7 +55,8 @@ void test_bootstrap_tick_wires_input_dispatch_and_render() {
   auto dispatcher = comic2::make_default_game_dispatcher();
   RecordingPresenter presenter;
 
-  const auto summary = comic2::run_bootstrap_tick(state, dispatcher, presenter, 0);
+  const auto summary =
+      comic2::run_bootstrap_tick(state, dispatcher, presenter, 0);
 
   expect(summary.input_captured, "bootstrap tick should capture input flags");
   expect(summary.stage == comic2::DispatchStage::GroundedPhysics,
@@ -63,7 +66,8 @@ void test_bootstrap_tick_wires_input_dispatch_and_render() {
          "bootstrap tick should invoke the presenter once");
   expect(state.input.left_pressed, "left input should be captured");
   expect(state.input.right_pressed, "right input should be captured");
-  expect(!state.input.jump_pressed, "jump input should remain false when env says 0");
+  expect(!state.input.jump_pressed,
+         "jump input should remain false when env says 0");
 }
 
 } // namespace
