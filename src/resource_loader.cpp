@@ -187,13 +187,4 @@ load_initial_bootstrap_resources(RuntimeState &state,
   return summary;
 }
 
-Ega4PlaneImage load_frpak_fullscreen_image(const std::filesystem::path &path) {
-  const auto bytes = load_file_bytes(path);
-  auto image = decode_ega_4plane_rle(bytes, true);
-  // FRPAK fullscreen images are always 320x200 EGA: 40 bytes/row, 200 rows
-  image.width_bytes = 40;
-  image.height_rows = 200;
-  return image;
-}
-
 } // namespace comic2
