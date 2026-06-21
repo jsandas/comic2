@@ -15,7 +15,7 @@
 
 namespace {
 
-void setenv_safe(const char *name, const char *value, int overwrite) {
+void set_test_env(const char *name, const char *value, int overwrite) {
 #ifdef _WIN32
   // Windows doesn't have setenv; use _putenv_s instead
   char buf[1024];
@@ -45,11 +45,11 @@ struct RecordingPresenter : comic2::IFramePresenter {
 };
 
 void test_bootstrap_entry_runs_without_crashing() {
-  setenv_safe("COMIC2_BOOTSTRAP_TICKS", "1", 1);
-  setenv_safe("COMIC2_INPUT_LEFT", "0", 1);
-  setenv_safe("COMIC2_INPUT_RIGHT", "0", 1);
-  setenv_safe("COMIC2_INPUT_JUMP", "0", 1);
-  setenv_safe("COMIC2_INPUT_DOWN", "0", 1);
+  set_test_env("COMIC2_BOOTSTRAP_TICKS", "1", 1);
+  set_test_env("COMIC2_INPUT_LEFT", "0", 1);
+  set_test_env("COMIC2_INPUT_RIGHT", "0", 1);
+  set_test_env("COMIC2_INPUT_JUMP", "0", 1);
+  set_test_env("COMIC2_INPUT_DOWN", "0", 1);
 
   const int exit_code =
       comic2::run_bootstrap_entry(std::filesystem::current_path());
@@ -59,10 +59,10 @@ void test_bootstrap_entry_runs_without_crashing() {
 }
 
 void test_bootstrap_tick_wires_input_dispatch_and_render() {
-  setenv_safe("COMIC2_INPUT_LEFT", "1", 1);
-  setenv_safe("COMIC2_INPUT_RIGHT", "1", 1);
-  setenv_safe("COMIC2_INPUT_JUMP", "0", 1);
-  setenv_safe("COMIC2_INPUT_DOWN", "0", 1);
+  set_test_env("COMIC2_INPUT_LEFT", "1", 1);
+  set_test_env("COMIC2_INPUT_RIGHT", "1", 1);
+  set_test_env("COMIC2_INPUT_JUMP", "0", 1);
+  set_test_env("COMIC2_INPUT_DOWN", "0", 1);
 
   auto state = comic2::make_default_runtime_state();
   state.player.is_airborne = false;
