@@ -2,12 +2,28 @@
 #include <filesystem>
 #include <stdexcept>
 
+#ifdef _WIN32
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
+
 #include "comic2/bootstrap.hpp"
 #include "comic2/default_handlers.hpp"
 #include "comic2/game_state.hpp"
 #include "comic2/renderer.hpp"
 
 namespace {
+
+void setenv_safe(const char *name, const char *value, int overwrite) {
+#ifdef _WIN32
+  // Windows doesn't have setenv; use _putenv_s instead
+  char buf[1024];
+  snprintf(buf, sizeof(buf), "%s=%s", name, value);
+  _putenv_s(buf);
+#else
+  setenv(name, value, overwrite);
+}
 
 void expect(bool condition, const char *message) {
   if (!condition) {
@@ -29,11 +45,11 @@ struct RecordingPresenter : comic2::IFramePresenter {
 };
 
 void test_bootstrap_entry_runs_without_crashing() {
-  setenv("COMIC2_BOOTSTRAP_TICKS", "1", 1);
-  setenv("COMIC2_INPUT_LEFT", "0", 1);
-  setenv("COMIC2_INPUT_RIGHT", "0", 1);
-  setenv("COMIC2_INPUT_JUMP", "0", 1);
-  setenv("COMIC2_INPUT_DOWN", "0", 1);
+  setenv_safe("COMIC2_BOOTSTRAP_TICKS", "1", 1);
+  setenv_safe("COMIC2_INPUT_LEFT", "0", 1);
+  setenv_safe("COMIC2_INPUT_RIGHT", "0", 1);
+  setenv_safe("COMIC2_INPUT_JUMP", "0", 1);
+  setenv_safe("COMIC2_INPUT_DOWN", "0", 1);
 
   const int exit_code =
       comic2::run_bootstrap_entry(std::filesystem::current_path());
@@ -43,10 +59,10 @@ void test_bootstrap_entry_runs_without_crashing() {
 }
 
 void test_bootstrap_tick_wires_input_dispatch_and_render() {
-  setenv("COMIC2_INPUT_LEFT", "1", 1);
-  setenv("COMIC2_INPUT_RIGHT", "1", 1);
-  setenv("COMIC2_INPUT_JUMP", "0", 1);
-  setenv("COMIC2_INPUT_DOWN", "0", 1);
+  setenv_safe("COMIC2_INPUT_LEFT", "1", 1);
+  setenv_safe("COMIC2_INPUT_RIGHT", "1", 1);
+  setenv_safe("COMIC2_INPUT_JUMP", "0", 1);
+  setenv_safe("COMIC2_INPUT_DOWN", "0", 1);
 
   auto state = comic2::make_default_runtime_state();
   state.player.is_airborne = false;
