@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 
@@ -8,6 +9,12 @@
 #include "comic2/renderer.hpp"
 
 namespace comic2 {
+
+struct BootstrapLoadSummary {
+  std::size_t metadata_files_tried = 0;
+  std::size_t sprite_files_tried = 0;
+  bool room_grid_loaded = false;
+};
 
 struct BootstrapTickSummary {
   DispatchStage stage = DispatchStage::InputHandling;
@@ -24,7 +31,6 @@ void render_bootstrap_frame(IFramePresenter &presenter,
                             const RuntimeState &state);
 BootstrapTickSummary run_bootstrap_tick(RuntimeState &state,
                                         GameDispatcher &dispatcher,
-                                        IFramePresenter &presenter,
-                                        std::uint32_t tick_index);
+                                        IFramePresenter &presenter);
 
 } // namespace comic2

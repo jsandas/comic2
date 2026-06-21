@@ -48,6 +48,7 @@ void poll_bootstrap_input(RuntimeState &state) {
 void render_bootstrap_frame(IFramePresenter &presenter,
                             const RuntimeState &state) {
   EgaPlanarSurface frame(320, 200);
+  // Synthetic bootstrap pattern for the startup smoke test.
   frame.clear(static_cast<std::uint8_t>((state.current_level * 17u +
                                          state.current_room * 13u +
                                          state.player.hp * 5u) &
@@ -70,6 +71,12 @@ int run_bootstrap_entry(const std::filesystem::path &root) {
   auto state = make_default_runtime_state();
   const auto bootstrap = load_initial_bootstrap_resources(state, root);
 
+  if (!bootstrap.room_grid_loaded) {
+    std::cerr << "WARNING: no bootstrap room grid loaded from "
+              << root.string() << "\n";
+    return 2;
+  }
+
   std::cout << "Bootstrap resources: metadata_files="
             << bootstrap.metadata_files_tried
             << " sprite_files=" << bootstrap.sprite_files_tried
@@ -86,7 +93,7 @@ int run_bootstrap_entry(const std::filesystem::path &root) {
   const int tick_budget = read_bootstrap_tick_budget();
 
   for (int tick = 0; tick < tick_budget; ++tick) {
-    const auto summary = run_bootstrap_tick(state, dispatcher, presenter, tick);
+    const auto summary = run_bootstrap_tick(state, dispatcher, presenter);
 
     std::cout << "Bootstrap tick " << (tick + 1) << "/" << tick_budget
               << " stage=" << to_string(summary.stage)
@@ -109,9 +116,7 @@ int run_bootstrap_entry(const std::filesystem::path &root) {
 
 BootstrapTickSummary run_bootstrap_tick(RuntimeState &state,
                                         GameDispatcher &dispatcher,
-                                        IFramePresenter &presenter,
-                                        std::uint32_t tick_index) {
-  (void)tick_index;
+                                        IFramePresenter &presenter) {
 
   poll_bootstrap_input(state);
   const auto result = dispatcher.run_tick(state);

@@ -7,7 +7,7 @@ namespace comic2 {
 void handle_level_transition(RuntimeState &state);
 void handle_special_logic1(RuntimeState &state);
 void handle_special_logic2(RuntimeState &state);
-void handle_airborne_movement(RuntimeState &state);
+void handle_airborne_physics(RuntimeState &state);
 void handle_timed_overlay(RuntimeState &state);
 void handle_grounded_physics(RuntimeState &state);
 void handle_player_animation(RuntimeState &state);

@@ -69,7 +69,7 @@ void handle_special_logic2(RuntimeState &state) {
   state.flags.special_logic2_active = false;
 }
 
-void handle_airborne_movement(RuntimeState &state) {
+void handle_airborne_physics(RuntimeState &state) {
   apply_default_airborne_physics(state);
   state.player.is_physics_active = state.player.is_airborne;
 }
@@ -125,7 +125,7 @@ void install_default_stage_hooks(GameDispatcher &dispatcher) {
   dispatcher.set_special_logic2_hook(
       [](RuntimeState &state) { handle_special_logic2(state); });
   dispatcher.set_airborne_physics_hook(
-      [](RuntimeState &state) { handle_airborne_movement(state); });
+      [](RuntimeState &state) { handle_airborne_physics(state); });
   dispatcher.set_timed_overlay_hook(
       [](RuntimeState &state) { handle_timed_overlay(state); });
   dispatcher.set_grounded_physics_hook(

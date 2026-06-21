@@ -49,8 +49,6 @@ struct DispatcherFlags {
   bool operator==(const DispatcherFlags &) const = default;
 };
 
-struct RuntimeState;
-RuntimeState make_default_runtime_state();
 struct RuntimeState {
   std::uint16_t current_level = 0;
   std::uint16_t current_room = 0;
@@ -75,5 +73,7 @@ struct RuntimeState {
 
   bool operator==(const RuntimeState &) const = default;
 };
+
+RuntimeState make_default_runtime_state();
 
 } // namespace comic2

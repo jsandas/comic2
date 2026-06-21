@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -11,13 +12,10 @@
 
 namespace comic2 {
 
-struct BootstrapLoadSummary {
-  std::size_t metadata_files_tried = 0;
-  std::size_t sprite_files_tried = 0;
-  bool room_grid_loaded = false;
-};
+struct BootstrapLoadSummary;
 
-std::vector<std::uint8_t> load_file_bytes(const std::filesystem::path &path);
+std::optional<std::vector<std::uint8_t>>
+load_file_bytes(const std::filesystem::path &path);
 BootstrapLoadSummary
 load_initial_bootstrap_resources(RuntimeState &state,
                                  const std::filesystem::path &root);
