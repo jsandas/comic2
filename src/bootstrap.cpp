@@ -72,8 +72,8 @@ int run_bootstrap_entry(const std::filesystem::path &root) {
   const auto bootstrap = load_initial_bootstrap_resources(state, root);
 
   if (!bootstrap.room_grid_loaded) {
-    std::cerr << "WARNING: no bootstrap room grid loaded from "
-              << root.string() << "\n";
+    std::cerr << "WARNING: no bootstrap room grid loaded from " << root.string()
+              << "\n";
     return 2;
   }
 

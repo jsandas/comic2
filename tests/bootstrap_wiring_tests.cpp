@@ -55,8 +55,7 @@ void test_bootstrap_entry_runs_without_crashing() {
   set_test_env("COMIC2_INPUT_JUMP", "0", 1);
   set_test_env("COMIC2_INPUT_DOWN", "0", 1);
 
-  const int exit_code =
-      comic2::run_bootstrap_entry(empty_root);
+  const int exit_code = comic2::run_bootstrap_entry(empty_root);
 
   check(exit_code == 2,
         "bootstrap entry should report missing bootstrap resources");
@@ -77,19 +76,18 @@ void test_bootstrap_tick_wires_input_dispatch_and_render() {
   auto dispatcher = comic2::make_default_game_dispatcher();
   RecordingPresenter presenter;
 
-  const auto summary =
-        comic2::run_bootstrap_tick(state, dispatcher, presenter);
+  const auto summary = comic2::run_bootstrap_tick(state, dispatcher, presenter);
 
-    check(summary.input_captured, "bootstrap tick should capture input flags");
-    check(summary.stage == comic2::DispatchStage::GroundedPhysics,
-         "bootstrap tick should enter grounded physics stage when grounded");
-    check(summary.frame_presented, "bootstrap tick should render a frame");
-    check(presenter.present_calls == 1,
-         "bootstrap tick should invoke the presenter once");
-    check(state.input.left_pressed, "left input should be captured");
-    check(state.input.right_pressed, "right input should be captured");
-    check(!state.input.jump_pressed,
-         "jump input should remain false when env says 0");
+  check(summary.input_captured, "bootstrap tick should capture input flags");
+  check(summary.stage == comic2::DispatchStage::GroundedPhysics,
+        "bootstrap tick should enter grounded physics stage when grounded");
+  check(summary.frame_presented, "bootstrap tick should render a frame");
+  check(presenter.present_calls == 1,
+        "bootstrap tick should invoke the presenter once");
+  check(state.input.left_pressed, "left input should be captured");
+  check(state.input.right_pressed, "right input should be captured");
+  check(!state.input.jump_pressed,
+        "jump input should remain false when env says 0");
 }
 
 } // namespace
