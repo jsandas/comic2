@@ -17,10 +17,9 @@ namespace {
 
 void set_test_env(const char *name, const char *value, int overwrite) {
 #ifdef _WIN32
-  // Windows doesn't have setenv; use _putenv_s instead
-  char buf[1024];
-  snprintf(buf, sizeof(buf), "%s=%s", name, value);
-  _putenv_s(buf);
+  // Windows doesn't have setenv; use _putenv_s instead.
+  (void)overwrite;
+  _putenv_s(name, value);
 #else
   setenv(name, value, overwrite);
 #endif
