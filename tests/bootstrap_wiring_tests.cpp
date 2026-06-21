@@ -23,6 +23,7 @@ void set_test_env(const char *name, const char *value, int overwrite) {
   _putenv_s(buf);
 #else
   setenv(name, value, overwrite);
+#endif
 }
 
 void expect(bool condition, const char *message) {
