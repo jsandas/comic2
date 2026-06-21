@@ -108,9 +108,10 @@ Ega4PlaneImage decode_ega_4plane_rle(std::span<const std::uint8_t> encoded,
   if (image.row_span_bytes == 0) {
     throw std::runtime_error("ega-rle row span cannot be zero");
   }
-  // row_span_bytes is u16 (max 65535), so it can never exceed kMaxDecodedBytes (65536).
-  // Check for unreasonable values with a u16-safe threshold.
-  constexpr std::uint16_t kMaxRowSpan = 0x7FFF; // 32768 - reasonable upper bound
+  // row_span_bytes is u16 (max 65535), so it can never exceed kMaxDecodedBytes
+  // (65536). Check for unreasonable values with a u16-safe threshold.
+  constexpr std::uint16_t kMaxRowSpan =
+      0x7FFF; // 32768 - reasonable upper bound
   if (image.row_span_bytes > kMaxRowSpan) {
     throw std::runtime_error("ega-rle row span too large");
   }
