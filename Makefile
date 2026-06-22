@@ -5,8 +5,20 @@
 # not a reassemblable binary. This Makefile is retained for the djlink/bindiff
 # tools only, which may be useful for future structural binary comparison.
 
+.DEFAULT_GOAL := build
+
 # Build the djlink/bindiff tools from source
 tools: tools/djlink/djlink tools/djlink/bindiff
+
+SDL2_CFLAGS ?= $(shell pkg-config --cflags sdl2 2>/dev/null)
+SDL2_LIBS ?= $(shell pkg-config --libs sdl2 2>/dev/null)
+
+build:
+	@cmake -S . -B build -DCMAKE_CXX_FLAGS="$(SDL2_CFLAGS)" -DCMAKE_EXE_LINKER_FLAGS="$(SDL2_LIBS)"
+	@cmake --build build --parallel
+
+run: build
+	@./build/comic2_renderer_demo
 
 tools/djlink/djlink tools/djlink/bindiff:
 	$(MAKE) -C tools/djlink djlink bindiff
@@ -14,7 +26,7 @@ tools/djlink/djlink tools/djlink/bindiff:
 clean-tools:
 	$(MAKE) -C tools/djlink clean
 
-.PHONY: tools clean-tools
+.PHONY: tools clean-tools quality cppcheck format-check format build run
 
 quality: cppcheck format-check
 

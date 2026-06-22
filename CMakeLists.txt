@@ -13,34 +13,29 @@ if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
-# Optional SDL2 support for visual presentation
-option(ENABLE_SDL2 "Enable SDL2 presenter for visual output" OFF)
-
-if(ENABLE_SDL2)
-    # Platform-aware SDL2 detection (matches captain-comic-refactor approach)
-    if(WIN32)
-        # Windows: Use CONFIG mode for vcpkg compatibility
-        find_package(SDL2 CONFIG REQUIRED)
-        if(TARGET SDL2::SDL2)
-            set(SDL2_TARGET SDL2::SDL2)
-        elseif(TARGET SDL2::SDL2-static)
-            set(SDL2_TARGET SDL2::SDL2-static)
-        else()
-            message(FATAL_ERROR "SDL2 was requested but neither SDL2::SDL2 nor SDL2::SDL2-static target found")
-        endif()
+# SDL2 support for visual presentation is always enabled in the make-based build.
+if(WIN32)
+    # Windows: Use CONFIG mode for vcpkg compatibility
+    find_package(SDL2 CONFIG REQUIRED)
+    if(TARGET SDL2::SDL2)
+        set(SDL2_TARGET SDL2::SDL2)
+    elseif(TARGET SDL2::SDL2-static)
+        set(SDL2_TARGET SDL2::SDL2-static)
     else()
-        # Unix-like: Use CMake's find_package (works with Homebrew and system installs)
-        find_package(SDL2 REQUIRED)
-        if(TARGET SDL2::SDL2)
-            set(SDL2_TARGET SDL2::SDL2)
-        else()
-            message(FATAL_ERROR "SDL2 was requested but SDL2::SDL2 target not found")
-        endif()
+        message(FATAL_ERROR "SDL2 was requested but neither SDL2::SDL2 nor SDL2::SDL2-static target found")
     endif()
-    
-    message(STATUS "SDL2 found - enabling visual presenter (target: ${SDL2_TARGET})")
-    add_definitions(-DCOMIC2_USE_SDL2)
+else()
+    # Unix-like: Use CMake's find_package (works with Homebrew and system installs)
+    find_package(SDL2 REQUIRED)
+    if(TARGET SDL2::SDL2)
+        set(SDL2_TARGET SDL2::SDL2)
+    else()
+        message(FATAL_ERROR "SDL2 was requested but SDL2::SDL2 target not found")
+    endif()
 endif()
+
+message(STATUS "SDL2 found - enabling visual presenter (target: ${SDL2_TARGET})")
+add_definitions(-DCOMIC2_USE_SDL2)
 
 add_library(comic2_core
     src/bootstrap.cpp
@@ -62,9 +57,7 @@ target_include_directories(comic2_core
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-if(ENABLE_SDL2 AND SDL2_TARGET)
-    target_link_libraries(comic2_core PUBLIC ${SDL2_TARGET})
-endif()
+target_link_libraries(comic2_core PUBLIC ${SDL2_TARGET})
 
 add_executable(comic2_reimpl
     src/main.cpp
@@ -75,16 +68,14 @@ target_link_libraries(comic2_reimpl
         comic2_core
 )
 
-# Optional renderer demo executable (only when SDL2 is enabled)
-if(ENABLE_SDL2 AND SDL2_TARGET)
-    add_executable(comic2_renderer_demo src/renderer_demo.cpp)
-    if(WIN32 AND TARGET SDL2::SDL2main)
-        target_link_libraries(comic2_renderer_demo PRIVATE SDL2::SDL2main comic2_core)
-    elseif(WIN32 AND TARGET SDL2::SDL2main-static)
-        target_link_libraries(comic2_renderer_demo PRIVATE SDL2::SDL2main-static comic2_core)
-    else()
-        target_link_libraries(comic2_renderer_demo PRIVATE comic2_core)
-    endif()
+# Renderer demo executable with SDL2 support
+add_executable(comic2_renderer_demo src/renderer_demo.cpp)
+if(WIN32 AND TARGET SDL2::SDL2main)
+    target_link_libraries(comic2_renderer_demo PRIVATE SDL2::SDL2main comic2_core)
+elseif(WIN32 AND TARGET SDL2::SDL2main-static)
+    target_link_libraries(comic2_renderer_demo PRIVATE SDL2::SDL2main-static comic2_core)
+else()
+    target_link_libraries(comic2_renderer_demo PRIVATE comic2_core)
 endif()
 
 add_executable(comic2_unit_tests

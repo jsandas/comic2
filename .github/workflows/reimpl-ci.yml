@@ -11,54 +11,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test-headless:
-    name: ${{ matrix.os }} - Headless - ${{ matrix.build_type }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-2022]
-        build_type: [Debug, Release]
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Install dependencies (Ubuntu)
-        if: runner.os == 'Linux'
-        run: |
-          sudo DEBIAN_FRONTEND=noninteractive apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y cmake g++
-
-      - name: Install dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install cmake
-
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          # No additional dependencies needed for headless build
-
-      - name: Configure CMake (Linux/macOS)
-        if: runner.os != 'Windows'
-        run: |
-          cmake -B build -S . -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_SDL2=OFF
-
-      - name: Configure CMake (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          cmake -B build -S . -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_SDL2=OFF
-
-      - name: Build
-        run: |
-          cmake --build build --config ${{ matrix.build_type }}
-
-      - name: Run tests
-        working-directory: build
-        run: |
-          ctest --output-on-failure --build-config ${{ matrix.build_type }}
-
   build-and-test-with-sdl2:
     name: ${{ matrix.os }} - SDL2 - ${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
