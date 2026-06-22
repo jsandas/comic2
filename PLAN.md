@@ -394,3 +394,50 @@ Status note: Phase 7.4 baseline is now implemented with room-grid tile lookup, t
   - grounded physics
   - rendering placeholder output
 - [x] 7) Keep `main()` as orchestration only; delegate game logic to subsystem modules and handler hooks
+
+---
+
+## Phase 8: Actual Game Execution and Runtime Bring-Up
+
+### Goal
+Bring the reimplementation from the bootstrap smoke test into a real running game loop that can render frames, consume user input, and start exercising the actual game state.
+
+### Recommended Execution Order
+1. Rendering and frame presentation
+2. User input plumbing
+3. Resource/state bootstrap for the real game
+4. Audio backend
+5. Main loop integration and graceful quit
+
+### Phase 8.1: Rendering and Frame Loop
+- [ ] Replace the bootstrap-only rendering path with a real frame loop driven by the dispatcher.
+- [ ] Ensure the renderer can present a visible 320x200-style EGA frame through the existing presenter abstraction.
+- [ ] Establish a stable tick cadence and frame pacing for the main game loop.
+- [ ] Verify that the app produces a visible frame before gameplay systems are connected.
+
+### Phase 8.2: User Input
+- [ ] Replace the environment-variable input shim with real keyboard input handling.
+- [ ] Map keyboard actions to the existing `InputState` model for left/right, jump, down, and quit.
+- [ ] Keep input isolated so gameplay and physics remain testable through the dispatcher.
+- [ ] Verify that movement and state changes occur in response to real key presses.
+
+### Phase 8.3: Real Resource and Scene Bootstrap
+- [ ] Load the actual room/resource data through the existing resource-loader path instead of synthetic bootstrap state.
+- [ ] Initialize the level, room, and player state so the dispatcher is operating on a real game context.
+- [ ] Provide a temporary fallback path for missing assets so the engine can still start in a controlled way.
+- [ ] Verify that the game enters an initial room or a graceful placeholder screen.
+
+### Phase 8.4: Audio Backend
+- [ ] Add a minimal audio backend behind a small interface so sound can be enabled without blocking gameplay.
+- [ ] Start with a simple placeholder or tone playback path for initial event coverage.
+- [ ] Connect audio triggers to the game loop in a non-blocking way.
+- [ ] Verify that audio initialization succeeds and at least one sound event can be triggered safely.
+
+### Phase 8.5: Main Loop Integration
+- [ ] Combine render, input, dispatch, and optional audio into a single continuous game loop.
+- [ ] Exit cleanly on quit input or window close.
+- [ ] Keep subsystem boundaries intact so rendering, input, and gameplay remain independently testable.
+- [ ] Verify that the app runs continuously and updates state while presenting frames.
+
+### Scope Boundary
+This phase is about getting the real game running, not full parity or complete content fidelity. The first milestone is stability: visible frames, working input, and a continuous loop.

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -22,13 +23,25 @@ struct BootstrapTickSummary {
   bool frame_presented = false;
 };
 
+struct FrameLoopSummary {
+  int frames_rendered = 0;
+  DispatchStage last_stage = DispatchStage::InputHandling;
+};
+
 bool read_bootstrap_bool_env(const char *name);
 int read_bootstrap_tick_budget(int default_ticks = 2);
 int run_bootstrap_entry(const std::filesystem::path &root);
+FrameLoopSummary run_render_loop(RuntimeState &state, GameDispatcher &dispatcher,
+                                 IFramePresenter &presenter,
+                                 int frame_budget = 60,
+                                 std::chrono::milliseconds frame_interval =
+                                     std::chrono::milliseconds(0));
 
 void poll_bootstrap_input(RuntimeState &state);
 void render_bootstrap_frame(IFramePresenter &presenter,
                             const RuntimeState &state);
+BootstrapLoadSummary load_initial_bootstrap_resources(RuntimeState &state,
+                                                      const std::filesystem::path &root);
 BootstrapTickSummary run_bootstrap_tick(RuntimeState &state,
                                         GameDispatcher &dispatcher,
                                         IFramePresenter &presenter);

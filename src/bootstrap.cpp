@@ -1,9 +1,11 @@
 #include "comic2/bootstrap.hpp"
 
+#include <chrono>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
 #include <iostream>
+#include <thread>
 
 #include "comic2/default_handlers.hpp"
 #include "comic2/resource_loader.hpp"
@@ -65,6 +67,31 @@ void render_bootstrap_frame(IFramePresenter &presenter,
   presenter.present(frame);
 }
 
+FrameLoopSummary run_render_loop(RuntimeState &state, GameDispatcher &dispatcher,
+                                 IFramePresenter &presenter,
+                                 int frame_budget,
+                                 std::chrono::milliseconds frame_interval) {
+  FrameLoopSummary summary{};
+  if (frame_budget <= 0) {
+    return summary;
+  }
+
+  for (int frame = 0; frame < frame_budget; ++frame) {
+    poll_bootstrap_input(state);
+    const auto result = dispatcher.run_tick(state);
+    render_bootstrap_frame(presenter, state);
+
+    summary.frames_rendered += 1;
+    summary.last_stage = result.stage;
+
+    if (frame_interval.count() > 0) {
+      std::this_thread::sleep_for(frame_interval);
+    }
+  }
+
+  return summary;
+}
+
 int run_bootstrap_entry(const std::filesystem::path &root) {
   std::cout << "Starting comic2 bootstrap from: " << root.string() << "\n";
 
@@ -73,8 +100,7 @@ int run_bootstrap_entry(const std::filesystem::path &root) {
 
   if (!bootstrap.room_grid_loaded) {
     std::cerr << "WARNING: no bootstrap room grid loaded from " << root.string()
-              << "\n";
-    return 2;
+              << " (room loader remains provisional)\n";
   }
 
   std::cout << "Bootstrap resources: metadata_files="
@@ -91,20 +117,16 @@ int run_bootstrap_entry(const std::filesystem::path &root) {
 
   MemoryFramePresenter presenter;
   const int tick_budget = read_bootstrap_tick_budget();
+  const auto loop_summary = run_render_loop(state, dispatcher, presenter,
+                                             tick_budget,
+                                             std::chrono::milliseconds(0));
 
-  for (int tick = 0; tick < tick_budget; ++tick) {
-    const auto summary = run_bootstrap_tick(state, dispatcher, presenter);
-
-    std::cout << "Bootstrap tick " << (tick + 1) << "/" << tick_budget
-              << " stage=" << to_string(summary.stage)
-              << " input_captured=" << std::boolalpha << summary.input_captured
-              << std::noboolalpha << " frame_presented=" << std::boolalpha
-              << summary.frame_presented << std::noboolalpha
-              << " input_left=" << state.input.left_pressed
-              << " input_right=" << state.input.right_pressed
-              << " input_jump=" << state.input.jump_pressed
-              << " input_down=" << state.input.down_pressed << "\n";
-  }
+  std::cout << "Bootstrap loop frames=" << loop_summary.frames_rendered
+            << " last_stage=" << to_string(loop_summary.last_stage)
+            << " input_left=" << state.input.left_pressed
+            << " input_right=" << state.input.right_pressed
+            << " input_jump=" << state.input.jump_pressed
+            << " input_down=" << state.input.down_pressed << "\n";
 
   std::cout << "Bootstrap ready: level=" << state.current_level
             << " room=" << state.current_room

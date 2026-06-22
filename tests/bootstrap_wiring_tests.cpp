@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <stdexcept>
+#include <string>
 
 #ifdef _WIN32
 #include <process.h>
@@ -57,8 +58,8 @@ void test_bootstrap_entry_runs_without_crashing() {
 
   const int exit_code = comic2::run_bootstrap_entry(empty_root);
 
-  check(exit_code == 2,
-        "bootstrap entry should report missing bootstrap resources");
+  check(exit_code == 0,
+        "bootstrap entry should continue even when bootstrap resources are missing");
 
   std::filesystem::remove_all(empty_root);
 }
@@ -90,9 +91,43 @@ void test_bootstrap_tick_wires_input_dispatch_and_render() {
         "jump input should remain false when env says 0");
 }
 
+void test_render_loop_renders_multiple_frames() {
+  set_test_env("COMIC2_INPUT_LEFT", "0", 1);
+  set_test_env("COMIC2_INPUT_RIGHT", "0", 1);
+  set_test_env("COMIC2_INPUT_JUMP", "0", 1);
+  set_test_env("COMIC2_INPUT_DOWN", "0", 1);
+
+  auto state = comic2::make_default_runtime_state();
+  auto dispatcher = comic2::make_default_game_dispatcher();
+  RecordingPresenter presenter;
+
+  const auto summary = comic2::run_render_loop(state, dispatcher, presenter, 3,
+                                               std::chrono::milliseconds(0));
+
+  check(summary.frames_rendered == 3,
+        "render loop should render the requested frame count");
+  check(presenter.present_calls == 3,
+        "render loop should invoke the presenter for each frame");
+}
+
+void test_bootstrap_loader_reads_reference_room_data() {
+  const std::filesystem::path repo_root = std::filesystem::path(__FILE__).parent_path().parent_path();
+  const std::filesystem::path reference_root = repo_root / "reference" / "original";
+  auto state = comic2::make_default_runtime_state();
+
+  const auto summary = comic2::load_initial_bootstrap_resources(state, reference_root);
+
+  check(summary.room_grid_loaded,
+        "bootstrap loader should load the reference room grid from FRDATA assets");
+  check(state.room_grid.tile_w > 0 && state.room_grid.tile_h > 0,
+        "bootstrap loader should populate the room grid dimensions");
+}
+
 } // namespace
 
 void run_bootstrap_wiring_tests() {
   test_bootstrap_entry_runs_without_crashing();
   test_bootstrap_tick_wires_input_dispatch_and_render();
+  test_render_loop_renders_multiple_frames();
+  test_bootstrap_loader_reads_reference_room_data();
 }
