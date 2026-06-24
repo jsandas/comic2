@@ -62,8 +62,7 @@ jobs:
         run: |
           cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=Debug \
-            -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
-            -DENABLE_SDL2=OFF
+            -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror"
       
       - name: Build with strict warnings
         run: cmake --build build --config Debug
