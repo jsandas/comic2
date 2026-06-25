@@ -13,7 +13,7 @@ if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
-# SDL2 support for visual presentation is always enabled in the make-based build.
+# SDL2 support for visual presentation is always enabled.
 if(WIN32)
     # Windows: Use CONFIG mode for vcpkg compatibility
     find_package(SDL2 CONFIG REQUIRED)

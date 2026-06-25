@@ -2,8 +2,7 @@
 #
 # NOTE: comic2.asm is an IDA Pro MASM-style disassembly and cannot be
 # assembled with NASM. The goal of this project is a C++ reimplementation,
-# not a reassemblable binary. This Makefile is retained for the djlink/bindiff
-# tools only, which may be useful for future structural binary comparison.
+# not a reassemblable binary.
 
 .DEFAULT_GOAL := build
 
@@ -14,7 +13,7 @@ SDL2_CFLAGS ?= $(shell pkg-config --cflags sdl2 2>/dev/null)
 SDL2_LIBS ?= $(shell pkg-config --libs sdl2 2>/dev/null)
 
 build:
-	@cmake -S . -B build -DCMAKE_CXX_FLAGS="$(SDL2_CFLAGS)" -DCMAKE_EXE_LINKER_FLAGS="$(SDL2_LIBS)"
+	@cmake -S . -B build
 	@cmake --build build --parallel
 
 run: build
