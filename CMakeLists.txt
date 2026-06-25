@@ -22,7 +22,7 @@ if(WIN32)
     elseif(TARGET SDL2::SDL2-static)
         set(SDL2_TARGET SDL2::SDL2-static)
     else()
-        message(FATAL_ERROR "SDL2 was requested but neither SDL2::SDL2 nor SDL2::SDL2-static target found")
+        message(FATAL_ERROR "SDL2 is required but neither SDL2::SDL2 nor SDL2::SDL2-static target found")
     endif()
 else()
     # Unix-like: Use CMake's find_package (works with Homebrew and system installs)
@@ -30,12 +30,12 @@ else()
     if(TARGET SDL2::SDL2)
         set(SDL2_TARGET SDL2::SDL2)
     else()
-        message(FATAL_ERROR "SDL2 was requested but SDL2::SDL2 target not found")
+        message(FATAL_ERROR "SDL2 is required but SDL2::SDL2 target not found")
     endif()
 endif()
 
 message(STATUS "SDL2 found - enabling visual presenter (target: ${SDL2_TARGET})")
-add_definitions(-DCOMIC2_USE_SDL2)
+add_compile_definitions(COMIC2_USE_SDL2)
 
 add_library(comic2_core
     src/bootstrap.cpp

@@ -9,9 +9,6 @@
 # Build the djlink/bindiff tools from source
 tools: tools/djlink/djlink tools/djlink/bindiff
 
-SDL2_CFLAGS ?= $(shell pkg-config --cflags sdl2 2>/dev/null)
-SDL2_LIBS ?= $(shell pkg-config --libs sdl2 2>/dev/null)
-
 build:
 	@cmake -S . -B build
 	@cmake --build build --parallel
