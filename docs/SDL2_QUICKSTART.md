@@ -8,9 +8,8 @@ brew install sdl2  # macOS
 # or
 sudo apt-get install libsdl2-dev  # Ubuntu/Debian
 
-# Build with SDL2
-cd reimpl
-cmake -S . -B build -DENABLE_SDL2=ON
+# Build with SDL2 support
+cmake -S . -B build
 cmake --build build
 
 # Run demo (shows window with test pattern)
@@ -31,7 +30,7 @@ cmake --build build
 
 ### With Visual Output (SDL2)
 ```bash
-cmake -S . -B build -DENABLE_SDL2=ON
+cmake -S . -B build
 cmake --build build
 ```
 - ✅ Visual rendering
@@ -90,7 +89,7 @@ sudo apt-get install libsdl2-dev  # Ubuntu
 ```bash
 # Solution: Clean rebuild
 rm -rf build
-cmake -S . -B build -DENABLE_SDL2=ON
+cmake -S . -B build
 cmake --build build
 ```
 
