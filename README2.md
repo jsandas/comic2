@@ -36,7 +36,7 @@ cmake --build build
 ### With SDL2 Visual Output
 ```bash
 # Install SDL2 first (e.g., brew install sdl2)
-cmake -S . -B build -DENABLE_SDL2=ON
+cmake -S . -B build
 cmake --build build
 ```
 
