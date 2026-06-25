@@ -86,16 +86,9 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
   }
 
   const std::size_t absolute_rle_offset =
-      static_cast<std::size_t>(room_entry->rle_data_off) + kEncodedRoomDataBaseOffset;
-  if (absolute_rle_offset >= bytes.size() + kEncodedRoomDataBaseOffset) {
-    return false;
-  }
-  const std::size_t buffer_offset =
-      absolute_rle_offset >= kEncodedRoomDataBaseOffset
-          ? absolute_rle_offset - kEncodedRoomDataBaseOffset
-          : absolute_rle_offset;
-
-  if (buffer_offset >= bytes.size()) {
+      static_cast<std::size_t>(room_entry->rle_data_off) +
+      kEncodedRoomDataBaseOffset;
+  if (absolute_rle_offset >= bytes.size()) {
     return false;
   }
 
@@ -107,7 +100,7 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
 
   SignedRleResult decoded;
   try {
-    decoded = decode_signed_rle(bytes.subspan(buffer_offset));
+    decoded = decode_signed_rle(bytes.subspan(absolute_rle_offset));
   } catch (...) {
     return false;
   }

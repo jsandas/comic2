@@ -15,10 +15,11 @@ int main(int argc, char **argv) {
                                            : std::filesystem::current_path();
 
     auto state = comic2::make_default_runtime_state();
-    const auto bootstrap = comic2::load_initial_bootstrap_resources(state, root);
+    const auto bootstrap =
+        comic2::load_initial_bootstrap_resources(state, root);
     if (!bootstrap.room_grid_loaded) {
-      std::cerr << "WARNING: no bootstrap room grid loaded from " << root.string()
-                << " (using fallback frame path)\n";
+      std::cerr << "WARNING: no bootstrap room grid loaded from "
+                << root.string() << " (using fallback frame path)\n";
     }
 
     auto dispatcher = comic2::make_default_game_dispatcher();

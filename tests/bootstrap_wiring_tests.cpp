@@ -45,8 +45,7 @@ struct RecordingPresenter : comic2::IFramePresenter {
 };
 
 std::uint8_t read_color_index(const comic2::EgaPlanarSurface &frame,
-                              std::size_t x,
-                              std::size_t y) {
+                              std::size_t x, std::size_t y) {
   const std::size_t x_byte = x / 8;
   const std::uint8_t bit = static_cast<std::uint8_t>(7 - (x % 8));
   std::uint8_t index = 0;
@@ -74,8 +73,8 @@ void test_bootstrap_entry_runs_without_crashing() {
 
   const int exit_code = comic2::run_bootstrap_entry(empty_root);
 
-  check(exit_code == 0,
-        "bootstrap entry should continue even when bootstrap resources are missing");
+  check(exit_code == 0, "bootstrap entry should continue even when bootstrap "
+                        "resources are missing");
 
   std::filesystem::remove_all(empty_root);
 }
@@ -122,46 +121,49 @@ void test_render_loop_renders_multiple_frames() {
 
   check(summary.frames_rendered == 3,
         "render loop should render the requested frame count");
-    check(summary.ticks_processed == 3,
-      "render loop should process one dispatcher tick per frame");
+  check(summary.ticks_processed == 3,
+        "render loop should process one dispatcher tick per frame");
   check(presenter.present_calls == 3,
         "render loop should invoke the presenter for each frame");
 }
 
-  void test_render_bootstrap_frame_uses_room_tile_data() {
-    auto state = comic2::make_default_runtime_state();
-    state.player.x = 300;
-    state.player.y = 180;
-    state.room_grid.tile_w = 1;
-    state.room_grid.tile_h = 1;
-    state.room_grid.row_pointers = {0};
-    state.room_grid.tile_data = {0x0A};
+void test_render_bootstrap_frame_uses_room_tile_data() {
+  auto state = comic2::make_default_runtime_state();
+  state.player.x = 300;
+  state.player.y = 180;
+  state.room_grid.tile_w = 1;
+  state.room_grid.tile_h = 1;
+  state.room_grid.row_pointers = {0};
+  state.room_grid.tile_data = {0x0A};
 
-    comic2::MemoryFramePresenter presenter;
-    comic2::render_bootstrap_frame(presenter, state);
+  comic2::MemoryFramePresenter presenter;
+  comic2::render_bootstrap_frame(presenter, state);
 
-    check(presenter.has_frame(), "render should present a frame");
-    const auto &frame_a = presenter.last_frame();
-    const auto color_a = read_color_index(frame_a, 8, 8);
+  check(presenter.has_frame(), "render should present a frame");
+  const auto &frame_a = presenter.last_frame();
+  const auto color_a = read_color_index(frame_a, 8, 8);
 
-    state.room_grid.tile_data = {0x02};
-    comic2::render_bootstrap_frame(presenter, state);
-    const auto &frame_b = presenter.last_frame();
-    const auto color_b = read_color_index(frame_b, 8, 8);
+  state.room_grid.tile_data = {0x02};
+  comic2::render_bootstrap_frame(presenter, state);
+  const auto &frame_b = presenter.last_frame();
+  const auto color_b = read_color_index(frame_b, 8, 8);
 
-    check(color_a != color_b,
-      "rendered tile color should change when room tile data changes");
-  }
+  check(color_a != color_b,
+        "rendered tile color should change when room tile data changes");
+}
 
 void test_bootstrap_loader_reads_reference_room_data() {
-  const std::filesystem::path repo_root = std::filesystem::path(__FILE__).parent_path().parent_path();
-  const std::filesystem::path reference_root = repo_root / "reference" / "original";
+  const std::filesystem::path repo_root =
+      std::filesystem::path(__FILE__).parent_path().parent_path();
+  const std::filesystem::path reference_root =
+      repo_root / "reference" / "original";
   auto state = comic2::make_default_runtime_state();
 
-  const auto summary = comic2::load_initial_bootstrap_resources(state, reference_root);
+  const auto summary =
+      comic2::load_initial_bootstrap_resources(state, reference_root);
 
-  check(summary.room_grid_loaded,
-        "bootstrap loader should load the reference room grid from FRDATA assets");
+  check(summary.room_grid_loaded, "bootstrap loader should load the reference "
+                                  "room grid from FRDATA assets");
   check(state.room_grid.tile_w > 0 && state.room_grid.tile_h > 0,
         "bootstrap loader should populate the room grid dimensions");
 }

@@ -172,10 +172,10 @@ load_initial_bootstrap_resources(RuntimeState &state,
       root / "FRDATA.1",
   };
   const std::array room_candidates = {
-      root / "FR000.0", root / "FR000.1", root / "FR000.2",
-      root / "FR001.0", root / "FR001.1", root / "FR001.2", root / "FR001.3",
-      root / "FR002.0", root / "FR002.1", root / "FR002.2",
-      root / "FR003.0", root / "FR003.1", root / "FR003.2", root / "FR003.3",
+      root / "FR000.0", root / "FR000.1", root / "FR000.2", root / "FR001.0",
+      root / "FR001.1", root / "FR001.2", root / "FR001.3", root / "FR002.0",
+      root / "FR002.1", root / "FR002.2", root / "FR003.0", root / "FR003.1",
+      root / "FR003.2", root / "FR003.3",
   };
   const std::array sprite_candidates = {
       root / "FRPAK.001", root / "FRPAK.002", root / "FRPAK.003",

@@ -34,14 +34,15 @@ void set_pixel(EgaPlanarSurface &surface, std::int32_t x, std::int32_t y,
     if ((color_index >> plane) & 0x1U) {
       value = static_cast<std::uint8_t>(value | mask);
     } else {
-      value = static_cast<std::uint8_t>(value & static_cast<std::uint8_t>(~mask));
+      value =
+          static_cast<std::uint8_t>(value & static_cast<std::uint8_t>(~mask));
     }
     surface.set_plane_byte(plane, x_byte, y_row, value);
   }
 }
 
 std::uint8_t read_room_tile(const RuntimeState &state, std::size_t tile_x,
-                           std::size_t tile_y) {
+                            std::size_t tile_y) {
   if (tile_x >= state.room_grid.tile_w || tile_y >= state.room_grid.tile_h ||
       tile_y >= state.room_grid.row_pointers.size()) {
     return 0;
@@ -55,11 +56,11 @@ std::uint8_t read_room_tile(const RuntimeState &state, std::size_t tile_x,
   return state.room_grid.tile_data[off];
 }
 
-void draw_fallback_background(EgaPlanarSurface &frame, const RuntimeState &state) {
-  frame.clear(static_cast<std::uint8_t>((state.current_level * 5u +
-                                         state.current_room * 3u +
-                                         state.player.hp) &
-                                        0x0F));
+void draw_fallback_background(EgaPlanarSurface &frame,
+                              const RuntimeState &state) {
+  frame.clear(static_cast<std::uint8_t>(
+      (state.current_level * 5u + state.current_room * 3u + state.player.hp) &
+      0x0F));
   for (std::size_t y = 0; y < frame.height_rows(); ++y) {
     const auto x = static_cast<std::int32_t>((y % 20U) * 16U);
     set_pixel(frame, x, static_cast<std::int32_t>(y), 0x0F);
@@ -76,10 +77,12 @@ void draw_room_tilemap(EgaPlanarSurface &frame, const RuntimeState &state) {
   for (std::size_t tile_y = 0;
        tile_y < state.room_grid.tile_h && tile_y < visible_tiles_y; ++tile_y) {
     for (std::size_t tile_x = 0;
-         tile_x < state.room_grid.tile_w && tile_x < visible_tiles_x; ++tile_x) {
+         tile_x < state.room_grid.tile_w && tile_x < visible_tiles_x;
+         ++tile_x) {
       const std::uint8_t tile_id = read_room_tile(state, tile_x, tile_y);
       const std::uint8_t base_color = static_cast<std::uint8_t>(tile_id & 0x0F);
-      const std::uint8_t accent_color = static_cast<std::uint8_t>((base_color + 2U) & 0x0F);
+      const std::uint8_t accent_color =
+          static_cast<std::uint8_t>((base_color + 2U) & 0x0F);
       const auto px0 = static_cast<std::int32_t>(tile_x * kTileSizePixels);
       const auto py0 = static_cast<std::int32_t>(tile_y * kTileSizePixels);
 
@@ -87,7 +90,8 @@ void draw_room_tilemap(EgaPlanarSurface &frame, const RuntimeState &state) {
         for (std::int32_t px = 0; px < kTileSizePixels; ++px) {
           const bool edge = (px == 0 || py == 0 || px == kTileSizePixels - 1 ||
                              py == kTileSizePixels - 1);
-          set_pixel(frame, px0 + px, py0 + py, edge ? accent_color : base_color);
+          set_pixel(frame, px0 + px, py0 + py,
+                    edge ? accent_color : base_color);
         }
       }
     }
@@ -140,7 +144,8 @@ void poll_bootstrap_input(RuntimeState &state) {
 void render_bootstrap_frame(IFramePresenter &presenter,
                             const RuntimeState &state) {
   EgaPlanarSurface frame(320, 200);
-  const bool has_room_grid = state.room_grid.tile_w > 0 && state.room_grid.tile_h > 0 &&
+  const bool has_room_grid = state.room_grid.tile_w > 0 &&
+                             state.room_grid.tile_h > 0 &&
                              !state.room_grid.row_pointers.empty() &&
                              !state.room_grid.tile_data.empty();
 
@@ -155,9 +160,9 @@ void render_bootstrap_frame(IFramePresenter &presenter,
   presenter.present(frame);
 }
 
-FrameLoopSummary run_render_loop(RuntimeState &state, GameDispatcher &dispatcher,
-                                 IFramePresenter &presenter,
-                                 int frame_budget,
+FrameLoopSummary run_render_loop(RuntimeState &state,
+                                 GameDispatcher &dispatcher,
+                                 IFramePresenter &presenter, int frame_budget,
                                  std::chrono::milliseconds frame_interval) {
   FrameLoopSummary summary{};
   if (frame_budget <= 0) {
@@ -219,9 +224,8 @@ int run_bootstrap_entry(const std::filesystem::path &root) {
 
   MemoryFramePresenter presenter;
   const int tick_budget = read_bootstrap_tick_budget();
-  const auto loop_summary = run_render_loop(state, dispatcher, presenter,
-                                             tick_budget,
-                                             std::chrono::milliseconds(0));
+  const auto loop_summary = run_render_loop(
+      state, dispatcher, presenter, tick_budget, std::chrono::milliseconds(0));
 
   std::cout << "Bootstrap loop frames=" << loop_summary.frames_rendered
             << " last_stage=" << to_string(loop_summary.last_stage)
