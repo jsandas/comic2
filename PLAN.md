@@ -351,9 +351,9 @@ Status note: Phase 7.4 baseline is now implemented with room-grid tile lookup, t
 - [x] Add validation helpers that compare plane bytes for known decode/blit fixtures
 - [x] Add optional SDL2 presenter behind `IFramePresenter` while keeping core logic headless-testable
   - Implemented `Sdl2FramePresenter` class with 4-plane EGA to RGBA conversion
-  - Configurable via `-DENABLE_SDL2=ON/OFF` CMake option (default: OFF)
+  - Configurable via CMake (SDL2 is now a mandatory dependency)
   - Created `comic2_renderer_demo` executable for visual testing
-  - All tests pass in both SDL2 and headless modes
+  - All tests pass in CI with SDL2 enabled
   - EGA palette mapping implemented with standard 16-color palette
 
 #### 7.7 Integration Gates and Oracle Verification
