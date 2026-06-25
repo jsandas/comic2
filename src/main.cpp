@@ -18,8 +18,7 @@ int main(int argc, char **argv) {
     const auto bootstrap = comic2::load_initial_bootstrap_resources(state, root);
     if (!bootstrap.room_grid_loaded) {
       std::cerr << "WARNING: no bootstrap room grid loaded from " << root.string()
-                << "\n";
-      return 2;
+                << " (using fallback frame path)\n";
     }
 
     auto dispatcher = comic2::make_default_game_dispatcher();
@@ -36,6 +35,7 @@ int main(int argc, char **argv) {
 
     std::cout << "render loop complete: frames_rendered="
               << loop_summary.frames_rendered
+              << " ticks_processed=" << loop_summary.ticks_processed
               << " last_stage=" << comic2::to_string(loop_summary.last_stage)
               << "\n";
     return 0;

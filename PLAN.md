@@ -410,10 +410,10 @@ Bring the reimplementation from the bootstrap smoke test into a real running gam
 5. Main loop integration and graceful quit
 
 ### Phase 8.1: Rendering and Frame Loop
-- [ ] Replace the bootstrap-only rendering path with a real frame loop driven by the dispatcher.
-- [ ] Ensure the renderer can present a visible 320x200-style EGA frame through the existing presenter abstraction.
-- [ ] Establish a stable tick cadence and frame pacing for the main game loop.
-- [ ] Verify that the app produces a visible frame before gameplay systems are connected.
+- [x] Replace the bootstrap-only rendering path with a real frame loop driven by the dispatcher.
+- [x] Ensure the renderer can present a visible 320x200-style EGA frame through the existing presenter abstraction.
+- [x] Establish a stable tick cadence and frame pacing for the main game loop.
+- [x] Verify that the app produces a visible frame before gameplay systems are connected.
 
 ### Phase 8.2: User Input
 - [ ] Replace the environment-variable input shim with real keyboard input handling.

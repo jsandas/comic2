@@ -25,6 +25,7 @@ struct BootstrapTickSummary {
 
 struct FrameLoopSummary {
   int frames_rendered = 0;
+  int ticks_processed = 0;
   DispatchStage last_stage = DispatchStage::InputHandling;
 };
 

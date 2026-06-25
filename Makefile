@@ -58,5 +58,5 @@ format:
         \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cc" -o -name "*.h" \) \
         -print0 | xargs -0 clang-format -i
 
-run: build
+runapp: build
 	@./build/comic2_reimpl reference/original
