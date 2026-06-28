@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cctype>
 #include <cstdlib>
 #include <filesystem>
@@ -43,12 +44,11 @@ bool require_original_assets() {
   }
 
   std::string normalized(value);
-  for (char &ch : normalized) {
-    ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
-  }
+  std::transform(normalized.begin(), normalized.end(), normalized.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
 
-  return normalized == "1" || normalized == "true" ||
-         normalized == "yes" || normalized == "on";
+  return normalized == "1" || normalized == "true" || normalized == "yes" ||
+         normalized == "on";
 }
 
 std::optional<std::filesystem::path> find_reference_assets_root() {
