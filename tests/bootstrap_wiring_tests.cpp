@@ -18,6 +18,7 @@
 #include "comic2/default_handlers.hpp"
 #include "comic2/game_state.hpp"
 #include "comic2/renderer.hpp"
+#include "comic2/resource_loader.hpp"
 
 namespace {
 
@@ -210,6 +211,17 @@ void test_render_bootstrap_frame_uses_room_tile_data() {
 
   check(color_a != color_b,
         "rendered tile color should change when room tile data changes");
+
+  const auto top_left_edge = read_color_index(frame_b, 0, 0);
+  const auto center_fill = read_color_index(frame_b, 8, 8);
+  const auto bottom_right_edge = read_color_index(frame_b, 15, 15);
+
+  check(top_left_edge == 0x04,
+    "tile border should use the accent color derived from tile data");
+  check(center_fill == 0x02,
+    "tile interior should use the base color derived from tile data");
+  check(bottom_right_edge == 0x04,
+    "tile border should remain accented at the far edge");
 }
 
 void test_bootstrap_loader_reads_reference_room_data() {

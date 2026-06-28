@@ -68,6 +68,46 @@ void draw_fallback_background(EgaPlanarSurface &frame,
   }
 }
 
+std::uint8_t expand_color_bit(bool enabled, std::uint8_t mask) {
+  return enabled ? mask : 0x00;
+}
+
+void draw_room_tile(EgaPlanarSurface &frame, std::int32_t px0, std::int32_t py0,
+                    std::uint8_t base_color, std::uint8_t accent_color) {
+  if (px0 < 0 || py0 < 0 || px0 + kTileSizePixels > frame.width_pixels() ||
+      py0 + kTileSizePixels > frame.height_rows()) {
+    return;
+  }
+
+  const std::size_t x_byte0 = static_cast<std::size_t>(px0 / 8);
+  const std::size_t x_byte1 = x_byte0 + 1;
+  const std::uint8_t accent_top_bottom = 0xFF;
+
+  for (std::size_t plane = 0; plane < EgaPlanarSurface::kPlaneCount; ++plane) {
+    const bool base_plane_on = ((base_color >> plane) & 0x1U) != 0;
+    const bool accent_plane_on = ((accent_color >> plane) & 0x1U) != 0;
+    const std::uint8_t middle_left =
+        static_cast<std::uint8_t>(expand_color_bit(base_plane_on, 0x7F) |
+                                  expand_color_bit(accent_plane_on, 0x80));
+    const std::uint8_t middle_right =
+        static_cast<std::uint8_t>(expand_color_bit(base_plane_on, 0xFE) |
+                                  expand_color_bit(accent_plane_on, 0x01));
+    const std::uint8_t edge_fill =
+        expand_color_bit(accent_plane_on, accent_top_bottom);
+
+    for (std::int32_t py = 0; py < kTileSizePixels; ++py) {
+      const auto y_row = static_cast<std::size_t>(py0 + py);
+      if (py == 0 || py == kTileSizePixels - 1) {
+        frame.set_plane_byte(plane, x_byte0, y_row, edge_fill);
+        frame.set_plane_byte(plane, x_byte1, y_row, edge_fill);
+      } else {
+        frame.set_plane_byte(plane, x_byte0, y_row, middle_left);
+        frame.set_plane_byte(plane, x_byte1, y_row, middle_right);
+      }
+    }
+  }
+}
+
 void draw_room_tilemap(EgaPlanarSurface &frame, const RuntimeState &state) {
   const std::size_t visible_tiles_x =
       static_cast<std::size_t>(frame.width_pixels()) / kTileSizePixels;
@@ -86,14 +126,7 @@ void draw_room_tilemap(EgaPlanarSurface &frame, const RuntimeState &state) {
       const auto px0 = static_cast<std::int32_t>(tile_x * kTileSizePixels);
       const auto py0 = static_cast<std::int32_t>(tile_y * kTileSizePixels);
 
-      for (std::int32_t py = 0; py < kTileSizePixels; ++py) {
-        for (std::int32_t px = 0; px < kTileSizePixels; ++px) {
-          const bool edge = (px == 0 || py == 0 || px == kTileSizePixels - 1 ||
-                             py == kTileSizePixels - 1);
-          set_pixel(frame, px0 + px, py0 + py,
-                    edge ? accent_color : base_color);
-        }
-      }
+      draw_room_tile(frame, px0, py0, base_color, accent_color);
     }
   }
 }
