@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #ifdef _WIN32
 #include <process.h>
@@ -30,6 +31,41 @@ void check(bool condition, const char *message) {
   if (!condition) {
     throw std::runtime_error(message);
   }
+}
+
+std::filesystem::path find_reference_assets_root() {
+  std::vector<std::filesystem::path> seeds;
+
+  const std::filesystem::path file_path(__FILE__);
+  if (file_path.is_absolute()) {
+    seeds.push_back(file_path.parent_path().parent_path());
+  }
+
+  seeds.push_back(std::filesystem::current_path());
+
+  if (const char *github_workspace = std::getenv("GITHUB_WORKSPACE");
+      github_workspace != nullptr && *github_workspace != '\0') {
+    seeds.emplace_back(github_workspace);
+  }
+
+  for (const auto &seed : seeds) {
+    std::filesystem::path cursor = seed;
+    for (;;) {
+      const auto candidate = cursor / "reference" / "original";
+      if (std::filesystem::exists(candidate / "FRDATA.0")) {
+        return candidate;
+      }
+
+      const auto parent = cursor.parent_path();
+      if (parent == cursor || parent.empty()) {
+        break;
+      }
+      cursor = parent;
+    }
+  }
+
+  throw std::runtime_error(
+      "unable to locate reference/original assets containing FRDATA.0");
 }
 
 struct RecordingPresenter : comic2::IFramePresenter {
@@ -153,10 +189,7 @@ void test_render_bootstrap_frame_uses_room_tile_data() {
 }
 
 void test_bootstrap_loader_reads_reference_room_data() {
-  const std::filesystem::path repo_root =
-      std::filesystem::path(__FILE__).parent_path().parent_path();
-  const std::filesystem::path reference_root =
-      repo_root / "reference" / "original";
+  const std::filesystem::path reference_root = find_reference_assets_root();
   auto state = comic2::make_default_runtime_state();
 
   const auto summary =
