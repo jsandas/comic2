@@ -224,7 +224,7 @@ FrameLoopSummary run_render_loop(RuntimeState &state,
       next_tick += frame_interval;
       const auto now = std::chrono::steady_clock::now();
       if (next_tick < now) {
-        next_tick = now;
+        next_tick = now + frame_interval;
       }
     }
   }
