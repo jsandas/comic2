@@ -52,8 +52,14 @@ std::filesystem::path find_reference_assets_root() {
     std::filesystem::path cursor = seed;
     for (;;) {
       const auto candidate = cursor / "reference" / "original";
-      if (std::filesystem::exists(candidate / "FRDATA.0")) {
-        return candidate;
+      if (std::filesystem::exists(candidate) &&
+          std::filesystem::is_directory(candidate)) {
+        for (const auto &entry : std::filesystem::directory_iterator(candidate)) {
+          const auto name = entry.path().filename().string();
+          if (name.rfind("FRDATA.", 0) == 0 && entry.is_regular_file()) {
+            return candidate;
+          }
+        }
       }
 
       const auto parent = cursor.parent_path();
@@ -65,7 +71,7 @@ std::filesystem::path find_reference_assets_root() {
   }
 
   throw std::runtime_error(
-      "unable to locate reference/original assets containing FRDATA.0");
+      "unable to locate reference/original assets containing FRDATA.*");
 }
 
 struct RecordingPresenter : comic2::IFramePresenter {
