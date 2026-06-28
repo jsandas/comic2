@@ -1,7 +1,6 @@
 #pragma once
 
 #include <chrono>
-#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 
@@ -10,12 +9,6 @@
 #include "comic2/renderer.hpp"
 
 namespace comic2 {
-
-struct BootstrapLoadSummary {
-  std::size_t metadata_files_tried = 0;
-  std::size_t sprite_files_tried = 0;
-  bool room_grid_loaded = false;
-};
 
 struct BootstrapTickSummary {
   DispatchStage stage = DispatchStage::InputHandling;
@@ -40,9 +33,6 @@ FrameLoopSummary run_render_loop(
 void poll_bootstrap_input(RuntimeState &state);
 void render_bootstrap_frame(IFramePresenter &presenter,
                             const RuntimeState &state);
-BootstrapLoadSummary
-load_initial_bootstrap_resources(RuntimeState &state,
-                                 const std::filesystem::path &root);
 BootstrapTickSummary run_bootstrap_tick(RuntimeState &state,
                                         GameDispatcher &dispatcher,
                                         IFramePresenter &presenter);
