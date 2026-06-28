@@ -54,7 +54,8 @@ std::filesystem::path find_reference_assets_root() {
       const auto candidate = cursor / "reference" / "original";
       if (std::filesystem::exists(candidate) &&
           std::filesystem::is_directory(candidate)) {
-        for (const auto &entry : std::filesystem::directory_iterator(candidate)) {
+        for (const auto &entry :
+             std::filesystem::directory_iterator(candidate)) {
           const auto name = entry.path().filename().string();
           if (name.rfind("FRDATA.", 0) == 0 && entry.is_regular_file()) {
             return candidate;
