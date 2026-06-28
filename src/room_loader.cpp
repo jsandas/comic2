@@ -60,7 +60,6 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
   constexpr std::size_t kRoomTableOffset = 0x04;
   constexpr std::size_t kRoomEntrySize = 6;
   constexpr std::uint16_t kSentinelEntry = 0xFFFFu;
-  constexpr std::size_t kEncodedRoomDataBaseOffset = 0x0600;
 
   if (bytes.size() < kRoomTableOffset + kRoomEntrySize) {
     return false;
@@ -86,8 +85,7 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
   }
 
   const std::size_t absolute_rle_offset =
-      static_cast<std::size_t>(room_entry->rle_data_off) +
-      kEncodedRoomDataBaseOffset;
+      static_cast<std::size_t>(room_entry->rle_data_off);
   if (absolute_rle_offset >= bytes.size()) {
     return false;
   }
