@@ -14,6 +14,8 @@ jobs:
   build-and-test-with-sdl2:
     name: ${{ matrix.os }} - SDL2 - ${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
+    env:
+      COMIC2_REQUIRE_ORIGINAL_ASSETS: ${{ vars.COMIC2_REQUIRE_ORIGINAL_ASSETS || '0' }}
     strategy:
       fail-fast: false
       matrix:

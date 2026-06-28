@@ -1,5 +1,8 @@
+#include <cctype>
 #include <cstdlib>
 #include <filesystem>
+#include <iostream>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -33,7 +36,22 @@ void check(bool condition, const char *message) {
   }
 }
 
-std::filesystem::path find_reference_assets_root() {
+bool require_original_assets() {
+  const char *value = std::getenv("COMIC2_REQUIRE_ORIGINAL_ASSETS");
+  if (value == nullptr || *value == '\0') {
+    return false;
+  }
+
+  std::string normalized(value);
+  for (char &ch : normalized) {
+    ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+  }
+
+  return normalized == "1" || normalized == "true" ||
+         normalized == "yes" || normalized == "on";
+}
+
+std::optional<std::filesystem::path> find_reference_assets_root() {
   std::vector<std::filesystem::path> seeds;
 
   const std::filesystem::path file_path(__FILE__);
@@ -71,8 +89,7 @@ std::filesystem::path find_reference_assets_root() {
     }
   }
 
-  throw std::runtime_error(
-      "unable to locate reference/original assets containing FRDATA.*");
+  return std::nullopt;
 }
 
 struct RecordingPresenter : comic2::IFramePresenter {
@@ -196,11 +213,23 @@ void test_render_bootstrap_frame_uses_room_tile_data() {
 }
 
 void test_bootstrap_loader_reads_reference_room_data() {
-  const std::filesystem::path reference_root = find_reference_assets_root();
+  const std::optional<std::filesystem::path> reference_root =
+      find_reference_assets_root();
+  if (!reference_root.has_value()) {
+    if (require_original_assets()) {
+      throw std::runtime_error(
+          "COMIC2_REQUIRE_ORIGINAL_ASSETS is set, but reference/original "
+          "assets containing FRDATA.* were not found");
+    }
+    std::cerr << "Skipping FRDATA bootstrap load test: reference/original "
+                 "assets are not present.\n";
+    return;
+  }
+
   auto state = comic2::make_default_runtime_state();
 
   const auto summary =
-      comic2::load_initial_bootstrap_resources(state, reference_root);
+      comic2::load_initial_bootstrap_resources(state, reference_root.value());
 
   check(summary.room_grid_loaded, "bootstrap loader should load the reference "
                                   "room grid from FRDATA assets");
