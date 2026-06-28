@@ -57,3 +57,6 @@ format:
 	@find src include tests \
         \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cc" -o -name "*.h" \) \
         -print0 | xargs -0 clang-format -i
+
+runapp: build
+	@./build/comic2_reimpl reference/original

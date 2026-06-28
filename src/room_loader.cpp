@@ -59,6 +59,7 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
                                             std::uint16_t room) {
   constexpr std::size_t kRoomTableOffset = 0x04;
   constexpr std::size_t kRoomEntrySize = 6;
+  constexpr std::uint16_t kSentinelEntry = 0xFFFFu;
 
   if (bytes.size() < kRoomTableOffset + kRoomEntrySize) {
     return false;
@@ -66,7 +67,7 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
 
   const std::uint16_t file_level = static_cast<std::uint16_t>(
       bytes[2] | (static_cast<std::uint16_t>(bytes[3]) << 8));
-  if (file_level != level) {
+  if (file_level != level && file_level != 0) {
     return false;
   }
 
@@ -83,13 +84,21 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
     return false;
   }
 
-  if (room_entry->rle_data_off >= bytes.size()) {
+  const std::size_t absolute_rle_offset =
+      static_cast<std::size_t>(room_entry->rle_data_off);
+  if (absolute_rle_offset >= bytes.size()) {
+    return false;
+  }
+
+  if (room_entry->tile_w == kSentinelEntry ||
+      room_entry->tile_h == kSentinelEntry ||
+      room_entry->rle_data_off == kSentinelEntry) {
     return false;
   }
 
   SignedRleResult decoded;
   try {
-    decoded = decode_signed_rle(bytes.subspan(room_entry->rle_data_off));
+    decoded = decode_signed_rle(bytes.subspan(absolute_rle_offset));
   } catch (...) {
     return false;
   }
