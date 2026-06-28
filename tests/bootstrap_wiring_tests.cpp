@@ -217,11 +217,11 @@ void test_render_bootstrap_frame_uses_room_tile_data() {
   const auto bottom_right_edge = read_color_index(frame_b, 15, 15);
 
   check(top_left_edge == 0x04,
-    "tile border should use the accent color derived from tile data");
+        "tile border should use the accent color derived from tile data");
   check(center_fill == 0x02,
-    "tile interior should use the base color derived from tile data");
+        "tile interior should use the base color derived from tile data");
   check(bottom_right_edge == 0x04,
-    "tile border should remain accented at the far edge");
+        "tile border should remain accented at the far edge");
 }
 
 void test_bootstrap_loader_reads_reference_room_data() {
