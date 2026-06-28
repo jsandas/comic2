@@ -23,7 +23,8 @@ int main(int argc, char **argv) {
     }
 
     auto dispatcher = comic2::make_default_game_dispatcher();
-    dispatcher.set_trace_enabled(true);
+    dispatcher.set_trace_enabled(
+        comic2::read_bootstrap_bool_env("COMIC2_TRACE_DISPATCH"));
 
 #ifdef COMIC2_USE_SDL2
     comic2::Sdl2FramePresenter presenter(640, 480);
