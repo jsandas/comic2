@@ -20,6 +20,7 @@ struct FrameLoopSummary {
   int frames_rendered = 0;
   int ticks_processed = 0;
   DispatchStage last_stage = DispatchStage::InputHandling;
+  bool quit_requested = false;
 };
 
 bool read_bootstrap_bool_env(const char *name);

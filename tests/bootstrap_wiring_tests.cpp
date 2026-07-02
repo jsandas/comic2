@@ -127,6 +127,7 @@ void test_bootstrap_entry_runs_without_crashing() {
   std::filesystem::create_directories(empty_root);
 
   set_test_env("COMIC2_BOOTSTRAP_TICKS", "1", 1);
+  set_test_env("COMIC2_FORCE_ENV_INPUT", "1", 1);
   set_test_env("COMIC2_INPUT_LEFT", "0", 1);
   set_test_env("COMIC2_INPUT_RIGHT", "0", 1);
   set_test_env("COMIC2_INPUT_JUMP", "0", 1);
@@ -141,6 +142,7 @@ void test_bootstrap_entry_runs_without_crashing() {
 }
 
 void test_bootstrap_tick_wires_input_dispatch_and_render() {
+  set_test_env("COMIC2_FORCE_ENV_INPUT", "1", 1);
   set_test_env("COMIC2_INPUT_LEFT", "1", 1);
   set_test_env("COMIC2_INPUT_RIGHT", "1", 1);
   set_test_env("COMIC2_INPUT_JUMP", "0", 1);
@@ -168,6 +170,7 @@ void test_bootstrap_tick_wires_input_dispatch_and_render() {
 }
 
 void test_render_loop_renders_multiple_frames() {
+  set_test_env("COMIC2_FORCE_ENV_INPUT", "1", 1);
   set_test_env("COMIC2_INPUT_LEFT", "0", 1);
   set_test_env("COMIC2_INPUT_RIGHT", "0", 1);
   set_test_env("COMIC2_INPUT_JUMP", "0", 1);
