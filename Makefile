@@ -22,9 +22,9 @@ tools/djlink/djlink tools/djlink/bindiff:
 clean-tools:
 	$(MAKE) -C tools/djlink clean
 
-.PHONY: tools clean-tools quality cppcheck format-check format build run
+.PHONY: tools clean-tools quality cppcheck format-check format build run check-compiler_warnings
 
-quality: cppcheck format-check
+quality: cppcheck format-check check-compiler_warnings
 
 cppcheck:
 	@docker run --name cppcheck_container --rm -v ${PWD}:/workspace \
@@ -57,6 +57,13 @@ format:
 	@find src include tests \
         \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cc" -o -name "*.h" \) \
         -print0 | xargs -0 clang-format -i
+
+check-compiler_warnings:
+	@cmake -B build -S . \
+		-DCMAKE_BUILD_TYPE=Debug \
+		-DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror"
+
+	@cmake --build build --config Debug
 
 runapp: build
 	@./build/comic2_reimpl reference/original

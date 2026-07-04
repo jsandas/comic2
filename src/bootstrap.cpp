@@ -27,7 +27,8 @@ KeyboardInputHandler *get_keyboard_handler() {
 }
 
 void init_keyboard_handler() {
-  if (!g_keyboard_handler) g_keyboard_handler = get_keyboard_handler();
+  if (!g_keyboard_handler)
+    g_keyboard_handler = get_keyboard_handler();
 }
 
 void set_pixel(EgaPlanarSurface &surface, std::int32_t x, std::int32_t y,
