@@ -111,6 +111,15 @@ byte_262 (scancode_jump)     - Space = 39h
 byte_263 (scancode_fire)     - 'R' = 52h
 ```
 
+### Inventory / Mode Selection
+```text
+word_25870                  - Inventory slot cursor used by the selection UI
+player_cycle_mode_selection - Adjusts the active mode index when I/Q are pressed
+ent_activate_slot_into_runtime - Confirms the selected slot when G is pressed and moves the mapped object into the runtime list
+```
+
+The inventory is not hard-coded as a fixed item order. The UI shows a fixed set of slots, but the contents come from runtime slot data and room/object tables.
+
 ### Interrupt Handlers (Look for INT 21h AX=2500h+vector)
 ```
 INT 08h - Timer (18.2 Hz tick)
