@@ -4,7 +4,13 @@
 #include <stdexcept>
 
 #ifdef COMIC2_USE_SDL2
+#if __has_include(<SDL2/SDL.h>)
+#include <SDL2/SDL.h>
+#elif __has_include(<SDL.h>)
 #include <SDL.h>
+#else
+#error "SDL2 headers not found"
+#endif
 #endif
 
 namespace comic2 {
@@ -26,27 +32,26 @@ struct KeyboardInputHandler::Impl {
 
 #ifdef COMIC2_USE_SDL2
   Impl() {
-    // Try to initialize SDL for event handling, but don't require it
-    // If SDL isn't available (e.g., headless environment), fall back to env
-    // vars
-    int init_flags = SDL_WasInit(SDL_INIT_EVERYTHING);
-    if (init_flags == 0) {
-      // SDL not yet initialized - try to initialize it
-      if (SDL_Init(SDL_INIT_EVENTS) == 0) {
+    // Allow deterministic/headless runs to avoid touching SDL at all.
+    if (read_env_bool("COMIC2_FORCE_ENV_INPUT")) {
+      return;
+    }
+
+    // Ensure the events subsystem is initialized for SDL_PollEvent.
+    if (SDL_WasInit(SDL_INIT_EVENTS) == 0) {
+      if (SDL_InitSubSystem(SDL_INIT_EVENTS) == 0) {
         sdl_available = true;
         sdl_initialized = true;
       }
-      // If SDL_Init fails, just leave sdl_available=false for fallback
-    } else {
-      // SDL is already initialized (e.g., by the presenter)
-      sdl_available = true;
-      // Don't set sdl_initialized since we didn't initialize it
+      return;
     }
+
+    sdl_available = true;
   }
 
   ~Impl() {
     if (sdl_initialized) {
-      SDL_Quit();
+      SDL_QuitSubSystem(SDL_INIT_EVENTS);
     }
   }
 #else
@@ -109,6 +114,13 @@ bool KeyboardInputHandler::poll_events(InputState &input) {
         break;
       }
     }
+
+    const Uint8 *keys = SDL_GetKeyboardState(nullptr);
+    input.left_pressed = keys[SDL_SCANCODE_LEFT] || keys[SDL_SCANCODE_A];
+    input.right_pressed = keys[SDL_SCANCODE_RIGHT] || keys[SDL_SCANCODE_D];
+    input.down_pressed = keys[SDL_SCANCODE_DOWN] || keys[SDL_SCANCODE_S];
+    input.jump_pressed = keys[SDL_SCANCODE_SPACE] || keys[SDL_SCANCODE_UP] ||
+                         keys[SDL_SCANCODE_W];
 
     return !impl_->quit_requested;
   }

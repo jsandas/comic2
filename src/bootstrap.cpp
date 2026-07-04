@@ -21,12 +21,13 @@ constexpr std::int16_t kTileSizePixels = 16;
 // Global keyboard input handler (initialized on first use)
 KeyboardInputHandler *g_keyboard_handler = nullptr;
 
+KeyboardInputHandler *get_keyboard_handler() {
+  static KeyboardInputHandler handler;
+  return &handler;
+}
+
 void init_keyboard_handler() {
-  if (!g_keyboard_handler) {
-#ifdef COMIC2_USE_SDL2
-    g_keyboard_handler = new KeyboardInputHandler();
-#endif
-  }
+  if (!g_keyboard_handler) g_keyboard_handler = get_keyboard_handler();
 }
 
 void set_pixel(EgaPlanarSurface &surface, std::int32_t x, std::int32_t y,
