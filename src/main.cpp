@@ -1,6 +1,7 @@
 #include <chrono>
 #include <exception>
 #include <filesystem>
+#include <limits>
 #include <iostream>
 
 #include "comic2/bootstrap.hpp"
@@ -32,9 +33,10 @@ int main(int argc, char **argv) {
     comic2::MemoryFramePresenter presenter;
 #endif
 
-    // Use a large frame budget with quit detection (run until user quits)
+    // Run until user quits (frame budget is effectively unbounded)
     const auto loop_summary = comic2::run_render_loop(
-        state, dispatcher, presenter, 60000, std::chrono::milliseconds(16));
+        state, dispatcher, presenter, std::numeric_limits<int>::max(),
+        std::chrono::milliseconds(16));
 
     std::cout << "render loop complete: frames_rendered="
               << loop_summary.frames_rendered
