@@ -34,8 +34,7 @@ int main(int argc, char **argv) {
 
     // Use a large frame budget with quit detection (run until user quits)
     const auto loop_summary = comic2::run_render_loop(
-        state, dispatcher, presenter, 60000,
-        std::chrono::milliseconds(16));
+        state, dispatcher, presenter, 60000, std::chrono::milliseconds(16));
 
     std::cout << "render loop complete: frames_rendered="
               << loop_summary.frames_rendered
