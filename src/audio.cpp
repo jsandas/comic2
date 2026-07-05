@@ -46,11 +46,9 @@ struct ToneSpec {
 class Sdl2ToneAudioBackend final : public IAudioBackend {
 public:
   bool initialize() override {
-    if (initialized_) {
-      return available_;
+    if (available_) {
+      return true;
     }
-    initialized_ = true;
-
     if (read_env_bool("COMIC2_DISABLE_AUDIO")) {
       return false;
     }

@@ -90,6 +90,15 @@ void test_run_render_loop_emits_jump_event_on_takeoff() {
   set_test_env("COMIC2_INPUT_RIGHT", "0", 1);
   set_test_env("COMIC2_INPUT_DOWN", "0", 1);
 
+  struct EnvCleanup {
+    ~EnvCleanup() {
+      set_test_env("COMIC2_FORCE_ENV_INPUT", "0", 1);
+      set_test_env("COMIC2_INPUT_JUMP", "0", 1);
+      set_test_env("COMIC2_INPUT_LEFT", "0", 1);
+      set_test_env("COMIC2_INPUT_RIGHT", "0", 1);
+      set_test_env("COMIC2_INPUT_DOWN", "0", 1);
+    }
+  } env_cleanup;
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.player.is_physics_active = false;
   state.player.is_airborne = false;
