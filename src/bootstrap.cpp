@@ -229,7 +229,8 @@ initialize_runtime_scene(RuntimeState &state,
   const auto candidates = build_asset_root_candidates(root);
   for (const auto &candidate : candidates) {
     RuntimeState candidate_state = state;
-    const auto load = load_initial_bootstrap_resources(candidate_state, candidate);
+    const auto load =
+        load_initial_bootstrap_resources(candidate_state, candidate);
     summary.metadata_files_tried += load.metadata_files_tried;
     summary.sprite_files_tried += load.sprite_files_tried;
 

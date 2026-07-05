@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <cctype>
-#include <cstdlib>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -296,8 +296,8 @@ void test_scene_bootstrap_does_not_commit_failed_candidate_state() {
   std::filesystem::remove_all(scratch_root);
   std::filesystem::create_directories(scratch_root);
 
-  const std::vector<std::uint8_t> failing_sprite_bytes = {
-      0xDE, 0xAD, 0xBE, 0xEF};
+  const std::vector<std::uint8_t> failing_sprite_bytes = {0xDE, 0xAD, 0xBE,
+                                                          0xEF};
   {
     std::ofstream output(scratch_root / "FRPAK.001", std::ios::binary);
     output.write(reinterpret_cast<const char *>(failing_sprite_bytes.data()),
@@ -312,10 +312,12 @@ void test_scene_bootstrap_does_not_commit_failed_candidate_state() {
         "succeeds");
   check(summary.using_placeholder,
         "scene bootstrap should explicitly mark placeholder fallback mode");
-  check(state.sprite_resource_bytes.empty(),
-        "failed candidate sprite bytes should not be committed to runtime state");
+  check(
+      state.sprite_resource_bytes.empty(),
+      "failed candidate sprite bytes should not be committed to runtime state");
   check(state.level_metadata_bytes.empty(),
-        "failed candidate metadata bytes should not be committed to runtime state");
+        "failed candidate metadata bytes should not be committed to runtime "
+        "state");
   check(state.room_resource_bytes.empty(),
         "failed candidate room bytes should not be committed to runtime state");
 
