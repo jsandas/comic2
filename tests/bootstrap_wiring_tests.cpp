@@ -1,7 +1,9 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
+#include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <optional>
 #include <stdexcept>
@@ -288,6 +290,38 @@ void test_scene_bootstrap_discovers_reference_assets_from_repo_root() {
         "scene bootstrap should clamp player y into visible bounds");
 }
 
+void test_scene_bootstrap_does_not_commit_failed_candidate_state() {
+  const auto scratch_root =
+      std::filesystem::temp_directory_path() / "comic2_scene_bootstrap_scratch";
+  std::filesystem::remove_all(scratch_root);
+  std::filesystem::create_directories(scratch_root);
+
+  const std::vector<std::uint8_t> failing_sprite_bytes = {
+      0xDE, 0xAD, 0xBE, 0xEF};
+  {
+    std::ofstream output(scratch_root / "FRPAK.001", std::ios::binary);
+    output.write(reinterpret_cast<const char *>(failing_sprite_bytes.data()),
+                 static_cast<std::streamsize>(failing_sprite_bytes.size()));
+  }
+
+  auto state = comic2::make_default_runtime_state();
+  const auto summary = comic2::initialize_runtime_scene(state, scratch_root);
+
+  check(!summary.room_grid_loaded,
+        "scene bootstrap should remain in placeholder mode when no candidate "
+        "succeeds");
+  check(summary.using_placeholder,
+        "scene bootstrap should explicitly mark placeholder fallback mode");
+  check(state.sprite_resource_bytes.empty(),
+        "failed candidate sprite bytes should not be committed to runtime state");
+  check(state.level_metadata_bytes.empty(),
+        "failed candidate metadata bytes should not be committed to runtime state");
+  check(state.room_resource_bytes.empty(),
+        "failed candidate room bytes should not be committed to runtime state");
+
+  std::filesystem::remove_all(scratch_root);
+}
+
 void test_scene_bootstrap_falls_back_with_missing_assets() {
   const auto empty_root =
       std::filesystem::temp_directory_path() / "comic2_scene_bootstrap_empty";
@@ -316,5 +350,6 @@ void run_bootstrap_wiring_tests() {
   test_render_bootstrap_frame_uses_room_tile_data();
   test_bootstrap_loader_reads_reference_room_data();
   test_scene_bootstrap_discovers_reference_assets_from_repo_root();
+  test_scene_bootstrap_does_not_commit_failed_candidate_state();
   test_scene_bootstrap_falls_back_with_missing_assets();
 }

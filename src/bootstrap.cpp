@@ -228,11 +228,15 @@ initialize_runtime_scene(RuntimeState &state,
 
   const auto candidates = build_asset_root_candidates(root);
   for (const auto &candidate : candidates) {
-    const auto load = load_initial_bootstrap_resources(state, candidate);
+    RuntimeState candidate_state = state;
+    const auto load = load_initial_bootstrap_resources(candidate_state, candidate);
     summary.metadata_files_tried += load.metadata_files_tried;
     summary.sprite_files_tried += load.sprite_files_tried;
 
     if (load.room_grid_loaded) {
+      candidate_state.player.is_physics_active = true;
+      clamp_player_to_room_bounds(candidate_state);
+      state = candidate_state;
       summary.room_grid_loaded = true;
       summary.using_placeholder = false;
       summary.assets_root_used = candidate;
@@ -241,9 +245,6 @@ initialize_runtime_scene(RuntimeState &state,
   }
 
   state.player.is_physics_active = true;
-  if (summary.room_grid_loaded) {
-    clamp_player_to_room_bounds(state);
-  }
 
   return summary;
 }
