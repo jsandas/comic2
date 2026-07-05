@@ -173,7 +173,7 @@ input_wait_for_scancode_event (was sub_599)                     → Block until 
 input_wait_for_joystick_or_key_confirm (was sub_424)            → Wait for joystick-button confirm transition or keyboard abort during calibration prompts
 input_capture_unique_key_binding_and_echo (was sub_54B)         → Capture a non-duplicate control key binding and print its name label
 camera_update_y_follow_comic_clamped (was sub_2B8E)             → Keep camera Y origin within follow band around comic_y, clamped to room bounds
-player_cycle_mode_selection (was sub_327D)                      → Cycle player mode index with availability checks and apply related physics toggles
+player_cycle_mode_selection (was sub_327D)                      → Cycle inventory/mode index with availability checks and apply related physics toggles
 player_start_state4_action_animation (was sub_30C6)             → Start facing-aware state-4 action animation when horizontal bounds allow it
 player_start_attack_animation (was sub_3468)                    → Start facing-aware attack animation when horizontal bounds allow it
 player_start_timed_overlay_sprite (was sub_3610)                → Latch an overlay sprite id and start 8-tick gated draw above comic
@@ -301,7 +301,7 @@ Identified Functions:
 - ent_update_transient_slots (was sub_31EB)         → Update/transient-slot animation, draw, and cleanup loop
 - update_projectiles (was sub_5D5F)                 → Update projectile movement/collision and impact effects
 - ent_deactivate_at_coords (was sub_4579)           → Clear active entity flag by exact (x,y) match
-- ent_activate_slot_into_runtime (was sub_46E6)     → Move mapped object slot into active runtime list near player interaction
+- ent_activate_slot_into_runtime (was sub_46E6)     → Confirm selected inventory/runtime slot, move mapped object into active runtime list, and consume the source slot
 
 Still to promote with higher confidence:
 - handle_enemies            → Confirm split between mapped-object behavior tick and active-runtime interaction tick

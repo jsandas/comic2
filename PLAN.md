@@ -416,10 +416,19 @@ Bring the reimplementation from the bootstrap smoke test into a real running gam
 - [x] Verify that the app produces a visible frame before gameplay systems are connected.
 
 ### Phase 8.2: User Input
-- [ ] Replace the environment-variable input shim with real keyboard input handling.
-- [ ] Map keyboard actions to the existing `InputState` model for left/right, jump, down, and quit.
-- [ ] Keep input isolated so gameplay and physics remain testable through the dispatcher.
-- [ ] Verify that movement and state changes occur in response to real key presses.
+- [x] Replace the environment-variable input shim with real keyboard input handling.
+- [x] Map keyboard actions to the existing `InputState` model for left/right, jump, down, and quit.
+- [x] Keep input isolated so gameplay and physics remain testable through the dispatcher.
+- [x] Verify that movement and state changes occur in response to real key presses.
+
+**Implementation details:**
+- Created `KeyboardInputHandler` class in `include/comic2/input_handler.hpp` and `src/input_handler.cpp`
+- Integrates with SDL2 when available for real keyboard input (Arrow keys, WASD keys, Space for jump, ESC to quit)
+- Falls back to environment variables for headless/testing environments
+- Tests can force environment variable mode via `COMIC2_FORCE_ENV_INPUT=1` for deterministic testing
+- Window close events are properly handled via SDL_QUIT event
+- Main loop now runs with large frame budget and stops on quit request (`quit_requested` flag in `FrameLoopSummary`)
+- All existing unit tests pass with updated bootstrap environment variable handling
 
 ### Phase 8.3: Real Resource and Scene Bootstrap
 - [ ] Load the actual room/resource data through the existing resource-loader path instead of synthetic bootstrap state.

@@ -138,7 +138,6 @@ typedef struct {
   uint16_t world_x;
   uint16_t world_y;
 } MappedObject12;
-
 typedef struct {
   int16_t x;
   int16_t y;
@@ -165,6 +164,23 @@ typedef struct {
   uint16_t mapped_object_ptr;
 } RuntimeEntitySlot32;
 ```
+
+### Inventory / Mode Selection
+
+The game does not appear to use a separate hard-coded inventory table with fixed item positions. Instead, the inventory UI behaves like a runtime slot selector:
+
+- `word_25870` is the current slot cursor.
+- `byte_255` (`I`) decrements the cursor through available slots.
+- `byte_256` (`Q`) increments the cursor through available slots.
+- `byte_257` (`G`) confirms the highlighted slot and enters `ent_activate_slot_into_runtime`.
+
+Confirmed flow:
+
+1. `player_cycle_mode_selection` updates `byte_25876` and refreshes the HUD selection icon.
+2. `ent_activate_slot_into_runtime` draws the selected slot, waits for confirm, then copies the selected runtime slot into the active entity list.
+3. The selected source entry in `unk_25219` is marked `0FFFFh`, so the slot is consumed dynamically rather than staying fixed in place.
+
+This means the inventory UI has fixed screen positions, but the contents are runtime-populated and can move or disappear based on game state.
 
 ### Graphics System
 
