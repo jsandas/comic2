@@ -5,8 +5,8 @@
 #include <cstdint>
 #include <filesystem>
 
-#include "comic2/dispatcher.hpp"
 #include "comic2/audio.hpp"
+#include "comic2/dispatcher.hpp"
 #include "comic2/game_state.hpp"
 #include "comic2/renderer.hpp"
 
@@ -35,14 +35,15 @@ struct SceneBootstrapSummary {
 
 bool read_bootstrap_bool_env(const char *name);
 int read_bootstrap_tick_budget(int default_ticks = 2);
-SceneBootstrapSummary initialize_runtime_scene(RuntimeState &state,
-                                              const std::filesystem::path &root);
+SceneBootstrapSummary
+initialize_runtime_scene(RuntimeState &state,
+                         const std::filesystem::path &root);
 int run_bootstrap_entry(const std::filesystem::path &root);
 FrameLoopSummary run_render_loop(
     RuntimeState &state, GameDispatcher &dispatcher, IFramePresenter &presenter,
     int frame_budget = 60,
-  std::chrono::milliseconds frame_interval = std::chrono::milliseconds(0),
-  IAudioBackend *audio_backend = nullptr);
+    std::chrono::milliseconds frame_interval = std::chrono::milliseconds(0),
+    IAudioBackend *audio_backend = nullptr);
 
 void poll_bootstrap_input(RuntimeState &state);
 void render_bootstrap_frame(IFramePresenter &presenter,

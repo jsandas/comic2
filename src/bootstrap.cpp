@@ -1,5 +1,6 @@
 #include "comic2/bootstrap.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <exception>
@@ -75,15 +76,12 @@ build_asset_root_candidates(const std::filesystem::path &root) {
     const auto normalized = std::filesystem::weakly_canonical(candidate, ec);
     const auto key = ec ? candidate.lexically_normal() : normalized;
 
-    bool seen = false;
-    for (const auto &existing : deduped) {
-      if (existing == key) {
-        seen = true;
-        break;
-      }
-    }
+    const bool already_present = std::any_of(
+        deduped.begin(), deduped.end(), [&](const auto &existing) {
+          return existing == key;
+        });
 
-    if (!seen) {
+    if (!already_present) {
       deduped.push_back(key);
     }
   }
@@ -224,8 +222,9 @@ void draw_player_marker(EgaPlanarSurface &frame, const RuntimeState &state) {
 
 } // namespace
 
-SceneBootstrapSummary initialize_runtime_scene(RuntimeState &state,
-                                              const std::filesystem::path &root) {
+SceneBootstrapSummary
+initialize_runtime_scene(RuntimeState &state,
+                         const std::filesystem::path &root) {
   SceneBootstrapSummary summary{};
 
   const auto candidates = build_asset_root_candidates(root);
@@ -390,11 +389,11 @@ int run_bootstrap_entry(const std::filesystem::path &root) {
             << bootstrap.metadata_files_tried
             << " sprite_files=" << bootstrap.sprite_files_tried
             << " room_grid_loaded=" << std::boolalpha
-            << bootstrap.room_grid_loaded << " using_placeholder="
-            << bootstrap.using_placeholder << std::noboolalpha << "\n";
+            << bootstrap.room_grid_loaded
+            << " using_placeholder=" << bootstrap.using_placeholder
+            << std::noboolalpha << "\n";
   if (!bootstrap.assets_root_used.empty()) {
-    std::cout << "Assets root: " << bootstrap.assets_root_used.string()
-              << "\n";
+    std::cout << "Assets root: " << bootstrap.assets_root_used.string() << "\n";
   }
   std::cout << "Loaded metadata bytes=" << state.level_metadata_bytes.size()
             << " room_bytes=" << state.room_resource_bytes.size()

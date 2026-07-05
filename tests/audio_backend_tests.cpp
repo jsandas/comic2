@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <stdexcept>
@@ -104,16 +105,14 @@ void test_run_render_loop_emits_jump_event_on_takeoff() {
   expect(summary.frames_rendered == 1,
          "render loop should process one frame for jump trigger test");
 
-  bool found_jump = false;
-  for (const auto event : audio.events) {
-    if (event == comic2::AudioEvent::Jump) {
-      found_jump = true;
-      break;
-    }
-  }
+  const bool found_jump = std::any_of(
+      audio.events.begin(), audio.events.end(), [](const auto event) {
+        return event == comic2::AudioEvent::Jump;
+      });
 
-  expect(found_jump,
-         "audio backend should receive jump event when player becomes airborne");
+  expect(
+      found_jump,
+      "audio backend should receive jump event when player becomes airborne");
 }
 
 void test_null_audio_backend_accepts_events() {

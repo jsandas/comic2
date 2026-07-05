@@ -35,12 +35,12 @@ int main(int argc, char **argv) {
 #else
     comic2::MemoryFramePresenter presenter;
 #endif
-  auto audio_backend = comic2::make_default_audio_backend();
+    auto audio_backend = comic2::make_default_audio_backend();
 
     // Run until user quits (frame budget is effectively unbounded)
     const auto loop_summary = comic2::run_render_loop(
         state, dispatcher, presenter, std::numeric_limits<int>::max(),
-    std::chrono::milliseconds(16), audio_backend.get());
+        std::chrono::milliseconds(16), audio_backend.get());
 
     std::cout << "render loop complete: frames_rendered="
               << loop_summary.frames_rendered

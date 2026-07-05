@@ -30,7 +30,7 @@ struct ToneSpec {
   int duration_ms;
 };
 
-ToneSpec tone_for_event(AudioEvent event) {
+[[maybe_unused]] ToneSpec tone_for_event(AudioEvent event) {
   switch (event) {
   case AudioEvent::StartupChime:
     return ToneSpec{.frequency_hz = 523, .duration_ms = 80};
@@ -86,7 +86,8 @@ public:
     }
 
     const ToneSpec spec = tone_for_event(event);
-    const int sample_rate = obtained_spec_.freq > 0 ? obtained_spec_.freq : 22050;
+    const int sample_rate =
+        obtained_spec_.freq > 0 ? obtained_spec_.freq : 22050;
     const int sample_count = (sample_rate * spec.duration_ms) / 1000;
     if (sample_count <= 0) {
       return;
@@ -97,7 +98,8 @@ public:
     constexpr double kAmplitude = 12000.0;
 
     for (int i = 0; i < sample_count; ++i) {
-      const double t = static_cast<double>(i) / static_cast<double>(sample_rate);
+      const double t =
+          static_cast<double>(i) / static_cast<double>(sample_rate);
       const double phase = kTwoPi * static_cast<double>(spec.frequency_hz) * t;
       pcm[static_cast<std::size_t>(i)] =
           static_cast<std::int16_t>(std::sin(phase) * kAmplitude);
@@ -164,7 +166,9 @@ void NullAudioBackend::shutdown() {}
 
 bool NullAudioBackend::is_available() const { return false; }
 
-std::size_t NullAudioBackend::events_enqueued() const { return events_enqueued_; }
+std::size_t NullAudioBackend::events_enqueued() const {
+  return events_enqueued_;
+}
 
 std::unique_ptr<IAudioBackend> make_default_audio_backend() {
 #ifdef COMIC2_USE_SDL2
