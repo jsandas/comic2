@@ -106,9 +106,8 @@ void test_run_render_loop_emits_jump_event_on_takeoff() {
          "render loop should process one frame for jump trigger test");
 
   const bool found_jump = std::any_of(
-      audio.events.begin(), audio.events.end(), [](const auto event) {
-        return event == comic2::AudioEvent::Jump;
-      });
+      audio.events.begin(), audio.events.end(),
+      [](const auto event) { return event == comic2::AudioEvent::Jump; });
 
   expect(
       found_jump,

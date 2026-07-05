@@ -76,10 +76,9 @@ build_asset_root_candidates(const std::filesystem::path &root) {
     const auto normalized = std::filesystem::weakly_canonical(candidate, ec);
     const auto key = ec ? candidate.lexically_normal() : normalized;
 
-    const bool already_present = std::any_of(
-        deduped.begin(), deduped.end(), [&](const auto &existing) {
-          return existing == key;
-        });
+    const bool already_present =
+        std::any_of(deduped.begin(), deduped.end(),
+                    [&](const auto &existing) { return existing == key; });
 
     if (!already_present) {
       deduped.push_back(key);
