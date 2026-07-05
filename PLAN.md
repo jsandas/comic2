@@ -431,16 +431,28 @@ Bring the reimplementation from the bootstrap smoke test into a real running gam
 - All existing unit tests pass with updated bootstrap environment variable handling
 
 ### Phase 8.3: Real Resource and Scene Bootstrap
-- [ ] Load the actual room/resource data through the existing resource-loader path instead of synthetic bootstrap state.
-- [ ] Initialize the level, room, and player state so the dispatcher is operating on a real game context.
-- [ ] Provide a temporary fallback path for missing assets so the engine can still start in a controlled way.
-- [ ] Verify that the game enters an initial room or a graceful placeholder screen.
+- [x] Load the actual room/resource data through the existing resource-loader path instead of synthetic bootstrap state.
+- [x] Initialize the level, room, and player state so the dispatcher is operating on a real game context.
+- [x] Provide a temporary fallback path for missing assets so the engine can still start in a controlled way.
+- [x] Verify that the game enters an initial room or a graceful placeholder screen.
+
+**Implementation details:**
+- Added `initialize_runtime_scene` in `bootstrap` to attempt real asset-backed bootstrap across candidate roots (`<root>`, `<root>/reference/original`, `<root>/original`) before entering the dispatch loop.
+- Startup now records whether scene bootstrap succeeded with real room data or fell back to placeholder mode, and reports the selected asset root when available.
+- Added bounds clamping for bootstrap player coordinates when real room geometry is loaded so first-frame state is valid for dispatcher/render use.
+- Added bootstrap wiring tests to validate both discovered-real-assets startup and controlled fallback startup with missing assets.
 
 ### Phase 8.4: Audio Backend
-- [ ] Add a minimal audio backend behind a small interface so sound can be enabled without blocking gameplay.
-- [ ] Start with a simple placeholder or tone playback path for initial event coverage.
-- [ ] Connect audio triggers to the game loop in a non-blocking way.
-- [ ] Verify that audio initialization succeeds and at least one sound event can be triggered safely.
+- [x] Add a minimal audio backend behind a small interface so sound can be enabled without blocking gameplay.
+- [x] Start with a simple placeholder or tone playback path for initial event coverage.
+- [x] Connect audio triggers to the game loop in a non-blocking way.
+- [x] Verify that audio initialization succeeds and at least one sound event can be triggered safely.
+
+**Implementation details:**
+- Added `IAudioBackend` interface with `NullAudioBackend` and default backend factory in `audio` module (`include/comic2/audio.hpp`, `src/audio.cpp`).
+- Added SDL2-backed non-blocking tone playback backend using queued PCM audio for startup/jump/hazard events; supports `COMIC2_DISABLE_AUDIO=1` fallback to null backend.
+- Integrated optional audio into `run_render_loop` lifecycle (initialize, enqueue startup event, per-frame update, shutdown) and wired default backend into `main` runtime startup.
+- Added tests for loop/audio lifecycle, jump event trigger, and null backend safety (`tests/audio_backend_tests.cpp`).
 
 ### Phase 8.5: Main Loop Integration
 - [ ] Combine render, input, dispatch, and optional audio into a single continuous game loop.

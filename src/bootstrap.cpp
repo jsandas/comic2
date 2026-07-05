@@ -5,7 +5,9 @@
 #include <exception>
 #include <filesystem>
 #include <iostream>
+#include <optional>
 #include <thread>
+#include <vector>
 
 #include "comic2/default_handlers.hpp"
 #include "comic2/input_handler.hpp"
@@ -24,6 +26,69 @@ KeyboardInputHandler *g_keyboard_handler = nullptr;
 KeyboardInputHandler *get_keyboard_handler() {
   static KeyboardInputHandler handler;
   return &handler;
+}
+
+bool has_room_grid_data(const RuntimeState &state) {
+  return state.room_grid.tile_w > 0 && state.room_grid.tile_h > 0 &&
+         !state.room_grid.row_pointers.empty() &&
+         !state.room_grid.tile_data.empty();
+}
+
+void clamp_player_to_room_bounds(RuntimeState &state) {
+  if (!has_room_grid_data(state)) {
+    return;
+  }
+
+  const std::int32_t room_pixel_w =
+      static_cast<std::int32_t>(state.room_grid.tile_w) * kTileSizePixels;
+  const std::int32_t room_pixel_h =
+      static_cast<std::int32_t>(state.room_grid.tile_h) * kTileSizePixels;
+
+  const std::int32_t max_x =
+      std::min<std::int32_t>(319, std::max<std::int32_t>(0, room_pixel_w - 8));
+  const std::int32_t max_y = std::min<std::int32_t>(
+      199, std::max<std::int32_t>(0, room_pixel_h - kTileSizePixels));
+
+  if (state.player.x < 0) {
+    state.player.x = 0;
+  } else if (state.player.x > max_x) {
+    state.player.x = static_cast<std::int16_t>(max_x);
+  }
+
+  if (state.player.y < 0) {
+    state.player.y = 0;
+  } else if (state.player.y > max_y) {
+    state.player.y = static_cast<std::int16_t>(max_y);
+  }
+}
+
+std::vector<std::filesystem::path>
+build_asset_root_candidates(const std::filesystem::path &root) {
+  std::vector<std::filesystem::path> candidates;
+  candidates.push_back(root);
+  candidates.push_back(root / "reference" / "original");
+  candidates.push_back(root / "original");
+
+  std::vector<std::filesystem::path> deduped;
+  for (const auto &candidate : candidates) {
+    std::error_code ec;
+    const auto normalized = std::filesystem::weakly_canonical(candidate, ec);
+    const auto key = ec ? candidate.lexically_normal() : normalized;
+
+    bool seen = false;
+    for (const auto &existing : deduped) {
+      if (existing == key) {
+        seen = true;
+        break;
+      }
+    }
+
+    if (!seen) {
+      deduped.push_back(key);
+    }
+  }
+
+  return deduped;
 }
 
 void init_keyboard_handler() {
@@ -159,6 +224,32 @@ void draw_player_marker(EgaPlanarSurface &frame, const RuntimeState &state) {
 
 } // namespace
 
+SceneBootstrapSummary initialize_runtime_scene(RuntimeState &state,
+                                              const std::filesystem::path &root) {
+  SceneBootstrapSummary summary{};
+
+  const auto candidates = build_asset_root_candidates(root);
+  for (const auto &candidate : candidates) {
+    const auto load = load_initial_bootstrap_resources(state, candidate);
+    summary.metadata_files_tried += load.metadata_files_tried;
+    summary.sprite_files_tried += load.sprite_files_tried;
+
+    if (load.room_grid_loaded) {
+      summary.room_grid_loaded = true;
+      summary.using_placeholder = false;
+      summary.assets_root_used = candidate;
+      break;
+    }
+  }
+
+  state.player.is_physics_active = true;
+  if (summary.room_grid_loaded) {
+    clamp_player_to_room_bounds(state);
+  }
+
+  return summary;
+}
+
 bool read_bootstrap_bool_env(const char *name) {
   const char *value = std::getenv(name);
   return value != nullptr && (*value == '1' || *value == 't' || *value == 'T' ||
@@ -199,10 +290,7 @@ void poll_bootstrap_input(RuntimeState &state) {
 void render_bootstrap_frame(IFramePresenter &presenter,
                             const RuntimeState &state) {
   EgaPlanarSurface frame(320, 200);
-  const bool has_room_grid = state.room_grid.tile_w > 0 &&
-                             state.room_grid.tile_h > 0 &&
-                             !state.room_grid.row_pointers.empty() &&
-                             !state.room_grid.tile_data.empty();
+  const bool has_room_grid = has_room_grid_data(state);
 
   if (has_room_grid) {
     draw_room_tilemap(frame, state);
@@ -218,13 +306,22 @@ void render_bootstrap_frame(IFramePresenter &presenter,
 FrameLoopSummary run_render_loop(RuntimeState &state,
                                  GameDispatcher &dispatcher,
                                  IFramePresenter &presenter, int frame_budget,
-                                 std::chrono::milliseconds frame_interval) {
+                                 std::chrono::milliseconds frame_interval,
+                                 IAudioBackend *audio_backend) {
   FrameLoopSummary summary{};
   if (frame_budget <= 0) {
     return summary;
   }
 
+  const bool audio_enabled = (audio_backend != nullptr);
+  if (audio_enabled) {
+    audio_backend->initialize();
+    audio_backend->enqueue_event(AudioEvent::StartupChime);
+  }
+
   auto next_tick = std::chrono::steady_clock::now();
+  bool was_airborne = state.player.is_airborne;
+  std::uint8_t previous_hp = state.player.hp;
 
   for (int frame = 0; frame < frame_budget; ++frame) {
     if (frame_interval.count() > 0) {
@@ -243,11 +340,24 @@ FrameLoopSummary run_render_loop(RuntimeState &state,
     }
 
     const auto result = dispatcher.run_tick(state);
+
+    if (audio_enabled) {
+      if (!was_airborne && state.player.is_airborne) {
+        audio_backend->enqueue_event(AudioEvent::Jump);
+      }
+      if (previous_hp > 0 && state.player.hp == 0) {
+        audio_backend->enqueue_event(AudioEvent::Hazard);
+      }
+      audio_backend->update();
+    }
+
     render_bootstrap_frame(presenter, state);
 
     summary.frames_rendered += 1;
     summary.ticks_processed += 1;
     summary.last_stage = result.stage;
+    was_airborne = state.player.is_airborne;
+    previous_hp = state.player.hp;
 
     if (frame_interval.count() > 0) {
       next_tick += frame_interval;
@@ -258,6 +368,10 @@ FrameLoopSummary run_render_loop(RuntimeState &state,
     }
   }
 
+  if (audio_enabled) {
+    audio_backend->shutdown();
+  }
+
   return summary;
 }
 
@@ -265,7 +379,7 @@ int run_bootstrap_entry(const std::filesystem::path &root) {
   std::cout << "Starting comic2 bootstrap from: " << root.string() << "\n";
 
   auto state = make_default_runtime_state();
-  const auto bootstrap = load_initial_bootstrap_resources(state, root);
+  const auto bootstrap = initialize_runtime_scene(state, root);
 
   if (!bootstrap.room_grid_loaded) {
     std::cerr << "WARNING: no bootstrap room grid loaded from " << root.string()
@@ -276,7 +390,12 @@ int run_bootstrap_entry(const std::filesystem::path &root) {
             << bootstrap.metadata_files_tried
             << " sprite_files=" << bootstrap.sprite_files_tried
             << " room_grid_loaded=" << std::boolalpha
-            << bootstrap.room_grid_loaded << std::noboolalpha << "\n";
+            << bootstrap.room_grid_loaded << " using_placeholder="
+            << bootstrap.using_placeholder << std::noboolalpha << "\n";
+  if (!bootstrap.assets_root_used.empty()) {
+    std::cout << "Assets root: " << bootstrap.assets_root_used.string()
+              << "\n";
+  }
   std::cout << "Loaded metadata bytes=" << state.level_metadata_bytes.size()
             << " room_bytes=" << state.room_resource_bytes.size()
             << " sprite_bytes=" << state.sprite_resource_bytes.size() << "\n";

@@ -252,6 +252,61 @@ void test_bootstrap_loader_reads_reference_room_data() {
         "bootstrap loader should populate the room grid dimensions");
 }
 
+  void test_scene_bootstrap_discovers_reference_assets_from_repo_root() {
+    const std::optional<std::filesystem::path> reference_root =
+    find_reference_assets_root();
+    if (!reference_root.has_value()) {
+      if (require_original_assets()) {
+    throw std::runtime_error(
+        "COMIC2_REQUIRE_ORIGINAL_ASSETS is set, but reference/original "
+        "assets containing FRDATA.* were not found");
+      }
+      std::cerr << "Skipping scene bootstrap discovery test: reference/original "
+           "assets are not present.\n";
+      return;
+    }
+
+    const std::filesystem::path repo_root =
+    reference_root->parent_path().parent_path();
+    auto state = comic2::make_default_runtime_state();
+    state.player.x = 10000;
+    state.player.y = 10000;
+
+    const auto summary = comic2::initialize_runtime_scene(state, repo_root);
+
+    check(summary.room_grid_loaded,
+      "scene bootstrap should load room data from discovered asset roots");
+    check(!summary.using_placeholder,
+      "scene bootstrap should not use placeholder mode when assets exist");
+    check(!summary.assets_root_used.empty(),
+      "scene bootstrap should report the selected assets root");
+    check(state.room_grid.tile_w > 0 && state.room_grid.tile_h > 0,
+      "scene bootstrap should populate room grid dimensions");
+    check(state.player.x >= 0 && state.player.x <= 319,
+      "scene bootstrap should clamp player x into visible bounds");
+    check(state.player.y >= 0 && state.player.y <= 199,
+      "scene bootstrap should clamp player y into visible bounds");
+  }
+
+  void test_scene_bootstrap_falls_back_with_missing_assets() {
+    const auto empty_root =
+    std::filesystem::temp_directory_path() / "comic2_scene_bootstrap_empty";
+    std::filesystem::remove_all(empty_root);
+    std::filesystem::create_directories(empty_root);
+
+    auto state = comic2::make_default_runtime_state();
+    const auto summary = comic2::initialize_runtime_scene(state, empty_root);
+
+    check(!summary.room_grid_loaded,
+      "scene bootstrap should not report room load success without assets");
+    check(summary.using_placeholder,
+      "scene bootstrap should explicitly mark placeholder fallback mode");
+    check(state.player.is_physics_active,
+      "scene bootstrap fallback should keep physics stage active");
+
+    std::filesystem::remove_all(empty_root);
+  }
+
 } // namespace
 
 void run_bootstrap_wiring_tests() {
@@ -260,4 +315,6 @@ void run_bootstrap_wiring_tests() {
   test_render_loop_renders_multiple_frames();
   test_render_bootstrap_frame_uses_room_tile_data();
   test_bootstrap_loader_reads_reference_room_data();
+  test_scene_bootstrap_discovers_reference_assets_from_repo_root();
+  test_scene_bootstrap_falls_back_with_missing_assets();
 }
