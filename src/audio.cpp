@@ -140,7 +140,6 @@ public:
   ~Sdl2ToneAudioBackend() override { shutdown(); }
 
 private:
-  bool initialized_ = false;
   bool available_ = false;
   bool owns_sdl_audio_subsystem_ = false;
   std::size_t events_enqueued_ = 0;

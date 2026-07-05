@@ -313,10 +313,12 @@ FrameLoopSummary run_render_loop(RuntimeState &state,
     return summary;
   }
 
-  const bool audio_enabled = (audio_backend != nullptr);
-  if (audio_enabled) {
-    audio_backend->initialize();
-    audio_backend->enqueue_event(AudioEvent::StartupChime);
+  bool audio_enabled = false;
+  if (audio_backend != nullptr) {
+    audio_enabled = audio_backend->initialize();
+    if (audio_enabled) {
+      audio_backend->enqueue_event(AudioEvent::StartupChime);
+    }
   }
 
   auto next_tick = std::chrono::steady_clock::now();
