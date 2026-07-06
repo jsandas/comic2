@@ -38,6 +38,7 @@ message(STATUS "SDL2 found - enabling visual presenter (target: ${SDL2_TARGET})"
 add_compile_definitions(COMIC2_USE_SDL2)
 
 add_library(comic2_core
+    src/audio.cpp
     src/bootstrap.cpp
     src/default_handlers.cpp
     src/dispatcher.cpp
@@ -80,6 +81,7 @@ else()
 endif()
 
 add_executable(comic2_unit_tests
+    tests/audio_backend_tests.cpp
     tests/bootstrap_wiring_tests.cpp
     tests/dispatcher_tests.cpp
     tests/integration_gates_tests.cpp

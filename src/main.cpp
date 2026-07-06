@@ -4,6 +4,7 @@
 #include <iostream>
 #include <limits>
 
+#include "comic2/audio.hpp"
 #include "comic2/bootstrap.hpp"
 #include "comic2/default_handlers.hpp"
 #include "comic2/renderer.hpp"
@@ -16,11 +17,13 @@ int main(int argc, char **argv) {
                                            : std::filesystem::current_path();
 
     auto state = comic2::make_default_runtime_state();
-    const auto bootstrap =
-        comic2::load_initial_bootstrap_resources(state, root);
+    const auto bootstrap = comic2::initialize_runtime_scene(state, root);
     if (!bootstrap.room_grid_loaded) {
       std::cerr << "WARNING: no bootstrap room grid loaded from "
                 << root.string() << " (using fallback frame path)\n";
+    } else if (!bootstrap.assets_root_used.empty()) {
+      std::cout << "Loaded initial scene from: "
+                << bootstrap.assets_root_used.string() << "\n";
     }
 
     auto dispatcher = comic2::make_default_game_dispatcher();
@@ -32,11 +35,12 @@ int main(int argc, char **argv) {
 #else
     comic2::MemoryFramePresenter presenter;
 #endif
+    auto audio_backend = comic2::make_default_audio_backend();
 
     // Run until user quits (frame budget is effectively unbounded)
     const auto loop_summary = comic2::run_render_loop(
         state, dispatcher, presenter, std::numeric_limits<int>::max(),
-        std::chrono::milliseconds(16));
+        std::chrono::milliseconds(16), audio_backend.get());
 
     std::cout << "render loop complete: frames_rendered="
               << loop_summary.frames_rendered
