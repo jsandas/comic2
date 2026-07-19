@@ -303,6 +303,22 @@ void render_bootstrap_frame(IFramePresenter &presenter,
   presenter.present(frame);
 }
 
+IntegratedLoopSummary run_integrated_bootstrap_loop(
+    const std::filesystem::path &root, IFramePresenter &presenter,
+    int frame_budget, std::chrono::milliseconds frame_interval,
+    IAudioBackend *audio_backend) {
+  auto state = make_default_runtime_state();
+  const auto bootstrap = initialize_runtime_scene(state, root);
+
+  auto dispatcher = make_default_game_dispatcher();
+  dispatcher.set_trace_enabled(read_bootstrap_bool_env("COMIC2_TRACE_DISPATCH"));
+
+  const auto loop = run_render_loop(state, dispatcher, presenter, frame_budget,
+                                    frame_interval, audio_backend);
+
+  return IntegratedLoopSummary{.bootstrap = bootstrap, .loop = loop};
+}
+
 FrameLoopSummary run_render_loop(RuntimeState &state,
                                  GameDispatcher &dispatcher,
                                  IFramePresenter &presenter, int frame_budget,

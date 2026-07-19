@@ -30,7 +30,11 @@ void set_test_env(const char *name, const char *value, int overwrite) {
   (void)overwrite;
   _putenv_s(name, value);
 #else
-  setenv(name, value, overwrite);
+  if (value == nullptr || *value == '\0') {
+    unsetenv(name);
+  } else {
+    setenv(name, value, overwrite);
+  }
 #endif
 }
 
@@ -130,6 +134,7 @@ void test_bootstrap_entry_runs_without_crashing() {
 
   set_test_env("COMIC2_BOOTSTRAP_TICKS", "1", 1);
   set_test_env("COMIC2_FORCE_ENV_INPUT", "1", 1);
+  set_test_env("COMIC2_INPUT_QUIT", "0", 1);
   set_test_env("COMIC2_INPUT_LEFT", "0", 1);
   set_test_env("COMIC2_INPUT_RIGHT", "0", 1);
   set_test_env("COMIC2_INPUT_JUMP", "0", 1);
@@ -145,6 +150,7 @@ void test_bootstrap_entry_runs_without_crashing() {
 
 void test_bootstrap_tick_wires_input_dispatch_and_render() {
   set_test_env("COMIC2_FORCE_ENV_INPUT", "1", 1);
+  set_test_env("COMIC2_INPUT_QUIT", "0", 1);
   set_test_env("COMIC2_INPUT_LEFT", "1", 1);
   set_test_env("COMIC2_INPUT_RIGHT", "1", 1);
   set_test_env("COMIC2_INPUT_JUMP", "0", 1);
@@ -171,8 +177,36 @@ void test_bootstrap_tick_wires_input_dispatch_and_render() {
         "jump input should remain false when env says 0");
 }
 
+void test_integrated_loop_exits_cleanly_when_quit_is_requested() {
+  const auto empty_root =
+      std::filesystem::temp_directory_path() / "comic2_integrated_quit";
+  std::filesystem::remove_all(empty_root);
+  std::filesystem::create_directories(empty_root);
+
+  set_test_env("COMIC2_FORCE_ENV_INPUT", "1", 1);
+  set_test_env("COMIC2_INPUT_QUIT", "1", 1);
+  set_test_env("COMIC2_INPUT_LEFT", "0", 1);
+  set_test_env("COMIC2_INPUT_RIGHT", "0", 1);
+  set_test_env("COMIC2_INPUT_JUMP", "0", 1);
+  set_test_env("COMIC2_INPUT_DOWN", "0", 1);
+
+  RecordingPresenter presenter;
+  const auto summary = comic2::run_integrated_bootstrap_loop(
+      empty_root, presenter, 5, std::chrono::milliseconds(0));
+
+  check(!summary.bootstrap.room_grid_loaded,
+        "integrated loop should stay in placeholder mode when assets are absent");
+  check(summary.loop.quit_requested,
+        "integrated loop should report a quit request");
+  check(summary.loop.frames_rendered == 0,
+        "integrated loop should stop before rendering frames when quit is requested");
+
+  std::filesystem::remove_all(empty_root);
+}
+
 void test_render_loop_renders_multiple_frames() {
   set_test_env("COMIC2_FORCE_ENV_INPUT", "1", 1);
+  set_test_env("COMIC2_INPUT_QUIT", "0", 1);
   set_test_env("COMIC2_INPUT_LEFT", "0", 1);
   set_test_env("COMIC2_INPUT_RIGHT", "0", 1);
   set_test_env("COMIC2_INPUT_JUMP", "0", 1);
@@ -348,6 +382,7 @@ void test_scene_bootstrap_falls_back_with_missing_assets() {
 void run_bootstrap_wiring_tests() {
   test_bootstrap_entry_runs_without_crashing();
   test_bootstrap_tick_wires_input_dispatch_and_render();
+  test_integrated_loop_exits_cleanly_when_quit_is_requested();
   test_render_loop_renders_multiple_frames();
   test_render_bootstrap_frame_uses_room_tile_data();
   test_bootstrap_loader_reads_reference_room_data();
