@@ -141,8 +141,4 @@ bool KeyboardInputHandler::poll_events(InputState &input) {
   return !impl_->quit_requested;
 }
 
-bool KeyboardInputHandler::is_quit_requested() const {
-  return impl_->quit_requested;
-}
-
 } // namespace comic2
