@@ -53,6 +53,8 @@ void apply_input_tick(RuntimeState &state, const PlayerMotionConfig &motion) {
 void apply_grounded_physics_tick(RuntimeState &state,
                                  const PlayerMotionConfig &motion,
                                  const TileCollisionConfig &collision) {
+  detail::apply_horizontal_movement(state, motion);
+
   if (state.input.jump_pressed && state.player.jump_counter > 0) {
     state.player.is_airborne = true;
     state.player.is_physics_active = true;

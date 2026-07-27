@@ -455,10 +455,16 @@ Bring the reimplementation from the bootstrap smoke test into a real running gam
 - Added tests for loop/audio lifecycle, jump event trigger, and null backend safety (`tests/audio_backend_tests.cpp`).
 
 ### Phase 8.5: Main Loop Integration
-- [ ] Combine render, input, dispatch, and optional audio into a single continuous game loop.
-- [ ] Exit cleanly on quit input or window close.
-- [ ] Keep subsystem boundaries intact so rendering, input, and gameplay remain independently testable.
-- [ ] Verify that the app runs continuously and updates state while presenting frames.
+- [x] Combine render, input, dispatch, and optional audio into a single continuous game loop.
+- [x] Exit cleanly on quit input or window close.
+- [x] Keep subsystem boundaries intact so rendering, input, and gameplay remain independently testable.
+- [x] Verify that the app runs continuously and updates state while presenting frames.
+
+**Implementation details:**
+- `run_render_loop` now executes unified per-frame flow in order: input polling, dispatcher tick, optional audio event/update, then frame presentation.
+- Input polling returns a loop-continue signal (`poll_bootstrap_input`), allowing clean early termination on quit without coupling loop control to global internals.
+- Main bootstrap wiring remains orchestration-only (`main` and `run_integrated_bootstrap_loop`) while gameplay behavior stays in dispatcher/hooks.
+- Added continuous-loop regression coverage ensuring state updates while frames are presented (`test_render_loop_updates_state_while_presenting_frames`), plus existing quit-path and audio lifecycle tests.
 
 ### Scope Boundary
 This phase is about getting the real game running, not full parity or complete content fidelity. The first milestone is stability: visible frames, working input, and a continuous loop.

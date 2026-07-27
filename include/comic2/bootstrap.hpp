@@ -55,7 +55,7 @@ FrameLoopSummary run_render_loop(
     std::chrono::milliseconds frame_interval = std::chrono::milliseconds(0),
     IAudioBackend *audio_backend = nullptr);
 
-void poll_bootstrap_input(RuntimeState &state);
+bool poll_bootstrap_input(RuntimeState &state);
 void render_bootstrap_frame(IFramePresenter &presenter,
                             const RuntimeState &state);
 BootstrapTickSummary run_bootstrap_tick(RuntimeState &state,

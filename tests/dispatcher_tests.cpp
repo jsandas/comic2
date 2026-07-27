@@ -503,6 +503,53 @@ void test_projectile_scripted_tick_deactivates_on_tile_collision() {
          "projectile should deactivate on tile collision during scripted tick");
 }
 
+void test_airborne_fallback_clamps_player_with_missing_room_support() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  comic2::RuntimeState state;
+  state.room_grid = {};
+  state.player.y = 190;
+  state.player.y_vel = 6;
+  state.player.is_airborne = true;
+  state.player.is_physics_active = true;
+
+  const auto result = dispatcher.run_tick(state);
+  expect(result.stage == comic2::DispatchStage::AirbornePhysics,
+         "airborne player should route to airborne physics stage");
+  expect(state.player.y == 168,
+         "fallback clamp should keep player inside viewport bottom");
+  expect(state.player.y_vel == 0,
+         "fallback clamp should clear downward velocity at viewport bottom");
+  expect(!state.player.is_airborne,
+         "fallback clamp should ground player at viewport bottom");
+}
+
+void test_airborne_with_valid_room_data_skips_fallback_clamp() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  comic2::RuntimeState state;
+  state.room_grid.tile_w = 1;
+  state.room_grid.tile_h = 1;
+  state.room_grid.row_pointers = {0};
+  state.room_grid.tile_data = {0x00};
+
+  state.player.y = 190;
+  state.player.y_vel = 6;
+  state.player.is_airborne = true;
+  state.player.is_physics_active = true;
+
+  const auto result = dispatcher.run_tick(state);
+  expect(result.stage == comic2::DispatchStage::AirbornePhysics,
+         "airborne player should route to airborne physics stage");
+  expect(state.player.y > 168,
+         "fallback clamp should not force viewport floor when room data is "
+         "available");
+  expect(state.player.is_airborne,
+         "player should remain airborne when fallback clamp is skipped");
+}
+
 } // namespace
 
 void run_dispatcher_tests() {
@@ -519,4 +566,6 @@ void run_dispatcher_tests() {
   test_level_transition_loads_room_tilemap();
   test_projectile_scripted_tick_updates_deterministically();
   test_projectile_scripted_tick_deactivates_on_tile_collision();
+       test_airborne_fallback_clamps_player_with_missing_room_support();
+       test_airborne_with_valid_room_data_skips_fallback_clamp();
 }
