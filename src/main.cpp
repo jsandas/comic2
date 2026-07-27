@@ -16,20 +16,6 @@ int main(int argc, char **argv) {
                                            ? std::filesystem::path(argv[1])
                                            : std::filesystem::current_path();
 
-    auto state = comic2::make_default_runtime_state();
-    const auto bootstrap = comic2::initialize_runtime_scene(state, root);
-    if (!bootstrap.room_grid_loaded) {
-      std::cerr << "WARNING: no bootstrap room grid loaded from "
-                << root.string() << " (using fallback frame path)\n";
-    } else if (!bootstrap.assets_root_used.empty()) {
-      std::cout << "Loaded initial scene from: "
-                << bootstrap.assets_root_used.string() << "\n";
-    }
-
-    auto dispatcher = comic2::make_default_game_dispatcher();
-    dispatcher.set_trace_enabled(
-        comic2::read_bootstrap_bool_env("COMIC2_TRACE_DISPATCH"));
-
 #ifdef COMIC2_USE_SDL2
     comic2::Sdl2FramePresenter presenter(640, 480);
 #else
@@ -38,16 +24,17 @@ int main(int argc, char **argv) {
     auto audio_backend = comic2::make_default_audio_backend();
 
     // Run until user quits (frame budget is effectively unbounded)
-    const auto loop_summary = comic2::run_render_loop(
-        state, dispatcher, presenter, std::numeric_limits<int>::max(),
+    const auto loop_summary = comic2::run_integrated_bootstrap_loop(
+        root, presenter, std::numeric_limits<int>::max(),
         std::chrono::milliseconds(16), audio_backend.get());
 
     std::cout << "render loop complete: frames_rendered="
-              << loop_summary.frames_rendered
-              << " ticks_processed=" << loop_summary.ticks_processed
-              << " last_stage=" << comic2::to_string(loop_summary.last_stage)
+              << loop_summary.loop.frames_rendered
+              << " ticks_processed=" << loop_summary.loop.ticks_processed
+              << " last_stage="
+              << comic2::to_string(loop_summary.loop.last_stage)
               << " quit_requested=" << std::boolalpha
-              << loop_summary.quit_requested << std::noboolalpha << "\n";
+              << loop_summary.loop.quit_requested << std::noboolalpha << "\n";
     return 0;
   } catch (const std::exception &ex) {
     std::cerr << "error: " << ex.what() << "\n";

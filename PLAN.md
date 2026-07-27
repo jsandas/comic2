@@ -455,10 +455,588 @@ Bring the reimplementation from the bootstrap smoke test into a real running gam
 - Added tests for loop/audio lifecycle, jump event trigger, and null backend safety (`tests/audio_backend_tests.cpp`).
 
 ### Phase 8.5: Main Loop Integration
-- [ ] Combine render, input, dispatch, and optional audio into a single continuous game loop.
-- [ ] Exit cleanly on quit input or window close.
-- [ ] Keep subsystem boundaries intact so rendering, input, and gameplay remain independently testable.
-- [ ] Verify that the app runs continuously and updates state while presenting frames.
+- [x] Combine render, input, dispatch, and optional audio into a single continuous game loop.
+- [x] Exit cleanly on quit input or window close.
+- [x] Keep subsystem boundaries intact so rendering, input, and gameplay remain independently testable.
+- [x] Verify that the app runs continuously and updates state while presenting frames.
+
+**Implementation details:**
+- `run_render_loop` now executes unified per-frame flow in order: input polling, dispatcher tick, optional audio event/update, then frame presentation.
+- Input polling returns a loop-continue signal (`poll_bootstrap_input`), allowing clean early termination on quit without coupling loop control to global internals.
+- Main bootstrap wiring remains orchestration-only (`main` and `run_integrated_bootstrap_loop`) while gameplay behavior stays in dispatcher/hooks.
+- Added continuous-loop regression coverage ensuring state updates while frames are presented (`test_render_loop_updates_state_while_presenting_frames`), plus existing quit-path and audio lifecycle tests.
 
 ### Scope Boundary
 This phase is about getting the real game running, not full parity or complete content fidelity. The first milestone is stability: visible frames, working input, and a continuous loop.
+
+---
+
+## Phase 8.6: Original Data-Driven Asset and Level Loading
+
+### Goal
+Move from bootstrap-style probing to deterministic, data-driven loading of levels, rooms, and graphics from original game files, with room transitions and rendering backed by decoded original assets.
+
+### Exit Criteria
+- [ ] Level/room selection resolves through FRDATA indirection instead of hardcoded candidate filename scans.
+- [ ] Room transitions load the target room from original data files and commit state atomically.
+- [ ] FRPAK payloads are indexed and decoded through an explicit resource catalog/cache.
+- [ ] Rendering path consumes decoded original graphics for at least one verified tile/sprite path.
+- [ ] Integration tests cover cross-room load success and failure fallback behavior.
+
+### 8.6.1 Resource Resolution Layer
+- [ ] Introduce a dedicated resolver API (new module) that maps `(level, room, asset kind)` to concrete file path + offset metadata.
+- [ ] Implement FRDATA table parsing for per-level room/resource indirection already documented in Phase 6.
+- [ ] Remove hardcoded room candidate arrays from bootstrap loading; keep only asset-root candidate discovery.
+- [ ] Add resolver unit tests for valid mapping, out-of-range room index, and sentinel/invalid entries.
+
+**Suggested touchpoints:**
+- `include/comic2/resource_loader.hpp`
+- `src/resource_loader.cpp`
+- `include/comic2/room_loader.hpp`
+- `src/room_loader.cpp`
+- `tests/subsystem_scaffold_tests.cpp`
+
+### 8.6.2 Room Transition Data Reload
+- [ ] Update `handle_level_transition` to resolve and load the next room via the resolver instead of reusing stale in-memory bytes.
+- [ ] Ensure transition load is atomic: decode into temporary state, then commit only on success.
+- [ ] Keep graceful behavior on failure (no crash, controlled fallback/state preservation).
+- [ ] Add transition tests covering:
+	- successful right-edge room transition load
+	- left-edge transition at room 0 clamp behavior
+	- failed target-room load with stable prior runtime state
+
+**Suggested touchpoints:**
+- `src/default_handlers.cpp`
+- `src/bootstrap.cpp`
+- `tests/dispatcher_tests.cpp`
+- `tests/bootstrap_wiring_tests.cpp`
+
+### 8.6.3 FRPAK Catalog and Decode Pipeline
+- [ ] Add a FRPAK catalog structure that records file id, record offsets, and decode metadata for sprite/tile resources.
+- [ ] Replace raw append of FRPAK bytes with cataloged storage and explicit record lookup APIs.
+- [ ] Add decode-on-demand path using existing RLE/4-plane decoders with bounds checks.
+- [ ] Add cache policy (initially simple): memoize decoded records by `(pak_id, record_id)`.
+- [ ] Add tests for malformed record headers, out-of-range offsets, and deterministic decode results.
+
+**Suggested touchpoints:**
+- `include/comic2/resource_formats.hpp`
+- `include/comic2/resource_loader.hpp`
+- `src/resource_loader.cpp`
+- `tests/renderer_validation_tests.cpp`
+
+### 8.6.4 Asset-Backed Rendering Integration
+- [ ] Replace bootstrap tile-color visualization path with a resource-backed tile draw path for at least one room fixture.
+- [ ] Add one sprite draw path that uses decoded original plane data via existing blit adapters.
+- [ ] Keep fallback renderer available when assets are missing or decode fails.
+- [ ] Add frame-hash or plane-byte regression tests for at least one asset-backed render fixture.
+
+**Suggested touchpoints:**
+- `src/bootstrap.cpp`
+- `src/renderer.cpp`
+- `tests/renderer_tests.cpp`
+- `tests/integration_gates_tests.cpp`
+
+### 8.6.5 Runtime Data Wiring for Entities
+- [ ] Load mapped object/entity descriptors from original room/resource payloads instead of synthetic scaffolds.
+- [ ] Populate `mapped_objects` and activation/runtime tables from decoded data before dispatch ticks.
+- [ ] Verify projectile/entity updates operate on loaded descriptors without changing dispatch order.
+- [ ] Add tests for descriptor decode, activation list build, and viewport slot population from real fixture bytes.
+
+**Suggested touchpoints:**
+- `src/entity_runtime.cpp`
+- `src/room_loader.cpp`
+- `src/bootstrap.cpp`
+- `tests/subsystem_scaffold_tests.cpp`
+
+### 8.6.6 Validation Gates (Phase 8.6)
+- [ ] Gate 8.6-A (Resolver): deterministic `(level, room)` mapping to expected source file/offset fixtures.
+- [ ] Gate 8.6-B (Transition): cross-room movement triggers correct room reload and stable player bounds.
+- [ ] Gate 8.6-C (Graphics): at least one decoded FRPAK-backed frame fixture passes hash/plane-byte checks.
+- [ ] Gate 8.6-D (Failure): missing/corrupt data path stays controlled and preserves prior good runtime state.
+
+### Revalidation Command
+- [ ] `cmake --build build && ctest --test-dir build --output-on-failure`
+
+### Implementation Notes
+- Preserve bootstrap fallback behavior while incrementally enabling data-driven paths.
+- Keep loader logic side-effect free until decode/validation succeeds; commit runtime state last.
+- Favor small, test-first increments: resolver -> transition reload -> FRPAK catalog -> rendering hookup.
+
+### 8.6 PR-Sized Handoff Slices (Agent-Ready)
+
+#### PR 8.6-A1: FRDATA Resolver Skeleton
+**Objective**
+- Create a deterministic resolver that maps `(level, room)` to room/resource lookup metadata from FRDATA payloads.
+
+**Scope**
+- Add resolver types and API surface.
+- Parse/validate FRDATA room indirection entries.
+- Keep existing bootstrap behavior unchanged (no call-site switch yet).
+
+**Files**
+- `include/comic2/resource_loader.hpp`
+- `src/resource_loader.cpp`
+- `include/comic2/room_loader.hpp`
+- `src/room_loader.cpp`
+- `tests/subsystem_scaffold_tests.cpp`
+
+**Tests to add/update**
+- Valid `(level, room)` mapping returns expected offsets.
+- Out-of-range room index fails cleanly.
+- Sentinel/invalid entries rejected.
+
+**Definition of done**
+- Resolver API exists, tested, and does not alter current runtime flow.
+
+---
+
+#### PR 8.6-A2: Transition Uses Resolver + Atomic Commit
+**Objective**
+- Make level/room transitions perform real data reload via resolver and commit only on success.
+
+**Scope**
+- Update transition path in default handlers.
+- Decode into temporary state and commit atomically.
+- Preserve previous state on load/decode failure.
+
+**Files**
+- `src/default_handlers.cpp`
+- `src/room_loader.cpp`
+- `tests/dispatcher_tests.cpp`
+- `tests/bootstrap_wiring_tests.cpp`
+
+**Tests to add/update**
+- Right-edge transition loads next room.
+- Room-0 left-edge clamp unchanged.
+- Failed target-room load preserves prior room grid/state.
+
+**Definition of done**
+- Transition path is data-driven and failure-safe, with deterministic tests.
+
+---
+
+#### PR 8.6-B1: FRPAK Catalog and Record Indexing
+**Objective**
+- Replace raw FRPAK byte concatenation with indexed catalog metadata.
+
+**Scope**
+- Add FRPAK catalog structures (pak id, record id, offsets, lengths).
+- Populate catalog during bootstrap/resource load.
+- Keep decode/render call-sites unchanged in this PR.
+
+**Files**
+- `include/comic2/resource_formats.hpp`
+- `include/comic2/resource_loader.hpp`
+- `src/resource_loader.cpp`
+- `tests/subsystem_scaffold_tests.cpp`
+
+**Tests to add/update**
+- Catalog creation for known FRPAK files.
+- Offset bounds validation.
+- Malformed/truncated record handling.
+
+**Definition of done**
+- Catalog available through API with strong bounds checks.
+
+---
+
+#### PR 8.6-B2: Decode-on-Demand + Cache
+**Objective**
+- Decode FRPAK records through explicit lookup API with memoization.
+
+**Scope**
+- Add record decode API keyed by `(pak_id, record_id)`.
+- Reuse existing signed-RLE and 4-plane decode routines.
+- Add simple decoded-image cache.
+
+**Files**
+- `include/comic2/resource_loader.hpp`
+- `src/resource_loader.cpp`
+- `tests/renderer_validation_tests.cpp`
+
+**Tests to add/update**
+- First decode succeeds; repeated decode hits cache.
+- Invalid record id/offset fails cleanly.
+- Deterministic plane-byte output for fixture record.
+
+**Definition of done**
+- Record decode API is stable, tested, and cache-backed.
+
+---
+
+#### PR 8.6-C1: Asset-Backed Tile Rendering Path
+**Objective**
+- Replace diagnostic tile coloring with one real tile draw path from decoded asset data.
+
+**Scope**
+- Wire one tile rendering path to decoded graphics.
+- Keep fallback renderer for missing assets/decode errors.
+- Do not yet rework full sprite/entity presentation pipeline.
+
+**Files**
+- `src/bootstrap.cpp`
+- `src/renderer.cpp`
+- `tests/renderer_tests.cpp`
+- `tests/integration_gates_tests.cpp`
+
+**Tests to add/update**
+- Fixture-based frame hash or plane-byte assertion using real tile asset.
+- Fallback path assertion when asset lookup fails.
+
+**Definition of done**
+- At least one visible room tile path is asset-backed and regression-tested.
+
+---
+
+#### PR 8.6-C2: Entity Descriptor Loading From Room Data
+**Objective**
+- Populate mapped/runtime entity inputs from real room/resource payloads.
+
+**Scope**
+- Decode entity descriptor tables from room-associated data.
+- Fill `mapped_objects` before runtime activation.
+- Keep activation/update behavior unchanged.
+
+**Files**
+- `src/room_loader.cpp`
+- `src/entity_runtime.cpp`
+- `src/bootstrap.cpp`
+- `tests/subsystem_scaffold_tests.cpp`
+
+**Tests to add/update**
+- Descriptor decode from fixture bytes.
+- Runtime slot build from loaded mapped objects.
+- Stable behavior when descriptor payload missing/corrupt.
+
+**Definition of done**
+- Runtime entity activation starts from loaded original-data descriptors.
+
+---
+
+#### PR 8.6-D1: End-to-End Integration and Failure Gates
+**Objective**
+- Finalize Phase 8.6 with integrated tests across resolver, transition reload, and asset-backed draw path.
+
+**Scope**
+- Add/update Gate 8.6-A/B/C/D tests.
+- Confirm fallback and state-preservation behavior on missing/corrupt files.
+- Tighten logging/diagnostics for runtime load failures.
+
+**Files**
+- `tests/integration_gates_tests.cpp`
+- `tests/bootstrap_wiring_tests.cpp`
+- `src/bootstrap.cpp`
+- `src/default_handlers.cpp`
+
+**Tests to add/update**
+- Deterministic multi-room transition sequence.
+- Asset-backed frame fixture regression.
+- Failure-mode state preservation checks.
+
+**Definition of done**
+- All Phase 8.6 validation gates pass in CI.
+
+---
+
+### Parallelization Map for Agent Handoff
+- Can run in parallel after PR 8.6-A1 lands: PR 8.6-B1 and PR 8.6-A2.
+- Can run in parallel after PR 8.6-B1 lands: PR 8.6-B2 and PR 8.6-C2.
+- Depends on PR 8.6-B2: PR 8.6-C1.
+- Final convergence PR: PR 8.6-D1.
+
+### Suggested Agent Prompt Template
+- Task: implement PR `<id>` exactly as scoped in PLAN.md.
+- Constraints: no behavior regressions outside listed files; preserve fallback paths.
+- Required output: code changes, tests, and short validation note with command output summary.
+- Validation command: `cmake --build build && ctest --test-dir build --output-on-failure`.
+
+### Copy/Paste Agent Prompt Blocks
+
+#### Prompt: PR 8.6-A1 (FRDATA Resolver Skeleton)
+```text
+Implement PR 8.6-A1 from PLAN.md exactly as scoped.
+
+Objective:
+- Create a deterministic resolver that maps (level, room) to room/resource lookup metadata from FRDATA payloads.
+
+Scope:
+- Add resolver types and API surface.
+- Parse/validate FRDATA room indirection entries.
+- Keep existing bootstrap behavior unchanged (no call-site switch yet).
+
+Allowed files:
+- include/comic2/resource_loader.hpp
+- src/resource_loader.cpp
+- include/comic2/room_loader.hpp
+- src/room_loader.cpp
+- tests/subsystem_scaffold_tests.cpp
+
+Required tests:
+- Valid (level, room) mapping returns expected offsets.
+- Out-of-range room index fails cleanly.
+- Sentinel/invalid entries rejected.
+
+Constraints:
+- No behavior regressions outside listed files.
+- Preserve existing fallback behavior.
+- Keep changes small and test-first.
+
+Definition of done:
+- Resolver API exists, tested, and does not alter current runtime flow.
+
+Validation:
+- cmake --build build && ctest --test-dir build --output-on-failure
+
+Required output format:
+1) Summary of changes
+2) Files changed
+3) Tests added/updated
+4) Validation command result summary
+5) Any risks or follow-ups
+```
+
+#### Prompt: PR 8.6-A2 (Transition Uses Resolver + Atomic Commit)
+```text
+Implement PR 8.6-A2 from PLAN.md exactly as scoped.
+
+Objective:
+- Make level/room transitions perform real data reload via resolver and commit only on success.
+
+Scope:
+- Update transition path in default handlers.
+- Decode into temporary state and commit atomically.
+- Preserve previous state on load/decode failure.
+
+Allowed files:
+- src/default_handlers.cpp
+- src/room_loader.cpp
+- tests/dispatcher_tests.cpp
+- tests/bootstrap_wiring_tests.cpp
+
+Required tests:
+- Right-edge transition loads next room.
+- Room-0 left-edge clamp unchanged.
+- Failed target-room load preserves prior room grid/state.
+
+Constraints:
+- No behavior regressions outside listed files.
+- Preserve fallback behavior.
+- Keep dispatcher stage ordering unchanged.
+
+Definition of done:
+- Transition path is data-driven and failure-safe, with deterministic tests.
+
+Validation:
+- cmake --build build && ctest --test-dir build --output-on-failure
+
+Required output format:
+1) Summary of changes
+2) Files changed
+3) Tests added/updated
+4) Validation command result summary
+5) Any risks or follow-ups
+```
+
+#### Prompt: PR 8.6-B1 (FRPAK Catalog and Record Indexing)
+```text
+Implement PR 8.6-B1 from PLAN.md exactly as scoped.
+
+Objective:
+- Replace raw FRPAK byte concatenation with indexed catalog metadata.
+
+Scope:
+- Add FRPAK catalog structures (pak id, record id, offsets, lengths).
+- Populate catalog during bootstrap/resource load.
+- Keep decode/render call-sites unchanged in this PR.
+
+Allowed files:
+- include/comic2/resource_formats.hpp
+- include/comic2/resource_loader.hpp
+- src/resource_loader.cpp
+- tests/subsystem_scaffold_tests.cpp
+
+Required tests:
+- Catalog creation for known FRPAK files.
+- Offset bounds validation.
+- Malformed/truncated record handling.
+
+Constraints:
+- No rendering behavior changes in this PR.
+- Preserve current fallback startup behavior.
+- Keep catalog API explicit and bounds-checked.
+
+Definition of done:
+- Catalog available through API with strong bounds checks.
+
+Validation:
+- cmake --build build && ctest --test-dir build --output-on-failure
+
+Required output format:
+1) Summary of changes
+2) Files changed
+3) Tests added/updated
+4) Validation command result summary
+5) Any risks or follow-ups
+```
+
+#### Prompt: PR 8.6-B2 (Decode-on-Demand + Cache)
+```text
+Implement PR 8.6-B2 from PLAN.md exactly as scoped.
+
+Objective:
+- Decode FRPAK records through explicit lookup API with memoization.
+
+Scope:
+- Add record decode API keyed by (pak_id, record_id).
+- Reuse existing signed-RLE and 4-plane decode routines.
+- Add simple decoded-image cache.
+
+Allowed files:
+- include/comic2/resource_loader.hpp
+- src/resource_loader.cpp
+- tests/renderer_validation_tests.cpp
+
+Required tests:
+- First decode succeeds; repeated decode hits cache.
+- Invalid record id/offset fails cleanly.
+- Deterministic plane-byte output for fixture record.
+
+Constraints:
+- No broad rendering pipeline rewrite in this PR.
+- Keep cache deterministic and easy to invalidate/reset for tests.
+
+Definition of done:
+- Record decode API is stable, tested, and cache-backed.
+
+Validation:
+- cmake --build build && ctest --test-dir build --output-on-failure
+
+Required output format:
+1) Summary of changes
+2) Files changed
+3) Tests added/updated
+4) Validation command result summary
+5) Any risks or follow-ups
+```
+
+#### Prompt: PR 8.6-C1 (Asset-Backed Tile Rendering Path)
+```text
+Implement PR 8.6-C1 from PLAN.md exactly as scoped.
+
+Objective:
+- Replace diagnostic tile coloring with one real tile draw path from decoded asset data.
+
+Scope:
+- Wire one tile rendering path to decoded graphics.
+- Keep fallback renderer for missing assets/decode errors.
+- Do not rework full sprite/entity presentation pipeline in this PR.
+
+Allowed files:
+- src/bootstrap.cpp
+- src/renderer.cpp
+- tests/renderer_tests.cpp
+- tests/integration_gates_tests.cpp
+
+Required tests:
+- Fixture-based frame hash or plane-byte assertion using real tile asset.
+- Fallback path assertion when asset lookup fails.
+
+Constraints:
+- Preserve existing loop/input/audio behavior.
+- Keep rendering changes isolated and reversible.
+
+Definition of done:
+- At least one visible room tile path is asset-backed and regression-tested.
+
+Validation:
+- cmake --build build && ctest --test-dir build --output-on-failure
+
+Required output format:
+1) Summary of changes
+2) Files changed
+3) Tests added/updated
+4) Validation command result summary
+5) Any risks or follow-ups
+```
+
+#### Prompt: PR 8.6-C2 (Entity Descriptor Loading From Room Data)
+```text
+Implement PR 8.6-C2 from PLAN.md exactly as scoped.
+
+Objective:
+- Populate mapped/runtime entity inputs from real room/resource payloads.
+
+Scope:
+- Decode entity descriptor tables from room-associated data.
+- Fill mapped_objects before runtime activation.
+- Keep activation/update behavior unchanged.
+
+Allowed files:
+- src/room_loader.cpp
+- src/entity_runtime.cpp
+- src/bootstrap.cpp
+- tests/subsystem_scaffold_tests.cpp
+
+Required tests:
+- Descriptor decode from fixture bytes.
+- Runtime slot build from loaded mapped objects.
+- Stable behavior when descriptor payload missing/corrupt.
+
+Constraints:
+- Do not change dispatcher order or projectile behavior.
+- Preserve fallback startup path when descriptors unavailable.
+
+Definition of done:
+- Runtime entity activation starts from loaded original-data descriptors.
+
+Validation:
+- cmake --build build && ctest --test-dir build --output-on-failure
+
+Required output format:
+1) Summary of changes
+2) Files changed
+3) Tests added/updated
+4) Validation command result summary
+5) Any risks or follow-ups
+```
+
+#### Prompt: PR 8.6-D1 (End-to-End Integration and Failure Gates)
+```text
+Implement PR 8.6-D1 from PLAN.md exactly as scoped.
+
+Objective:
+- Finalize Phase 8.6 with integrated tests across resolver, transition reload, and asset-backed draw path.
+
+Scope:
+- Add/update Gate 8.6-A/B/C/D tests.
+- Confirm fallback and state-preservation behavior on missing/corrupt files.
+- Tighten logging/diagnostics for runtime load failures.
+
+Allowed files:
+- tests/integration_gates_tests.cpp
+- tests/bootstrap_wiring_tests.cpp
+- src/bootstrap.cpp
+- src/default_handlers.cpp
+
+Required tests:
+- Deterministic multi-room transition sequence.
+- Asset-backed frame fixture regression.
+- Failure-mode state preservation checks.
+
+Constraints:
+- Keep assertions deterministic and CI-stable.
+- Avoid broad refactors; focus on integration and gate coverage.
+
+Definition of done:
+- All Phase 8.6 validation gates pass in CI.
+
+Validation:
+- cmake --build build && ctest --test-dir build --output-on-failure
+
+Required output format:
+1) Summary of changes
+2) Files changed
+3) Tests added/updated
+4) Validation command result summary
+5) Any risks or follow-ups
+```

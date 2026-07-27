@@ -12,11 +12,41 @@ namespace {
 
 constexpr PlayerMotionConfig kDefaultMotion{};
 constexpr std::int16_t kViewportWidthPixels = 320;
+constexpr std::int16_t kViewportHeightPixels = 200;
+constexpr std::int16_t kPlayerHeightPixels = 32;
 constexpr TileCollisionConfig kDefaultCollision{
     .solid_tile_threshold = 0x01,
     .hazard_tile_min = 0xF0,
     .hazard_tile_max = 0xFF,
 };
+
+bool has_floor_support_data(const RuntimeState &state) {
+  const auto &grid = state.room_grid;
+  if (grid.tile_w == 0 || grid.tile_h == 0) {
+    return false;
+  }
+
+  if (grid.row_pointers.size() < grid.tile_h) {
+    return false;
+  }
+
+  const std::size_t last_row =
+      static_cast<std::size_t>(grid.row_pointers[grid.tile_h - 1]);
+  const std::size_t min_required = last_row + grid.tile_w;
+  return grid.tile_data.size() >= min_required;
+}
+
+void clamp_player_vertical_bounds(RuntimeState &state) {
+  const std::int16_t max_y =
+      static_cast<std::int16_t>(kViewportHeightPixels - kPlayerHeightPixels);
+
+  if (state.player.y > max_y) {
+    state.player.y = max_y;
+    state.player.y_vel = 0;
+    state.player.is_airborne = false;
+    state.player.is_physics_active = false;
+  }
+}
 
 void update_room_transition_from_player_bounds(RuntimeState &state) {
   if (state.player.x < 0) {
@@ -40,12 +70,18 @@ void update_room_transition_from_player_bounds(RuntimeState &state) {
 
 void apply_default_airborne_physics(RuntimeState &state) {
   apply_airborne_physics_tick(state, kDefaultMotion, kDefaultCollision);
+  if (!has_floor_support_data(state)) {
+    clamp_player_vertical_bounds(state);
+  }
   update_room_transition_from_player_bounds(state);
   update_player_hazard_state(state, kDefaultCollision);
 }
 
 void apply_default_grounded_physics(RuntimeState &state) {
   apply_grounded_physics_tick(state, kDefaultMotion, kDefaultCollision);
+  if (!has_floor_support_data(state)) {
+    clamp_player_vertical_bounds(state);
+  }
   update_room_transition_from_player_bounds(state);
   update_player_hazard_state(state, kDefaultCollision);
 }

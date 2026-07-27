@@ -272,18 +272,19 @@ int read_bootstrap_tick_budget(int default_ticks) {
   }
 }
 
-void poll_bootstrap_input(RuntimeState &state) {
+bool poll_bootstrap_input(RuntimeState &state) {
   init_keyboard_handler();
 
   if (g_keyboard_handler) {
     // Use real SDL2 keyboard input
-    g_keyboard_handler->poll_events(state.input);
+    return g_keyboard_handler->poll_events(state.input);
   } else {
     // Fallback to environment variables
     state.input.jump_pressed = read_bootstrap_bool_env("COMIC2_INPUT_JUMP");
     state.input.left_pressed = read_bootstrap_bool_env("COMIC2_INPUT_LEFT");
     state.input.right_pressed = read_bootstrap_bool_env("COMIC2_INPUT_RIGHT");
     state.input.down_pressed = read_bootstrap_bool_env("COMIC2_INPUT_DOWN");
+    return !read_bootstrap_bool_env("COMIC2_INPUT_QUIT");
   }
 }
 
@@ -301,6 +302,24 @@ void render_bootstrap_frame(IFramePresenter &presenter,
   draw_player_marker(frame, state);
 
   presenter.present(frame);
+}
+
+IntegratedLoopSummary
+run_integrated_bootstrap_loop(const std::filesystem::path &root,
+                              IFramePresenter &presenter, int frame_budget,
+                              std::chrono::milliseconds frame_interval,
+                              IAudioBackend *audio_backend) {
+  auto state = make_default_runtime_state();
+  const auto bootstrap = initialize_runtime_scene(state, root);
+
+  auto dispatcher = make_default_game_dispatcher();
+  dispatcher.set_trace_enabled(
+      read_bootstrap_bool_env("COMIC2_TRACE_DISPATCH"));
+
+  const auto loop = run_render_loop(state, dispatcher, presenter, frame_budget,
+                                    frame_interval, audio_backend);
+
+  return IntegratedLoopSummary{.bootstrap = bootstrap, .loop = loop};
 }
 
 FrameLoopSummary run_render_loop(RuntimeState &state,
@@ -333,10 +352,7 @@ FrameLoopSummary run_render_loop(RuntimeState &state,
       }
     }
 
-    poll_bootstrap_input(state);
-
-    // Check if quit was requested by the input handler
-    if (g_keyboard_handler && g_keyboard_handler->is_quit_requested()) {
+    if (!poll_bootstrap_input(state)) {
       summary.quit_requested = true;
       break;
     }
@@ -429,7 +445,7 @@ BootstrapTickSummary run_bootstrap_tick(RuntimeState &state,
                                         GameDispatcher &dispatcher,
                                         IFramePresenter &presenter) {
 
-  poll_bootstrap_input(state);
+  (void)poll_bootstrap_input(state);
   const auto result = dispatcher.run_tick(state);
   render_bootstrap_frame(presenter, state);
 

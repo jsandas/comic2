@@ -15,9 +15,6 @@ public:
   // Returns true if the window should continue running (false on quit request)
   bool poll_events(InputState &input);
 
-  // Check if quit was requested (via ESC key or window close)
-  bool is_quit_requested() const;
-
   // Disable copying
   KeyboardInputHandler(const KeyboardInputHandler &) = delete;
   KeyboardInputHandler &operator=(const KeyboardInputHandler &) = delete;

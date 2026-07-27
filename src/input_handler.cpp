@@ -65,6 +65,8 @@ KeyboardInputHandler::KeyboardInputHandler() : impl_(new Impl()) {}
 KeyboardInputHandler::~KeyboardInputHandler() { delete impl_; }
 
 bool KeyboardInputHandler::poll_events(InputState &input) {
+  impl_->quit_requested = false;
+
 #ifdef COMIC2_USE_SDL2
   // Check if we should force environment variable mode (for testing)
   bool force_env_input = read_env_bool("COMIC2_FORCE_ENV_INPUT");
@@ -137,10 +139,6 @@ bool KeyboardInputHandler::poll_events(InputState &input) {
   }
 
   return !impl_->quit_requested;
-}
-
-bool KeyboardInputHandler::is_quit_requested() const {
-  return impl_->quit_requested;
 }
 
 } // namespace comic2
