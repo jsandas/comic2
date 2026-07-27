@@ -566,6 +566,6 @@ void run_dispatcher_tests() {
   test_level_transition_loads_room_tilemap();
   test_projectile_scripted_tick_updates_deterministically();
   test_projectile_scripted_tick_deactivates_on_tile_collision();
-       test_airborne_fallback_clamps_player_with_missing_room_support();
-       test_airborne_with_valid_room_data_skips_fallback_clamp();
+  test_airborne_fallback_clamps_player_with_missing_room_support();
+  test_airborne_with_valid_room_data_skips_fallback_clamp();
 }

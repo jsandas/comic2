@@ -194,12 +194,14 @@ void test_integrated_loop_exits_cleanly_when_quit_is_requested() {
   const auto summary = comic2::run_integrated_bootstrap_loop(
       empty_root, presenter, 5, std::chrono::milliseconds(0));
 
-  check(!summary.bootstrap.room_grid_loaded,
-        "integrated loop should stay in placeholder mode when assets are absent");
+  check(
+      !summary.bootstrap.room_grid_loaded,
+      "integrated loop should stay in placeholder mode when assets are absent");
   check(summary.loop.quit_requested,
         "integrated loop should report a quit request");
   check(summary.loop.frames_rendered == 0,
-        "integrated loop should stop before rendering frames when quit is requested");
+        "integrated loop should stop before rendering frames when quit is "
+        "requested");
 
   std::filesystem::remove_all(empty_root);
 }
@@ -251,34 +253,34 @@ void test_render_loop_renders_multiple_frames() {
         "render loop should invoke the presenter for each frame");
 }
 
-  void test_render_loop_updates_state_while_presenting_frames() {
-    set_test_env("COMIC2_FORCE_ENV_INPUT", "1", 1);
-    set_test_env("COMIC2_INPUT_QUIT", "0", 1);
-    set_test_env("COMIC2_INPUT_LEFT", "0", 1);
-    set_test_env("COMIC2_INPUT_RIGHT", "1", 1);
-    set_test_env("COMIC2_INPUT_JUMP", "0", 1);
-    set_test_env("COMIC2_INPUT_DOWN", "0", 1);
+void test_render_loop_updates_state_while_presenting_frames() {
+  set_test_env("COMIC2_FORCE_ENV_INPUT", "1", 1);
+  set_test_env("COMIC2_INPUT_QUIT", "0", 1);
+  set_test_env("COMIC2_INPUT_LEFT", "0", 1);
+  set_test_env("COMIC2_INPUT_RIGHT", "1", 1);
+  set_test_env("COMIC2_INPUT_JUMP", "0", 1);
+  set_test_env("COMIC2_INPUT_DOWN", "0", 1);
 
-    auto state = comic2::make_default_runtime_state();
-    state.player.is_airborne = false;
-    state.player.is_physics_active = true;
-    const std::int16_t initial_x = state.player.x;
+  auto state = comic2::make_default_runtime_state();
+  state.player.is_airborne = false;
+  state.player.is_physics_active = true;
+  const std::int16_t initial_x = state.player.x;
 
-    auto dispatcher = comic2::make_default_game_dispatcher();
-    RecordingPresenter presenter;
+  auto dispatcher = comic2::make_default_game_dispatcher();
+  RecordingPresenter presenter;
 
-    const auto summary = comic2::run_render_loop(state, dispatcher, presenter, 4,
-                     std::chrono::milliseconds(0));
+  const auto summary = comic2::run_render_loop(state, dispatcher, presenter, 4,
+                                               std::chrono::milliseconds(0));
 
-    check(summary.frames_rendered == 4,
-      "render loop should render continuously until frame budget is reached");
-    check(summary.ticks_processed == 4,
-      "render loop should process one game tick per presented frame");
-    check(presenter.present_calls == 4,
-      "render loop should present each frame while running continuously");
-    check(state.player.x > initial_x,
-      "runtime state should update while frames are being presented");
-  }
+  check(summary.frames_rendered == 4,
+        "render loop should render continuously until frame budget is reached");
+  check(summary.ticks_processed == 4,
+        "render loop should process one game tick per presented frame");
+  check(presenter.present_calls == 4,
+        "render loop should present each frame while running continuously");
+  check(state.player.x > initial_x,
+        "runtime state should update while frames are being presented");
+}
 
 void test_render_bootstrap_frame_uses_room_tile_data() {
   auto state = comic2::make_default_runtime_state();

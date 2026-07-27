@@ -31,7 +31,8 @@ int main(int argc, char **argv) {
     std::cout << "render loop complete: frames_rendered="
               << loop_summary.loop.frames_rendered
               << " ticks_processed=" << loop_summary.loop.ticks_processed
-              << " last_stage=" << comic2::to_string(loop_summary.loop.last_stage)
+              << " last_stage="
+              << comic2::to_string(loop_summary.loop.last_stage)
               << " quit_requested=" << std::boolalpha
               << loop_summary.loop.quit_requested << std::noboolalpha << "\n";
     return 0;
