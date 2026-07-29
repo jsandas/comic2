@@ -1,6 +1,7 @@
 #include "comic2/room_loader.hpp"
 
 #include <cstddef>
+#include <filesystem>
 #include <optional>
 #include <span>
 
@@ -11,8 +12,61 @@ namespace comic2 {
 namespace {
 
 constexpr std::size_t kRoomRowPointerMapOffset = 0x2A0;
+constexpr std::size_t kRoomTableOffset = 0x04;
+constexpr std::size_t kRoomEntrySize = 6;
+constexpr std::uint16_t kSentinelEntry = 0xFFFFu;
 
 } // namespace
+
+std::optional<RoomLoadSpec>
+resolve_room_load_spec(const std::filesystem::path &source_path,
+                       std::span<const std::uint8_t> bytes,
+                       std::uint16_t level, std::uint16_t room,
+                       ResourceAssetKind asset_kind) {
+  if (bytes.size() < kRoomTableOffset + kRoomEntrySize) {
+    return std::nullopt;
+  }
+
+  const std::uint16_t file_level = static_cast<std::uint16_t>(
+      bytes[2] | (static_cast<std::uint16_t>(bytes[3]) << 8));
+  if (file_level != level && file_level != 0) {
+    return std::nullopt;
+  }
+
+  const std::size_t room_entry_offset =
+      kRoomTableOffset + static_cast<std::size_t>(room) * kRoomEntrySize;
+  if (room_entry_offset > bytes.size() - kRoomEntrySize) {
+    return std::nullopt;
+  }
+
+  const std::optional<FrdataRoomEntry> room_entry =
+      decode_frdata_room_entry(bytes, room_entry_offset);
+  if (!room_entry.has_value() || room_entry->tile_w == 0 ||
+      room_entry->tile_h == 0 || room_entry->tile_w == kSentinelEntry ||
+      room_entry->tile_h == kSentinelEntry ||
+      room_entry->rle_data_off == kSentinelEntry) {
+    return std::nullopt;
+  }
+
+  RoomLoadSpec spec;
+  spec.source_path = source_path;
+  spec.level = level;
+  spec.room = room;
+  spec.asset_kind = asset_kind;
+  spec.table_offset = kRoomTableOffset;
+  spec.room_entry_offset = room_entry_offset;
+  spec.resource_offset = asset_kind == ResourceAssetKind::RoomTable
+                             ? room_entry_offset
+                             : static_cast<std::size_t>(room_entry->rle_data_off);
+  spec.room_entry = *room_entry;
+
+  if (asset_kind == ResourceAssetKind::RoomPayload &&
+      spec.resource_offset >= bytes.size()) {
+    return std::nullopt;
+  }
+
+  return spec;
+}
 
 std::optional<FrdataRoomEntry>
 decode_frdata_room_entry(std::span<const std::uint8_t> bytes,
@@ -57,62 +111,62 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
                                             std::span<const std::uint8_t> bytes,
                                             std::uint16_t level,
                                             std::uint16_t room) {
-  constexpr std::size_t kRoomTableOffset = 0x04;
-  constexpr std::size_t kRoomEntrySize = 6;
-  constexpr std::uint16_t kSentinelEntry = 0xFFFFu;
-
-  if (bytes.size() < kRoomTableOffset + kRoomEntrySize) {
-    return false;
-  }
-
-  const std::uint16_t file_level = static_cast<std::uint16_t>(
-      bytes[2] | (static_cast<std::uint16_t>(bytes[3]) << 8));
-  if (file_level != level && file_level != 0) {
-    return false;
-  }
-
-  const std::size_t room_entry_offset =
-      kRoomTableOffset + static_cast<std::size_t>(room) * kRoomEntrySize;
-  if (room_entry_offset > bytes.size() - kRoomEntrySize) {
-    return false;
-  }
-
-  const std::optional<FrdataRoomEntry> room_entry =
-      decode_frdata_room_entry(bytes, room_entry_offset);
-  if (!room_entry.has_value() || room_entry->tile_w == 0 ||
-      room_entry->tile_h == 0) {
-    return false;
-  }
-
-  const std::size_t absolute_rle_offset =
-      static_cast<std::size_t>(room_entry->rle_data_off);
-  if (absolute_rle_offset >= bytes.size()) {
-    return false;
-  }
-
-  if (room_entry->tile_w == kSentinelEntry ||
-      room_entry->tile_h == kSentinelEntry ||
-      room_entry->rle_data_off == kSentinelEntry) {
+  const std::optional<RoomLoadSpec> spec =
+      resolve_room_load_spec({}, bytes, level, room,
+                             ResourceAssetKind::RoomPayload);
+  if (!spec.has_value()) {
     return false;
   }
 
   SignedRleResult decoded;
   try {
-    decoded = decode_signed_rle(bytes.subspan(absolute_rle_offset));
+    decoded = decode_signed_rle(bytes.subspan(spec->resource_offset));
   } catch (...) {
     return false;
   }
   const std::optional<std::vector<std::uint16_t>> row_pointers =
-      build_room_row_pointer_table(decoded.bytes, room_entry->tile_h);
+      build_room_row_pointer_table(decoded.bytes, spec->room_entry.tile_h);
   if (!row_pointers.has_value()) {
     return false;
   }
 
   state.current_level = level;
   state.current_room = room;
-  state.room_entry = *room_entry;
-  state.room_grid.tile_w = room_entry->tile_w;
-  state.room_grid.tile_h = room_entry->tile_h;
+  state.room_entry = spec->room_entry;
+  state.room_grid.tile_w = spec->room_entry.tile_w;
+  state.room_grid.tile_h = spec->room_entry.tile_h;
+  state.room_grid.row_pointers = *row_pointers;
+  state.room_grid.tile_data = decoded.bytes;
+  return true;
+}
+
+bool load_room_tilemap_from_resource_file(
+    RuntimeState &state, const std::filesystem::path &source_path,
+    std::span<const std::uint8_t> bytes, std::uint16_t level,
+    std::uint16_t room) {
+  const std::optional<RoomLoadSpec> spec = resolve_room_load_spec(
+      source_path, bytes, level, room, ResourceAssetKind::RoomPayload);
+  if (!spec.has_value()) {
+    return false;
+  }
+
+  SignedRleResult decoded;
+  try {
+    decoded = decode_signed_rle(bytes.subspan(spec->resource_offset));
+  } catch (...) {
+    return false;
+  }
+  const std::optional<std::vector<std::uint16_t>> row_pointers =
+      build_room_row_pointer_table(decoded.bytes, spec->room_entry.tile_h);
+  if (!row_pointers.has_value()) {
+    return false;
+  }
+
+  state.current_level = level;
+  state.current_room = room;
+  state.room_entry = spec->room_entry;
+  state.room_grid.tile_w = spec->room_entry.tile_w;
+  state.room_grid.tile_h = spec->room_entry.tile_h;
   state.room_grid.row_pointers = *row_pointers;
   state.room_grid.tile_data = decoded.bytes;
   return true;

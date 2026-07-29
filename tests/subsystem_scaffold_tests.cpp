@@ -371,6 +371,41 @@ void test_room_loader_decodes_frdata_entry() {
   expect(entry->rle_data_off == 0x1234, "rle_data_off decode mismatch");
 }
 
+  void test_room_loader_resolves_room_payload_location() {
+    std::vector<std::uint8_t> bytes(0x40, 0x00);
+    bytes[2] = 0x03;
+    bytes[3] = 0x00;
+    bytes[0x04] = 0x04;
+    bytes[0x05] = 0x00;
+    bytes[0x06] = 0x03;
+    bytes[0x07] = 0x00;
+    bytes[0x08] = 0x20;
+    bytes[0x09] = 0x00;
+
+    const std::optional<comic2::RoomLoadSpec> spec =
+        comic2::resolve_room_load_spec("/tmp/FRDATA.0", bytes, 3, 0,
+              comic2::ResourceAssetKind::RoomPayload);
+    expect(spec.has_value(), "resolver should map a valid room payload");
+    expect(spec->source_path == std::filesystem::path("/tmp/FRDATA.0"),
+      "resolver should preserve the source path");
+    expect(spec->table_offset == 0x04, "resolver should report table offset");
+    expect(spec->room_entry_offset == 0x04,
+      "resolver should report room entry offset");
+    expect(spec->resource_offset == 0x20,
+      "resolver should report room payload offset");
+    expect(spec->room_entry.tile_w == 4, "resolver should decode tile_w");
+    expect(spec->room_entry.tile_h == 3, "resolver should decode tile_h");
+    expect(spec->room_entry.rle_data_off == 0x20,
+      "resolver should decode payload offset");
+
+    const std::optional<comic2::RoomLoadSpec> table_spec =
+        comic2::resolve_room_load_spec("/tmp/FRDATA.0", bytes, 3, 0,
+              comic2::ResourceAssetKind::RoomTable);
+    expect(table_spec.has_value(), "resolver should map room table access");
+    expect(table_spec->resource_offset == 0x04,
+      "room table access should point at the room entry");
+  }
+
 void test_room_loader_rejects_huge_offset() {
   const std::vector<std::uint8_t> bytes = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
@@ -396,6 +431,24 @@ void test_room_loader_rejects_out_of_bounds_room_index() {
       comic2::load_room_tilemap_from_resource_buffer(state, bytes, 3, 1);
   expect(!loaded,
          "room loader should reject a room index that is outside the table");
+}
+
+void test_room_loader_rejects_sentinel_entries() {
+  std::vector<std::uint8_t> bytes(0x10, 0x00);
+  bytes[2] = 0x03;
+  bytes[3] = 0x00;
+  bytes[0x04] = 0xFF;
+  bytes[0x05] = 0xFF;
+  bytes[0x06] = 0xFF;
+  bytes[0x07] = 0xFF;
+  bytes[0x08] = 0xFF;
+  bytes[0x09] = 0xFF;
+
+  const std::optional<comic2::RoomLoadSpec> spec =
+      comic2::resolve_room_load_spec("/tmp/FRDATA.0", bytes, 3, 0,
+                                     comic2::ResourceAssetKind::RoomPayload);
+  expect(!spec.has_value(),
+         "resolver should reject sentinel room entries as invalid");
 }
 
 void test_room_loader_populates_runtime_state_from_resource_buffer() {
@@ -466,7 +519,9 @@ void run_subsystem_scaffold_tests() {
   test_projectile_anim_frame_cycles();
   test_ent_activation_pipeline_integration();
   test_room_loader_decodes_frdata_entry();
+  test_room_loader_resolves_room_payload_location();
   test_room_loader_rejects_huge_offset();
   test_room_loader_rejects_out_of_bounds_room_index();
+  test_room_loader_rejects_sentinel_entries();
   test_room_loader_populates_runtime_state_from_resource_buffer();
 }

@@ -14,6 +14,11 @@
 
 namespace comic2 {
 
+enum class ResourceAssetKind {
+  RoomTable,
+  RoomPayload,
+};
+
 struct BootstrapLoadSummary {
   std::size_t metadata_files_tried = 0;
   std::size_t sprite_files_tried = 0;

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <optional>
 #include <span>
 #include <vector>
@@ -13,12 +14,24 @@
 namespace comic2 {
 
 struct RoomLoadSpec {
+  std::filesystem::path source_path;
   std::uint16_t level = 0;
   std::uint16_t room = 0;
+  ResourceAssetKind asset_kind = ResourceAssetKind::RoomPayload;
+  std::size_t table_offset = 0x04;
+  std::size_t room_entry_offset = 0;
+  std::size_t resource_offset = 0;
   FrdataRoomEntry room_entry{};
 
   bool operator==(const RoomLoadSpec &) const = default;
 };
+
+std::optional<RoomLoadSpec>
+resolve_room_load_spec(const std::filesystem::path &source_path,
+                       std::span<const std::uint8_t> bytes,
+                       std::uint16_t level, std::uint16_t room,
+                       ResourceAssetKind asset_kind =
+                           ResourceAssetKind::RoomPayload);
 
 std::optional<FrdataRoomEntry>
 decode_frdata_room_entry(std::span<const std::uint8_t> bytes,
@@ -32,5 +45,10 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
                                             std::span<const std::uint8_t> bytes,
                                             std::uint16_t level,
                                             std::uint16_t room);
+
+bool load_room_tilemap_from_resource_file(
+  RuntimeState &state, const std::filesystem::path &source_path,
+  std::span<const std::uint8_t> bytes, std::uint16_t level,
+  std::uint16_t room);
 
 } // namespace comic2

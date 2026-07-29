@@ -484,10 +484,16 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 - [ ] Integration tests cover cross-room load success and failure fallback behavior.
 
 ### 8.6.1 Resource Resolution Layer
-- [ ] Introduce a dedicated resolver API (new module) that maps `(level, room, asset kind)` to concrete file path + offset metadata.
-- [ ] Implement FRDATA table parsing for per-level room/resource indirection already documented in Phase 6.
-- [ ] Remove hardcoded room candidate arrays from bootstrap loading; keep only asset-root candidate discovery.
-- [ ] Add resolver unit tests for valid mapping, out-of-range room index, and sentinel/invalid entries.
+- [x] Introduce a dedicated resolver API (new module) that maps `(level, room, asset kind)` to concrete file path + offset metadata.
+- [x] Implement FRDATA table parsing for per-level room/resource indirection already documented in Phase 6.
+- [x] Remove hardcoded room candidate arrays from bootstrap loading; keep only asset-root candidate discovery.
+- [x] Add resolver unit tests for valid mapping, out-of-range room index, and sentinel/invalid entries.
+
+**Implementation details:**
+- Added resolver asset-kind typing and room metadata resolution path (`ResourceAssetKind`, `RoomLoadSpec`, `resolve_room_load_spec`) with explicit table/entry/resource offsets.
+- Refactored room decode/load path to consume resolver output and reject sentinel/invalid entries before decode.
+- Removed hardcoded FR000/FR001 room candidate arrays from bootstrap and replaced with dynamic room payload discovery (`FR###.#`) while preserving asset-root discovery and fallback behavior.
+- Added resolver-focused unit coverage for valid mapping offsets, out-of-range room index rejection, and sentinel-entry rejection.
 
 **Suggested touchpoints:**
 - `include/comic2/resource_loader.hpp`
