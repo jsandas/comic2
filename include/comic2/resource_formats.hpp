@@ -3,6 +3,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <span>
 #include <vector>
 
@@ -42,6 +43,31 @@ struct Ega4PlaneImage {
 struct SignedRleResult {
   std::vector<std::uint8_t> bytes;
   std::size_t consumed = 0;
+};
+
+struct FrpakCatalogRecord {
+  std::uint16_t pak_id = 0;
+  std::uint16_t record_id = 0;
+  std::size_t data_offset = 0;
+  std::size_t data_size = 0;
+  std::uint16_t row_span_bytes = 0;
+
+  bool operator==(const FrpakCatalogRecord &) const = default;
+};
+
+struct FrpakCatalogFile {
+  std::uint16_t pak_id = 0;
+  std::filesystem::path source_path;
+  std::size_t file_size = 0;
+  std::vector<FrpakCatalogRecord> records;
+
+  bool operator==(const FrpakCatalogFile &) const = default;
+};
+
+struct FrpakCatalog {
+  std::vector<FrpakCatalogFile> files;
+
+  bool operator==(const FrpakCatalog &) const = default;
 };
 
 SignedRleResult decode_signed_rle(std::span<const std::uint8_t> encoded);

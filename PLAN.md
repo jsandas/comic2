@@ -525,11 +525,17 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 - `tests/bootstrap_wiring_tests.cpp`
 
 ### 8.6.3 FRPAK Catalog and Decode Pipeline
-- [ ] Add a FRPAK catalog structure that records file id, record offsets, and decode metadata for sprite/tile resources.
-- [ ] Replace raw append of FRPAK bytes with cataloged storage and explicit record lookup APIs.
+- [x] Add a FRPAK catalog structure that records file id, record offsets, and decode metadata for sprite/tile resources.
+- [x] Replace raw append of FRPAK bytes with cataloged storage and explicit record lookup APIs.
 - [ ] Add decode-on-demand path using existing RLE/4-plane decoders with bounds checks.
 - [ ] Add cache policy (initially simple): memoize decoded records by `(pak_id, record_id)`.
 - [ ] Add tests for malformed record headers, out-of-range offsets, and deterministic decode results.
+
+**Implementation details (current slice):**
+- Added FRPAK catalog models (`FrpakCatalog`, `FrpakCatalogFile`, `FrpakCatalogRecord`) and runtime storage in `RuntimeState`.
+- Added explicit catalog APIs: build file catalog from payload bytes, catalog record lookup by `(pak_id, record_id)`, and record/file bounds validation.
+- Bootstrap FRPAK loading now indexes valid `FRPAK.001..007` payloads into catalog metadata with strict header/bounds checks.
+- Added tests for valid catalog construction, truncated/invalid headers, and out-of-range record bounds validation.
 
 **Suggested touchpoints:**
 - `include/comic2/resource_formats.hpp`

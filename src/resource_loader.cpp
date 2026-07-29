@@ -4,6 +4,7 @@
 #include <fstream>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "comic2/bootstrap.hpp"
@@ -13,6 +14,8 @@ namespace comic2 {
 namespace {
 
 constexpr std::size_t kMaxDecodedBytes = 0x10000;
+constexpr std::uint16_t kFrpakMinPakId = 1;
+constexpr std::uint16_t kFrpakMaxPakId = 999;
 
 std::uint16_t read_u16(std::span<const std::uint8_t> bytes, std::size_t off) {
   if (off + 1 >= bytes.size()) {
@@ -25,6 +28,27 @@ std::uint16_t read_u16(std::span<const std::uint8_t> bytes, std::size_t off) {
 bool path_exists(const std::filesystem::path &path) {
   return std::filesystem::exists(path) &&
          std::filesystem::is_regular_file(path);
+}
+
+std::optional<std::uint16_t>
+parse_frpak_id_from_path(const std::filesystem::path &path) {
+  const std::string ext = path.extension().string();
+  if (ext.size() != 4 || ext[0] != '.') {
+    return std::nullopt;
+  }
+
+  if (ext[1] < '0' || ext[1] > '9' || ext[2] < '0' || ext[2] > '9' ||
+      ext[3] < '0' || ext[3] > '9') {
+    return std::nullopt;
+  }
+
+  const auto pak_id = static_cast<std::uint16_t>(
+      (ext[1] - '0') * 100 + (ext[2] - '0') * 10 + (ext[3] - '0'));
+  if (pak_id < kFrpakMinPakId || pak_id > kFrpakMaxPakId) {
+    return std::nullopt;
+  }
+
+  return pak_id;
 }
 
 } // namespace
@@ -56,6 +80,59 @@ load_file_bytes(const std::filesystem::path &path) {
     }
   }
   return bytes;
+}
+
+std::optional<FrpakCatalogFile>
+build_frpak_catalog_file(const std::filesystem::path &source_path,
+                         std::span<const std::uint8_t> bytes,
+                         std::uint16_t pak_id) {
+  if (bytes.size() < sizeof(EgaRle4PlaneHeader)) {
+    return std::nullopt;
+  }
+
+  const std::uint16_t row_span = read_u16(bytes, 0);
+  if (row_span == 0) {
+    return std::nullopt;
+  }
+
+  FrpakCatalogFile file;
+  file.pak_id = pak_id;
+  file.source_path = source_path;
+  file.file_size = bytes.size();
+  file.records.push_back(FrpakCatalogRecord{
+      .pak_id = pak_id,
+      .record_id = 0,
+      .data_offset = 0,
+      .data_size = bytes.size(),
+      .row_span_bytes = row_span,
+  });
+  return file;
+}
+
+std::optional<FrpakCatalogRecord>
+find_frpak_catalog_record(const FrpakCatalog &catalog, std::uint16_t pak_id,
+                          std::uint16_t record_id) {
+  for (const auto &file : catalog.files) {
+    if (file.pak_id != pak_id) {
+      continue;
+    }
+
+    for (const auto &record : file.records) {
+      if (record.record_id == record_id) {
+        return record;
+      }
+    }
+  }
+
+  return std::nullopt;
+}
+
+bool validate_frpak_catalog_record_bounds(const FrpakCatalogRecord &record,
+                                          std::size_t file_size) {
+  if (record.data_offset > file_size) {
+    return false;
+  }
+  return record.data_size <= (file_size - record.data_offset);
 }
 
 SignedRleResult decode_signed_rle(std::span<const std::uint8_t> encoded) {
@@ -220,6 +297,29 @@ load_initial_bootstrap_resources(RuntimeState &state,
         continue;
       }
 
+      const auto pak_id = parse_frpak_id_from_path(candidate);
+      if (!pak_id.has_value()) {
+        continue;
+      }
+
+      const auto catalog_file = build_frpak_catalog_file(candidate, *bytes, *pak_id);
+      if (!catalog_file.has_value()) {
+        continue;
+      }
+
+      bool all_records_valid = true;
+      for (const auto &record : catalog_file->records) {
+        if (!validate_frpak_catalog_record_bounds(record,
+                                                  catalog_file->file_size)) {
+          all_records_valid = false;
+          break;
+        }
+      }
+      if (!all_records_valid) {
+        continue;
+      }
+
+      state.frpak_catalog.files.push_back(*catalog_file);
       state.sprite_resource_bytes.insert(state.sprite_resource_bytes.end(),
                                          bytes->begin(), bytes->end());
     } catch (const std::exception &) {

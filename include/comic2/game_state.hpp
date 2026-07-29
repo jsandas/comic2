@@ -7,6 +7,7 @@
 
 #include "comic2/entity_runtime.hpp"
 #include "comic2/projectiles.hpp"
+#include "comic2/resource_formats.hpp"
 #include "comic2/types.hpp"
 
 namespace comic2 {
@@ -68,6 +69,7 @@ struct RuntimeState {
   RoomTileGrid room_grid;
   std::vector<std::uint8_t> room_resource_bytes;
   std::vector<std::uint8_t> level_metadata_bytes;
+  FrpakCatalog frpak_catalog;
   std::vector<std::uint8_t> sprite_resource_bytes;
 
   PlayerState player;
