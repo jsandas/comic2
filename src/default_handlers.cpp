@@ -1,6 +1,7 @@
 #include "comic2/default_handlers.hpp"
 
 #include <limits>
+#include <utility>
 
 #include "comic2/player_controller.hpp"
 #include "comic2/room_loader.hpp"
@@ -55,15 +56,23 @@ void update_room_transition_from_player_bounds(RuntimeState &state) {
       return;
     }
 
-    --state.current_room;
-    state.player.x = static_cast<std::int16_t>(kViewportWidthPixels - 1);
+    state.pending_room_transition =
+        PendingRoomTransition{.target_room =
+                                  static_cast<std::uint16_t>(state.current_room -
+                                                             1),
+                              .target_player_x =
+                                  static_cast<std::int16_t>(kViewportWidthPixels -
+                                                            1)};
     state.flags.level_transition_pending = true;
     return;
   }
 
   if (state.player.x >= kViewportWidthPixels) {
-    ++state.current_room;
-    state.player.x = 0;
+    state.pending_room_transition =
+        PendingRoomTransition{.target_room =
+                                  static_cast<std::uint16_t>(state.current_room +
+                                                             1),
+                              .target_player_x = 0};
     state.flags.level_transition_pending = true;
   }
 }
@@ -89,11 +98,31 @@ void apply_default_grounded_physics(RuntimeState &state) {
 } // namespace
 
 void handle_level_transition(RuntimeState &state) {
+  const auto pending = state.pending_room_transition;
   state.flags.level_transition_pending = false;
-  if (!state.room_resource_bytes.empty()) {
-    load_room_tilemap_from_resource_buffer(state, state.room_resource_bytes,
-                                           state.current_level,
-                                           state.current_room);
+  state.pending_room_transition.reset();
+  if (!pending.has_value()) {
+    return;
+  }
+
+  RuntimeState candidate_state = state;
+  candidate_state.current_room = pending->target_room;
+  candidate_state.player.x = pending->target_player_x;
+
+  bool loaded = false;
+  if (!candidate_state.assets_root.empty()) {
+    loaded = load_room_tilemap_from_asset_root(
+        candidate_state, candidate_state.assets_root, candidate_state.current_level,
+        candidate_state.current_room);
+  }
+  if (!loaded && !candidate_state.room_resource_bytes.empty()) {
+    loaded = load_room_tilemap_from_resource_buffer(
+        candidate_state, candidate_state.room_resource_bytes,
+        candidate_state.current_level, candidate_state.current_room);
+  }
+
+  if (loaded) {
+    state = std::move(candidate_state);
   }
 }
 

@@ -237,6 +237,7 @@ initialize_runtime_scene(RuntimeState &state,
     if (load.room_grid_loaded) {
       candidate_state.player.is_physics_active = true;
       clamp_player_to_room_bounds(candidate_state);
+      candidate_state.assets_root = candidate;
       state = candidate_state;
       summary.room_grid_loaded = true;
       summary.using_placeholder = false;

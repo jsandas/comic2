@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
+#include <optional>
 #include <vector>
 
 #include "comic2/entity_runtime.hpp"
@@ -49,10 +51,19 @@ struct DispatcherFlags {
   bool operator==(const DispatcherFlags &) const = default;
 };
 
+struct PendingRoomTransition {
+  std::uint16_t target_room = 0;
+  std::int16_t target_player_x = 0;
+
+  bool operator==(const PendingRoomTransition &) const = default;
+};
+
 struct RuntimeState {
   std::uint16_t current_level = 0;
   std::uint16_t current_room = 0;
   FrdataRoomEntry room_entry{};
+  std::filesystem::path assets_root;
+  std::optional<PendingRoomTransition> pending_room_transition;
 
   RoomTileGrid room_grid;
   std::vector<std::uint8_t> room_resource_bytes;

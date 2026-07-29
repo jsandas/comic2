@@ -1,12 +1,9 @@
 #include "comic2/resource_loader.hpp"
 
-#include <algorithm>
 #include <array>
-#include <cctype>
 #include <fstream>
 #include <optional>
 #include <stdexcept>
-#include <string>
 #include <vector>
 
 #include "comic2/bootstrap.hpp"
@@ -28,48 +25,6 @@ std::uint16_t read_u16(std::span<const std::uint8_t> bytes, std::size_t off) {
 bool path_exists(const std::filesystem::path &path) {
   return std::filesystem::exists(path) &&
          std::filesystem::is_regular_file(path);
-}
-
-bool is_room_payload_candidate_name(std::string name) {
-  std::transform(name.begin(), name.end(), name.begin(),
-                 [](unsigned char c) {
-                   return static_cast<char>(std::toupper(c));
-                 });
-
-  if (name.size() != 7 || name.rfind("FR", 0) != 0 || name[5] != '.') {
-    return false;
-  }
-
-  const bool room_index_is_digits = std::isdigit(name[2]) &&
-                                    std::isdigit(name[3]) &&
-                                    std::isdigit(name[4]);
-  const bool variant_is_digit = std::isdigit(name[6]);
-  return room_index_is_digits && variant_is_digit;
-}
-
-std::vector<std::filesystem::path>
-discover_room_payload_candidates(const std::filesystem::path &root) {
-  std::vector<std::filesystem::path> candidates;
-
-  std::error_code ec;
-  if (!std::filesystem::exists(root, ec) ||
-      !std::filesystem::is_directory(root, ec)) {
-    return candidates;
-  }
-
-  for (const auto &entry : std::filesystem::directory_iterator(root, ec)) {
-    if (ec || !entry.is_regular_file()) {
-      continue;
-    }
-
-    const std::string name = entry.path().filename().string();
-    if (is_room_payload_candidate_name(name)) {
-      candidates.push_back(entry.path());
-    }
-  }
-
-  std::sort(candidates.begin(), candidates.end());
-  return candidates;
 }
 
 } // namespace
@@ -249,23 +204,8 @@ load_initial_bootstrap_resources(RuntimeState &state,
   }
 
   if (!summary.room_grid_loaded) {
-    const auto room_candidates = discover_room_payload_candidates(root);
-    for (const auto &candidate : room_candidates) {
-      try {
-        const auto bytes = load_file_bytes(candidate);
-        if (!bytes.has_value()) {
-          continue;
-        }
-
-        if (load_room_tilemap_from_resource_file(state, candidate, *bytes, 0,
-                                                 0)) {
-          summary.room_grid_loaded = true;
-          break;
-        }
-      } catch (const std::exception &) {
-        // Keep the bootstrap tolerant of partial room-table payloads.
-      }
-    }
+    summary.room_grid_loaded =
+        load_room_tilemap_from_asset_root(state, root, 0, 0);
   }
 
   for (const auto &candidate : sprite_candidates) {

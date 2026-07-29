@@ -1,9 +1,14 @@
 #include "comic2/room_loader.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <span>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "comic2/resource_loader.hpp"
 
@@ -15,6 +20,48 @@ constexpr std::size_t kRoomRowPointerMapOffset = 0x2A0;
 constexpr std::size_t kRoomTableOffset = 0x04;
 constexpr std::size_t kRoomEntrySize = 6;
 constexpr std::uint16_t kSentinelEntry = 0xFFFFu;
+
+bool is_room_payload_candidate_name(std::string name) {
+  std::transform(name.begin(), name.end(), name.begin(),
+                 [](unsigned char c) {
+                   return static_cast<char>(std::toupper(c));
+                 });
+
+  if (name.size() != 7 || name.rfind("FR", 0) != 0 || name[5] != '.') {
+    return false;
+  }
+
+  const bool room_index_is_digits = std::isdigit(name[2]) &&
+                                    std::isdigit(name[3]) &&
+                                    std::isdigit(name[4]);
+  const bool variant_is_digit = std::isdigit(name[6]);
+  return room_index_is_digits && variant_is_digit;
+}
+
+std::vector<std::filesystem::path>
+discover_room_payload_candidates(const std::filesystem::path &root) {
+  std::vector<std::filesystem::path> candidates;
+
+  std::error_code ec;
+  if (!std::filesystem::exists(root, ec) ||
+      !std::filesystem::is_directory(root, ec)) {
+    return candidates;
+  }
+
+  for (const auto &entry : std::filesystem::directory_iterator(root, ec)) {
+    if (ec || !entry.is_regular_file()) {
+      continue;
+    }
+
+    const std::string name = entry.path().filename().string();
+    if (is_room_payload_candidate_name(name)) {
+      candidates.push_back(entry.path());
+    }
+  }
+
+  std::sort(candidates.begin(), candidates.end());
+  return candidates;
+}
 
 } // namespace
 
@@ -170,6 +217,29 @@ bool load_room_tilemap_from_resource_file(
   state.room_grid.row_pointers = *row_pointers;
   state.room_grid.tile_data = decoded.bytes;
   return true;
+}
+
+bool load_room_tilemap_from_asset_root(RuntimeState &state,
+                                       const std::filesystem::path &root,
+                                       std::uint16_t level,
+                                       std::uint16_t room) {
+  const auto candidates = discover_room_payload_candidates(root);
+  for (const auto &candidate : candidates) {
+    const auto bytes = load_file_bytes(candidate);
+    if (!bytes.has_value()) {
+      continue;
+    }
+
+    RuntimeState candidate_state = state;
+    if (load_room_tilemap_from_resource_file(candidate_state, candidate, *bytes,
+                                             level, room)) {
+      candidate_state.room_resource_bytes = *bytes;
+      state = std::move(candidate_state);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 } // namespace comic2

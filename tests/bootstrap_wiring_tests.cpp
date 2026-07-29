@@ -371,6 +371,9 @@ void test_scene_bootstrap_discovers_reference_assets_from_repo_root() {
         "scene bootstrap should not use placeholder mode when assets exist");
   check(!summary.assets_root_used.empty(),
         "scene bootstrap should report the selected assets root");
+    check(state.assets_root == summary.assets_root_used,
+      "scene bootstrap should persist selected assets root into runtime "
+      "state");
   check(state.room_grid.tile_w > 0 && state.room_grid.tile_h > 0,
         "scene bootstrap should populate room grid dimensions");
   check(state.player.x >= 0 && state.player.x <= 319,

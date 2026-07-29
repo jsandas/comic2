@@ -51,4 +51,9 @@ bool load_room_tilemap_from_resource_file(
   std::span<const std::uint8_t> bytes, std::uint16_t level,
   std::uint16_t room);
 
+bool load_room_tilemap_from_asset_root(RuntimeState &state,
+                                       const std::filesystem::path &root,
+                                       std::uint16_t level,
+                                       std::uint16_t room);
+
 } // namespace comic2

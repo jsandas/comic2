@@ -503,13 +503,20 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 - `tests/subsystem_scaffold_tests.cpp`
 
 ### 8.6.2 Room Transition Data Reload
-- [ ] Update `handle_level_transition` to resolve and load the next room via the resolver instead of reusing stale in-memory bytes.
-- [ ] Ensure transition load is atomic: decode into temporary state, then commit only on success.
-- [ ] Keep graceful behavior on failure (no crash, controlled fallback/state preservation).
-- [ ] Add transition tests covering:
+- [x] Update `handle_level_transition` to resolve and load the next room via the resolver instead of reusing stale in-memory bytes.
+- [x] Ensure transition load is atomic: decode into temporary state, then commit only on success.
+- [x] Keep graceful behavior on failure (no crash, controlled fallback/state preservation).
+- [x] Add transition tests covering:
 	- successful right-edge room transition load
 	- left-edge transition at room 0 clamp behavior
 	- failed target-room load with stable prior runtime state
+
+**Implementation details:**
+- Transition boundary detection now stages pending target metadata (`target_room`, `target_player_x`) instead of mutating room/player state immediately.
+- `handle_level_transition` now performs resolver-backed reload into a temporary `RuntimeState` and commits only on successful room decode/load.
+- Transition load first attempts asset-root file resolution (`FR###.#` scan + resolver), then falls back to existing in-memory bytes when needed.
+- Failed loads consume pending transition flags but preserve prior room/grid/player runtime state.
+- Added deterministic tests for right-edge success path, room-0 left clamp behavior, and failed-load state preservation.
 
 **Suggested touchpoints:**
 - `src/default_handlers.cpp`
