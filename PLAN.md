@@ -479,7 +479,7 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 ### Exit Criteria
 - [ ] Level/room selection resolves through FRDATA indirection instead of hardcoded candidate filename scans.
 - [ ] Room transitions load the target room from original data files and commit state atomically.
-- [ ] FRPAK payloads are indexed and decoded through an explicit resource catalog/cache.
+- [x] FRPAK payloads are indexed and decoded through an explicit resource catalog/cache.
 - [ ] Rendering path consumes decoded original graphics for at least one verified tile/sprite path.
 - [ ] Integration tests cover cross-room load success and failure fallback behavior.
 
@@ -527,15 +527,18 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 ### 8.6.3 FRPAK Catalog and Decode Pipeline
 - [x] Add a FRPAK catalog structure that records file id, record offsets, and decode metadata for sprite/tile resources.
 - [x] Replace raw append of FRPAK bytes with cataloged storage and explicit record lookup APIs.
-- [ ] Add decode-on-demand path using existing RLE/4-plane decoders with bounds checks.
-- [ ] Add cache policy (initially simple): memoize decoded records by `(pak_id, record_id)`.
-- [ ] Add tests for malformed record headers, out-of-range offsets, and deterministic decode results.
+- [x] Add decode-on-demand path using existing RLE/4-plane decoders with bounds checks.
+- [x] Add cache policy (initially simple): memoize decoded records by `(pak_id, record_id)`.
+- [x] Add tests for malformed record headers, out-of-range offsets, and deterministic decode results.
 
 **Implementation details (current slice):**
 - Added FRPAK catalog models (`FrpakCatalog`, `FrpakCatalogFile`, `FrpakCatalogRecord`) and runtime storage in `RuntimeState`.
 - Added explicit catalog APIs: build file catalog from payload bytes, catalog record lookup by `(pak_id, record_id)`, and record/file bounds validation.
 - Bootstrap FRPAK loading now indexes valid `FRPAK.001..007` payloads into catalog metadata with strict header/bounds checks.
 - Added tests for valid catalog construction, truncated/invalid headers, and out-of-range record bounds validation.
+- Added decode-on-demand APIs that decode catalog records from aggregated sprite payload bytes and reject invalid record ids/offsets.
+- Added deterministic memoization cache for decoded records (`pak_id`, `record_id`) with cache reset API for test/control flows.
+- Added renderer validation tests that verify first decode, cache-hit determinism, invalid record id failure, and out-of-range metadata failure.
 
 **Suggested touchpoints:**
 - `include/comic2/resource_formats.hpp`

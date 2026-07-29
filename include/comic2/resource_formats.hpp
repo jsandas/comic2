@@ -38,6 +38,8 @@ struct Ega4PlaneImage {
   std::uint16_t height_rows =
       0; // image height in rows (must be set by caller for blitting)
   std::array<std::vector<std::uint8_t>, kEgaPlaneCount> planes;
+
+  bool operator==(const Ega4PlaneImage &) const = default;
 };
 
 struct SignedRleResult {
@@ -59,6 +61,7 @@ struct FrpakCatalogFile {
   std::uint16_t pak_id = 0;
   std::filesystem::path source_path;
   std::size_t file_size = 0;
+  std::size_t blob_offset = 0;
   std::vector<FrpakCatalogRecord> records;
 
   bool operator==(const FrpakCatalogFile &) const = default;
@@ -68,6 +71,14 @@ struct FrpakCatalog {
   std::vector<FrpakCatalogFile> files;
 
   bool operator==(const FrpakCatalog &) const = default;
+};
+
+struct FrpakDecodedRecordCacheEntry {
+  std::uint16_t pak_id = 0;
+  std::uint16_t record_id = 0;
+  Ega4PlaneImage image;
+
+  bool operator==(const FrpakDecodedRecordCacheEntry &) const = default;
 };
 
 SignedRleResult decode_signed_rle(std::span<const std::uint8_t> encoded);

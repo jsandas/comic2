@@ -51,6 +51,16 @@ parse_frpak_id_from_path(const std::filesystem::path &path) {
   return pak_id;
 }
 
+const FrpakCatalogFile *find_frpak_catalog_file(const FrpakCatalog &catalog,
+                                                std::uint16_t pak_id) {
+  for (const auto &file : catalog.files) {
+    if (file.pak_id == pak_id) {
+      return &file;
+    }
+  }
+  return nullptr;
+}
+
 } // namespace
 
 std::optional<std::vector<std::uint8_t>>
@@ -133,6 +143,70 @@ bool validate_frpak_catalog_record_bounds(const FrpakCatalogRecord &record,
     return false;
   }
   return record.data_size <= (file_size - record.data_offset);
+}
+
+std::optional<Ega4PlaneImage> decode_frpak_catalog_record(
+    const RuntimeState &state, const FrpakCatalogRecord &record) {
+  const FrpakCatalogFile *file =
+      find_frpak_catalog_file(state.frpak_catalog, record.pak_id);
+  if (file == nullptr) {
+    return std::nullopt;
+  }
+  if (!validate_frpak_catalog_record_bounds(record, file->file_size)) {
+    return std::nullopt;
+  }
+  if (file->blob_offset > state.sprite_resource_bytes.size()) {
+    return std::nullopt;
+  }
+
+  const std::size_t global_offset = file->blob_offset + record.data_offset;
+  if (global_offset > state.sprite_resource_bytes.size()) {
+    return std::nullopt;
+  }
+  if (record.data_size > state.sprite_resource_bytes.size() - global_offset) {
+    return std::nullopt;
+  }
+
+  try {
+    return decode_ega_4plane_rle(
+        std::span<const std::uint8_t>(state.sprite_resource_bytes)
+            .subspan(global_offset, record.data_size),
+        true);
+  } catch (const std::exception &) {
+    return std::nullopt;
+  }
+}
+
+std::optional<Ega4PlaneImage>
+decode_frpak_record(RuntimeState &state, std::uint16_t pak_id,
+                    std::uint16_t record_id) {
+  for (const auto &entry : state.frpak_decode_cache) {
+    if (entry.pak_id == pak_id && entry.record_id == record_id) {
+      return entry.image;
+    }
+  }
+
+  const auto record = find_frpak_catalog_record(state.frpak_catalog, pak_id,
+                                                record_id);
+  if (!record.has_value()) {
+    return std::nullopt;
+  }
+
+  const auto decoded = decode_frpak_catalog_record(state, *record);
+  if (!decoded.has_value()) {
+    return std::nullopt;
+  }
+
+  state.frpak_decode_cache.push_back(FrpakDecodedRecordCacheEntry{
+      .pak_id = pak_id,
+      .record_id = record_id,
+      .image = *decoded,
+  });
+  return decoded;
+}
+
+void clear_frpak_decode_cache(RuntimeState &state) {
+  state.frpak_decode_cache.clear();
 }
 
 SignedRleResult decode_signed_rle(std::span<const std::uint8_t> encoded) {
@@ -319,7 +393,9 @@ load_initial_bootstrap_resources(RuntimeState &state,
         continue;
       }
 
-      state.frpak_catalog.files.push_back(*catalog_file);
+      FrpakCatalogFile indexed_file = *catalog_file;
+      indexed_file.blob_offset = state.sprite_resource_bytes.size();
+      state.frpak_catalog.files.push_back(indexed_file);
       state.sprite_resource_bytes.insert(state.sprite_resource_bytes.end(),
                                          bytes->begin(), bytes->end());
     } catch (const std::exception &) {

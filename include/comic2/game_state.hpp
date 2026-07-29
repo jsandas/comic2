@@ -71,6 +71,7 @@ struct RuntimeState {
   std::vector<std::uint8_t> level_metadata_bytes;
   FrpakCatalog frpak_catalog;
   std::vector<std::uint8_t> sprite_resource_bytes;
+  std::vector<FrpakDecodedRecordCacheEntry> frpak_decode_cache;
 
   PlayerState player;
   InputState input;
