@@ -1,5 +1,6 @@
 #include "comic2/resource_loader.hpp"
 
+#include <algorithm>
 #include <array>
 #include <fstream>
 #include <optional>
@@ -53,12 +54,10 @@ parse_frpak_id_from_path(const std::filesystem::path &path) {
 
 const FrpakCatalogFile *find_frpak_catalog_file(const FrpakCatalog &catalog,
                                                 std::uint16_t pak_id) {
-  for (const auto &file : catalog.files) {
-    if (file.pak_id == pak_id) {
-      return &file;
-    }
-  }
-  return nullptr;
+  const auto it = std::find_if(
+      catalog.files.begin(), catalog.files.end(),
+      [pak_id](const FrpakCatalogFile &file) { return file.pak_id == pak_id; });
+  return it != catalog.files.end() ? &(*it) : nullptr;
 }
 
 } // namespace
@@ -126,19 +125,18 @@ build_frpak_catalog_file(const std::filesystem::path &source_path,
 std::optional<FrpakCatalogRecord>
 find_frpak_catalog_record(const FrpakCatalog &catalog, std::uint16_t pak_id,
                           std::uint16_t record_id) {
-  for (const auto &file : catalog.files) {
-    if (file.pak_id != pak_id) {
-      continue;
-    }
-
-    for (const auto &record : file.records) {
-      if (record.record_id == record_id) {
-        return record;
-      }
-    }
+  const FrpakCatalogFile *file = find_frpak_catalog_file(catalog, pak_id);
+  if (file == nullptr) {
+    return std::nullopt;
   }
 
-  return std::nullopt;
+  const auto it =
+      std::find_if(file->records.begin(), file->records.end(),
+                   [record_id](const FrpakCatalogRecord &record) {
+                     return record.record_id == record_id;
+                   });
+  return it != file->records.end() ? std::optional<FrpakCatalogRecord>(*it)
+                                   : std::nullopt;
 }
 
 bool validate_frpak_catalog_record_bounds(const FrpakCatalogRecord &record,
@@ -188,10 +186,13 @@ decode_frpak_catalog_record(const RuntimeState &state,
 std::optional<Ega4PlaneImage> decode_frpak_record(RuntimeState &state,
                                                   std::uint16_t pak_id,
                                                   std::uint16_t record_id) {
-  for (const auto &entry : state.frpak_decode_cache) {
-    if (entry.pak_id == pak_id && entry.record_id == record_id) {
-      return entry.image;
-    }
+  const auto cache_it = std::find_if(
+      state.frpak_decode_cache.begin(), state.frpak_decode_cache.end(),
+      [pak_id, record_id](const FrpakDecodedRecordCacheEntry &entry) {
+        return entry.pak_id == pak_id && entry.record_id == record_id;
+      });
+  if (cache_it != state.frpak_decode_cache.end()) {
+    return cache_it->image;
   }
 
   const auto record =
@@ -390,14 +391,13 @@ load_initial_bootstrap_resources(RuntimeState &state,
         continue;
       }
 
-      bool all_records_valid = true;
-      for (const auto &record : catalog_file->records) {
-        if (!validate_frpak_catalog_record_bounds(record,
-                                                  catalog_file->file_size)) {
-          all_records_valid = false;
-          break;
-        }
-      }
+      const bool all_records_valid =
+          std::all_of(catalog_file->records.begin(),
+                      catalog_file->records.end(),
+                      [&](const FrpakCatalogRecord &record) {
+                        return validate_frpak_catalog_record_bounds(
+                            record, catalog_file->file_size);
+                      });
       if (!all_records_valid) {
         continue;
       }
@@ -407,6 +407,7 @@ load_initial_bootstrap_resources(RuntimeState &state,
       state.frpak_catalog.files.push_back(indexed_file);
       state.sprite_resource_bytes.insert(state.sprite_resource_bytes.end(),
                                          bytes->begin(), bytes->end());
+      clear_frpak_decode_cache(state);
     } catch (const std::exception &) {
       // Missing or unreadable FRPAK payloads should not stop bootstrap.
     }
