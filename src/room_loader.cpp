@@ -22,10 +22,9 @@ constexpr std::size_t kRoomEntrySize = 6;
 constexpr std::uint16_t kSentinelEntry = 0xFFFFu;
 
 bool is_room_payload_candidate_name(std::string name) {
-  std::transform(name.begin(), name.end(), name.begin(),
-                 [](unsigned char c) {
-                   return static_cast<char>(std::toupper(c));
-                 });
+  std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) {
+    return static_cast<char>(std::toupper(c));
+  });
 
   if (name.size() != 7 || name.rfind("FR", 0) != 0 || name[5] != '.') {
     return false;
@@ -72,9 +71,8 @@ discover_room_payload_candidates(const std::filesystem::path &root) {
 
 std::optional<RoomLoadSpec>
 resolve_room_load_spec(const std::filesystem::path &source_path,
-                       std::span<const std::uint8_t> bytes,
-                       std::uint16_t level, std::uint16_t room,
-                       ResourceAssetKind asset_kind) {
+                       std::span<const std::uint8_t> bytes, std::uint16_t level,
+                       std::uint16_t room, ResourceAssetKind asset_kind) {
   if (bytes.size() < kRoomTableOffset + kRoomEntrySize) {
     return std::nullopt;
   }
@@ -107,9 +105,10 @@ resolve_room_load_spec(const std::filesystem::path &source_path,
   spec.asset_kind = asset_kind;
   spec.table_offset = kRoomTableOffset;
   spec.room_entry_offset = room_entry_offset;
-  spec.resource_offset = asset_kind == ResourceAssetKind::RoomTable
-                             ? room_entry_offset
-                             : static_cast<std::size_t>(room_entry->rle_data_off);
+  spec.resource_offset =
+      asset_kind == ResourceAssetKind::RoomTable
+          ? room_entry_offset
+          : static_cast<std::size_t>(room_entry->rle_data_off);
   spec.room_entry = *room_entry;
 
   if (asset_kind == ResourceAssetKind::RoomPayload &&
@@ -163,9 +162,8 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
                                             std::span<const std::uint8_t> bytes,
                                             std::uint16_t level,
                                             std::uint16_t room) {
-  const std::optional<RoomLoadSpec> spec =
-      resolve_room_load_spec({}, bytes, level, room,
-                             ResourceAssetKind::RoomPayload);
+  const std::optional<RoomLoadSpec> spec = resolve_room_load_spec(
+      {}, bytes, level, room, ResourceAssetKind::RoomPayload);
   if (!spec.has_value()) {
     return false;
   }

@@ -149,8 +149,9 @@ bool validate_frpak_catalog_record_bounds(const FrpakCatalogRecord &record,
   return record.data_size <= (file_size - record.data_offset);
 }
 
-std::optional<Ega4PlaneImage> decode_frpak_catalog_record(
-    const RuntimeState &state, const FrpakCatalogRecord &record) {
+std::optional<Ega4PlaneImage>
+decode_frpak_catalog_record(const RuntimeState &state,
+                            const FrpakCatalogRecord &record) {
   const FrpakCatalogFile *file =
       find_frpak_catalog_file(state.frpak_catalog, record.pak_id);
   if (file == nullptr) {
@@ -184,17 +185,17 @@ std::optional<Ega4PlaneImage> decode_frpak_catalog_record(
   }
 }
 
-std::optional<Ega4PlaneImage>
-decode_frpak_record(RuntimeState &state, std::uint16_t pak_id,
-                    std::uint16_t record_id) {
+std::optional<Ega4PlaneImage> decode_frpak_record(RuntimeState &state,
+                                                  std::uint16_t pak_id,
+                                                  std::uint16_t record_id) {
   for (const auto &entry : state.frpak_decode_cache) {
     if (entry.pak_id == pak_id && entry.record_id == record_id) {
       return entry.image;
     }
   }
 
-  const auto record = find_frpak_catalog_record(state.frpak_catalog, pak_id,
-                                                record_id);
+  const auto record =
+      find_frpak_catalog_record(state.frpak_catalog, pak_id, record_id);
   if (!record.has_value()) {
     return std::nullopt;
   }
@@ -383,7 +384,8 @@ load_initial_bootstrap_resources(RuntimeState &state,
         continue;
       }
 
-      const auto catalog_file = build_frpak_catalog_file(candidate, *bytes, *pak_id);
+      const auto catalog_file =
+          build_frpak_catalog_file(candidate, *bytes, *pak_id);
       if (!catalog_file.has_value()) {
         continue;
       }

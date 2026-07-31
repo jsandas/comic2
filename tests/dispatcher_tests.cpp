@@ -33,49 +33,50 @@ encode_literal_signed_rle(const std::vector<std::uint8_t> &bytes) {
 
 std::vector<std::uint8_t>
 make_room_resource_bytes(std::uint16_t level, std::uint16_t room,
-                                                                                     std::uint16_t tile_w, std::uint16_t tile_h,
-                                                                                     std::uint16_t payload_offset,
-                                                                                     const std::vector<std::uint8_t> &decoded_room_bytes) {
-       const std::vector<std::uint8_t> encoded_room_bytes =
-                     encode_literal_signed_rle(decoded_room_bytes);
+                         std::uint16_t tile_w, std::uint16_t tile_h,
+                         std::uint16_t payload_offset,
+                         const std::vector<std::uint8_t> &decoded_room_bytes) {
+  const std::vector<std::uint8_t> encoded_room_bytes =
+      encode_literal_signed_rle(decoded_room_bytes);
 
-       const std::size_t entry_offset = 0x04 + static_cast<std::size_t>(room) * 6;
-       const std::size_t min_header_size = entry_offset + 6;
-       const std::size_t min_payload_start =
-                     std::max<std::size_t>(min_header_size, payload_offset);
+  const std::size_t entry_offset = 0x04 + static_cast<std::size_t>(room) * 6;
+  const std::size_t min_header_size = entry_offset + 6;
+  const std::size_t min_payload_start =
+      std::max<std::size_t>(min_header_size, payload_offset);
 
-       std::vector<std::uint8_t> bytes(
-                     min_payload_start + encoded_room_bytes.size(), 0x00);
+  std::vector<std::uint8_t> bytes(min_payload_start + encoded_room_bytes.size(),
+                                  0x00);
 
-       bytes[2] = static_cast<std::uint8_t>(level & 0xFF);
-       bytes[3] = static_cast<std::uint8_t>((level >> 8) & 0xFF);
+  bytes[2] = static_cast<std::uint8_t>(level & 0xFF);
+  bytes[3] = static_cast<std::uint8_t>((level >> 8) & 0xFF);
 
-       bytes[entry_offset + 0] = static_cast<std::uint8_t>(tile_w & 0xFF);
-       bytes[entry_offset + 1] = static_cast<std::uint8_t>((tile_w >> 8) & 0xFF);
-       bytes[entry_offset + 2] = static_cast<std::uint8_t>(tile_h & 0xFF);
-       bytes[entry_offset + 3] = static_cast<std::uint8_t>((tile_h >> 8) & 0xFF);
-       bytes[entry_offset + 4] = static_cast<std::uint8_t>(payload_offset & 0xFF);
-       bytes[entry_offset + 5] =
-                     static_cast<std::uint8_t>((payload_offset >> 8) & 0xFF);
+  bytes[entry_offset + 0] = static_cast<std::uint8_t>(tile_w & 0xFF);
+  bytes[entry_offset + 1] = static_cast<std::uint8_t>((tile_w >> 8) & 0xFF);
+  bytes[entry_offset + 2] = static_cast<std::uint8_t>(tile_h & 0xFF);
+  bytes[entry_offset + 3] = static_cast<std::uint8_t>((tile_h >> 8) & 0xFF);
+  bytes[entry_offset + 4] = static_cast<std::uint8_t>(payload_offset & 0xFF);
+  bytes[entry_offset + 5] =
+      static_cast<std::uint8_t>((payload_offset >> 8) & 0xFF);
 
-       std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
-                                          bytes.begin() + payload_offset);
+  std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
+            bytes.begin() + payload_offset);
 
-       return bytes;
+  return bytes;
 }
 
-std::vector<std::uint8_t>
-make_decoded_room_bytes(std::uint8_t first_tile, std::uint16_t row0,
-                                                                                    std::uint16_t row1, std::uint16_t row2) {
-       std::vector<std::uint8_t> decoded(0x2C4, 0x00);
-       decoded[0] = first_tile;
-       decoded[0x2A0] = static_cast<std::uint8_t>(row0 & 0xFF);
-       decoded[0x2A1] = static_cast<std::uint8_t>((row0 >> 8) & 0xFF);
-       decoded[0x2A2] = static_cast<std::uint8_t>(row1 & 0xFF);
-       decoded[0x2A3] = static_cast<std::uint8_t>((row1 >> 8) & 0xFF);
-       decoded[0x2A4] = static_cast<std::uint8_t>(row2 & 0xFF);
-       decoded[0x2A5] = static_cast<std::uint8_t>((row2 >> 8) & 0xFF);
-       return decoded;
+std::vector<std::uint8_t> make_decoded_room_bytes(std::uint8_t first_tile,
+                                                  std::uint16_t row0,
+                                                  std::uint16_t row1,
+                                                  std::uint16_t row2) {
+  std::vector<std::uint8_t> decoded(0x2C4, 0x00);
+  decoded[0] = first_tile;
+  decoded[0x2A0] = static_cast<std::uint8_t>(row0 & 0xFF);
+  decoded[0x2A1] = static_cast<std::uint8_t>((row0 >> 8) & 0xFF);
+  decoded[0x2A2] = static_cast<std::uint8_t>(row1 & 0xFF);
+  decoded[0x2A3] = static_cast<std::uint8_t>((row1 >> 8) & 0xFF);
+  decoded[0x2A4] = static_cast<std::uint8_t>(row2 & 0xFF);
+  decoded[0x2A5] = static_cast<std::uint8_t>((row2 >> 8) & 0xFF);
+  return decoded;
 }
 
 void test_priority_order() {
@@ -423,8 +424,8 @@ void test_level_transition_loads_room_tilemap() {
   state.current_level = 1;
   state.current_room = 0;
   state.flags.level_transition_pending = true;
-       state.pending_room_transition =
-                     comic2::PendingRoomTransition{.target_room = 0, .target_player_x = 0};
+  state.pending_room_transition =
+      comic2::PendingRoomTransition{.target_room = 0, .target_player_x = 0};
 
   std::vector<std::uint8_t> decoded_room_bytes(0x2C4, 0x00);
   decoded_room_bytes[0x2A0] = 0x00;
@@ -533,8 +534,7 @@ void test_level_transition_left_edge_room0_clamps_without_transition() {
   const auto tick = dispatcher.run_tick(state);
   expect(tick.stage == comic2::DispatchStage::GroundedPhysics,
          "left-edge clamp should be handled in grounded physics");
-  expect(state.player.x == 0,
-         "left-edge at room 0 should clamp player to x=0");
+  expect(state.player.x == 0, "left-edge at room 0 should clamp player to x=0");
   expect(!state.flags.level_transition_pending,
          "left-edge at room 0 should not enqueue a room transition");
   expect(!state.pending_room_transition.has_value(),
@@ -742,9 +742,9 @@ void run_dispatcher_tests() {
   test_stage_flags_are_consumed_by_default_handlers();
   test_input_fallback_arms_grounded_physics_for_next_tick();
   test_level_transition_loads_room_tilemap();
-       test_level_transition_right_edge_reloads_target_room_from_assets();
-       test_level_transition_left_edge_room0_clamps_without_transition();
-       test_level_transition_failure_preserves_prior_runtime_state();
+  test_level_transition_right_edge_reloads_target_room_from_assets();
+  test_level_transition_left_edge_room0_clamps_without_transition();
+  test_level_transition_failure_preserves_prior_runtime_state();
   test_projectile_scripted_tick_updates_deterministically();
   test_projectile_scripted_tick_deactivates_on_tile_collision();
   test_airborne_fallback_clamps_player_with_missing_room_support();

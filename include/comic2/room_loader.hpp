@@ -26,12 +26,11 @@ struct RoomLoadSpec {
   bool operator==(const RoomLoadSpec &) const = default;
 };
 
-std::optional<RoomLoadSpec>
-resolve_room_load_spec(const std::filesystem::path &source_path,
-                       std::span<const std::uint8_t> bytes,
-                       std::uint16_t level, std::uint16_t room,
-                       ResourceAssetKind asset_kind =
-                           ResourceAssetKind::RoomPayload);
+std::optional<RoomLoadSpec> resolve_room_load_spec(
+    const std::filesystem::path &source_path,
+    std::span<const std::uint8_t> bytes, std::uint16_t level,
+    std::uint16_t room,
+    ResourceAssetKind asset_kind = ResourceAssetKind::RoomPayload);
 
 std::optional<FrdataRoomEntry>
 decode_frdata_room_entry(std::span<const std::uint8_t> bytes,
@@ -47,13 +46,12 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
                                             std::uint16_t room);
 
 bool load_room_tilemap_from_resource_file(
-  RuntimeState &state, const std::filesystem::path &source_path,
-  std::span<const std::uint8_t> bytes, std::uint16_t level,
-  std::uint16_t room);
+    RuntimeState &state, const std::filesystem::path &source_path,
+    std::span<const std::uint8_t> bytes, std::uint16_t level,
+    std::uint16_t room);
 
 bool load_room_tilemap_from_asset_root(RuntimeState &state,
                                        const std::filesystem::path &root,
-                                       std::uint16_t level,
-                                       std::uint16_t room);
+                                       std::uint16_t level, std::uint16_t room);
 
 } // namespace comic2

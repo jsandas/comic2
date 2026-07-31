@@ -373,40 +373,40 @@ void test_room_loader_decodes_frdata_entry() {
   expect(entry->rle_data_off == 0x1234, "rle_data_off decode mismatch");
 }
 
-  void test_room_loader_resolves_room_payload_location() {
-    std::vector<std::uint8_t> bytes(0x40, 0x00);
-    bytes[2] = 0x03;
-    bytes[3] = 0x00;
-    bytes[0x04] = 0x04;
-    bytes[0x05] = 0x00;
-    bytes[0x06] = 0x03;
-    bytes[0x07] = 0x00;
-    bytes[0x08] = 0x20;
-    bytes[0x09] = 0x00;
+void test_room_loader_resolves_room_payload_location() {
+  std::vector<std::uint8_t> bytes(0x40, 0x00);
+  bytes[2] = 0x03;
+  bytes[3] = 0x00;
+  bytes[0x04] = 0x04;
+  bytes[0x05] = 0x00;
+  bytes[0x06] = 0x03;
+  bytes[0x07] = 0x00;
+  bytes[0x08] = 0x20;
+  bytes[0x09] = 0x00;
 
-    const std::optional<comic2::RoomLoadSpec> spec =
-        comic2::resolve_room_load_spec("/tmp/FRDATA.0", bytes, 3, 0,
-              comic2::ResourceAssetKind::RoomPayload);
-    expect(spec.has_value(), "resolver should map a valid room payload");
-    expect(spec->source_path == std::filesystem::path("/tmp/FRDATA.0"),
-      "resolver should preserve the source path");
-    expect(spec->table_offset == 0x04, "resolver should report table offset");
-    expect(spec->room_entry_offset == 0x04,
-      "resolver should report room entry offset");
-    expect(spec->resource_offset == 0x20,
-      "resolver should report room payload offset");
-    expect(spec->room_entry.tile_w == 4, "resolver should decode tile_w");
-    expect(spec->room_entry.tile_h == 3, "resolver should decode tile_h");
-    expect(spec->room_entry.rle_data_off == 0x20,
-      "resolver should decode payload offset");
+  const std::optional<comic2::RoomLoadSpec> spec =
+      comic2::resolve_room_load_spec("/tmp/FRDATA.0", bytes, 3, 0,
+                                     comic2::ResourceAssetKind::RoomPayload);
+  expect(spec.has_value(), "resolver should map a valid room payload");
+  expect(spec->source_path == std::filesystem::path("/tmp/FRDATA.0"),
+         "resolver should preserve the source path");
+  expect(spec->table_offset == 0x04, "resolver should report table offset");
+  expect(spec->room_entry_offset == 0x04,
+         "resolver should report room entry offset");
+  expect(spec->resource_offset == 0x20,
+         "resolver should report room payload offset");
+  expect(spec->room_entry.tile_w == 4, "resolver should decode tile_w");
+  expect(spec->room_entry.tile_h == 3, "resolver should decode tile_h");
+  expect(spec->room_entry.rle_data_off == 0x20,
+         "resolver should decode payload offset");
 
-    const std::optional<comic2::RoomLoadSpec> table_spec =
-        comic2::resolve_room_load_spec("/tmp/FRDATA.0", bytes, 3, 0,
-              comic2::ResourceAssetKind::RoomTable);
-    expect(table_spec.has_value(), "resolver should map room table access");
-    expect(table_spec->resource_offset == 0x04,
-      "room table access should point at the room entry");
-  }
+  const std::optional<comic2::RoomLoadSpec> table_spec =
+      comic2::resolve_room_load_spec("/tmp/FRDATA.0", bytes, 3, 0,
+                                     comic2::ResourceAssetKind::RoomTable);
+  expect(table_spec.has_value(), "resolver should map room table access");
+  expect(table_spec->resource_offset == 0x04,
+         "room table access should point at the room entry");
+}
 
 void test_room_loader_rejects_huge_offset() {
   const std::vector<std::uint8_t> bytes = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -505,113 +505,113 @@ void test_room_loader_populates_runtime_state_from_resource_buffer() {
          "room loader should store decoded room bytes");
 }
 
-  void test_frpak_catalog_builds_file_index() {
-    const std::vector<std::uint8_t> bytes = {
-        0x40, 0x00, 0x01, 0x02, 0x03,
-    };
+void test_frpak_catalog_builds_file_index() {
+  const std::vector<std::uint8_t> bytes = {
+      0x40, 0x00, 0x01, 0x02, 0x03,
+  };
 
-    const auto file =
-        comic2::build_frpak_catalog_file("/tmp/FRPAK.001", bytes, 1);
-    expect(file.has_value(), "frpak catalog should build for valid payload");
-    expect(file->pak_id == 1, "frpak catalog should preserve pak id");
-    expect(file->file_size == bytes.size(),
-      "frpak catalog should store file size");
-    expect(file->records.size() == 1,
-      "frpak catalog should expose a single direct-stream record");
-    expect(file->records[0].record_id == 0,
-      "frpak direct-stream record id should start at zero");
-    expect(file->records[0].data_offset == 0,
-      "frpak direct-stream record offset should be zero");
-    expect(file->records[0].data_size == bytes.size(),
-      "frpak direct-stream record size should match file size");
-    expect(file->records[0].row_span_bytes == 0x40,
-      "frpak direct-stream row span should decode from file header");
+  const auto file =
+      comic2::build_frpak_catalog_file("/tmp/FRPAK.001", bytes, 1);
+  expect(file.has_value(), "frpak catalog should build for valid payload");
+  expect(file->pak_id == 1, "frpak catalog should preserve pak id");
+  expect(file->file_size == bytes.size(),
+         "frpak catalog should store file size");
+  expect(file->records.size() == 1,
+         "frpak catalog should expose a single direct-stream record");
+  expect(file->records[0].record_id == 0,
+         "frpak direct-stream record id should start at zero");
+  expect(file->records[0].data_offset == 0,
+         "frpak direct-stream record offset should be zero");
+  expect(file->records[0].data_size == bytes.size(),
+         "frpak direct-stream record size should match file size");
+  expect(file->records[0].row_span_bytes == 0x40,
+         "frpak direct-stream row span should decode from file header");
+}
+
+void test_frpak_catalog_rejects_truncated_header() {
+  const std::vector<std::uint8_t> bytes = {0x40};
+  const auto file =
+      comic2::build_frpak_catalog_file("/tmp/FRPAK.001", bytes, 1);
+  expect(!file.has_value(),
+         "frpak catalog should reject files smaller than header size");
+}
+
+void test_frpak_catalog_rejects_zero_row_span_header() {
+  const std::vector<std::uint8_t> bytes = {0x00, 0x00, 0x01};
+  const auto file =
+      comic2::build_frpak_catalog_file("/tmp/FRPAK.001", bytes, 1);
+  expect(!file.has_value(),
+         "frpak catalog should reject zero row-span headers");
+}
+
+void test_frpak_catalog_record_bounds_validation() {
+  const comic2::FrpakCatalogRecord valid{
+      .pak_id = 1,
+      .record_id = 0,
+      .data_offset = 2,
+      .data_size = 4,
+      .row_span_bytes = 0x20,
+  };
+  expect(comic2::validate_frpak_catalog_record_bounds(valid, 6),
+         "frpak bounds validator should accept in-range records");
+
+  const comic2::FrpakCatalogRecord offset_past_end{
+      .pak_id = 1,
+      .record_id = 1,
+      .data_offset = 7,
+      .data_size = 0,
+      .row_span_bytes = 0x20,
+  };
+  expect(!comic2::validate_frpak_catalog_record_bounds(offset_past_end, 6),
+         "frpak bounds validator should reject offsets beyond file size");
+
+  const comic2::FrpakCatalogRecord size_overflow{
+      .pak_id = 1,
+      .record_id = 2,
+      .data_offset = 4,
+      .data_size = 3,
+      .row_span_bytes = 0x20,
+  };
+  expect(!comic2::validate_frpak_catalog_record_bounds(size_overflow, 6),
+         "frpak bounds validator should reject records exceeding file size");
+}
+
+void test_bootstrap_populates_frpak_catalog_for_known_files() {
+  const auto root =
+      std::filesystem::temp_directory_path() / "comic2_frpak_catalog_fixture";
+  std::filesystem::remove_all(root);
+  std::filesystem::create_directories(root);
+
+  const std::vector<std::uint8_t> frpak_bytes = {
+      0x40, 0x00, 0xAA, 0xBB, 0xCC,
+  };
+  {
+    std::ofstream output(root / "FRPAK.001", std::ios::binary);
+    output.write(reinterpret_cast<const char *>(frpak_bytes.data()),
+                 static_cast<std::streamsize>(frpak_bytes.size()));
   }
 
-  void test_frpak_catalog_rejects_truncated_header() {
-    const std::vector<std::uint8_t> bytes = {0x40};
-    const auto file =
-        comic2::build_frpak_catalog_file("/tmp/FRPAK.001", bytes, 1);
-    expect(!file.has_value(),
-      "frpak catalog should reject files smaller than header size");
-  }
+  comic2::RuntimeState state;
+  const auto summary = comic2::load_initial_bootstrap_resources(state, root);
 
-  void test_frpak_catalog_rejects_zero_row_span_header() {
-    const std::vector<std::uint8_t> bytes = {0x00, 0x00, 0x01};
-    const auto file =
-        comic2::build_frpak_catalog_file("/tmp/FRPAK.001", bytes, 1);
-    expect(!file.has_value(),
-      "frpak catalog should reject zero row-span headers");
-  }
+  expect(summary.sprite_files_tried > 0,
+         "bootstrap should attempt sprite candidate discovery");
+  expect(state.frpak_catalog.files.size() == 1,
+         "bootstrap should index valid FRPAK files in catalog");
+  expect(state.frpak_catalog.files[0].pak_id == 1,
+         "bootstrap catalog should preserve FRPAK numeric id");
+  expect(state.frpak_catalog.files[0].records.size() == 1,
+         "bootstrap catalog should include one record for direct payload file");
 
-  void test_frpak_catalog_record_bounds_validation() {
-    const comic2::FrpakCatalogRecord valid{
-        .pak_id = 1,
-        .record_id = 0,
-        .data_offset = 2,
-        .data_size = 4,
-        .row_span_bytes = 0x20,
-    };
-    expect(comic2::validate_frpak_catalog_record_bounds(valid, 6),
-      "frpak bounds validator should accept in-range records");
+  const auto record =
+      comic2::find_frpak_catalog_record(state.frpak_catalog, 1, 0);
+  expect(record.has_value(),
+         "catalog lookup should resolve known pak/record pair");
+  expect(record->data_size == frpak_bytes.size(),
+         "catalog record size should match source file size");
 
-    const comic2::FrpakCatalogRecord offset_past_end{
-        .pak_id = 1,
-        .record_id = 1,
-        .data_offset = 7,
-        .data_size = 0,
-        .row_span_bytes = 0x20,
-    };
-    expect(!comic2::validate_frpak_catalog_record_bounds(offset_past_end, 6),
-      "frpak bounds validator should reject offsets beyond file size");
-
-    const comic2::FrpakCatalogRecord size_overflow{
-        .pak_id = 1,
-        .record_id = 2,
-        .data_offset = 4,
-        .data_size = 3,
-        .row_span_bytes = 0x20,
-    };
-    expect(!comic2::validate_frpak_catalog_record_bounds(size_overflow, 6),
-      "frpak bounds validator should reject records exceeding file size");
-  }
-
-  void test_bootstrap_populates_frpak_catalog_for_known_files() {
-    const auto root = std::filesystem::temp_directory_path() /
-            "comic2_frpak_catalog_fixture";
-    std::filesystem::remove_all(root);
-    std::filesystem::create_directories(root);
-
-    const std::vector<std::uint8_t> frpak_bytes = {
-        0x40, 0x00, 0xAA, 0xBB, 0xCC,
-    };
-    {
-      std::ofstream output(root / "FRPAK.001", std::ios::binary);
-      output.write(reinterpret_cast<const char *>(frpak_bytes.data()),
-         static_cast<std::streamsize>(frpak_bytes.size()));
-    }
-
-    comic2::RuntimeState state;
-    const auto summary = comic2::load_initial_bootstrap_resources(state, root);
-
-    expect(summary.sprite_files_tried > 0,
-      "bootstrap should attempt sprite candidate discovery");
-    expect(state.frpak_catalog.files.size() == 1,
-      "bootstrap should index valid FRPAK files in catalog");
-    expect(state.frpak_catalog.files[0].pak_id == 1,
-      "bootstrap catalog should preserve FRPAK numeric id");
-    expect(state.frpak_catalog.files[0].records.size() == 1,
-      "bootstrap catalog should include one record for direct payload file");
-
-    const auto record =
-        comic2::find_frpak_catalog_record(state.frpak_catalog, 1, 0);
-    expect(record.has_value(),
-      "catalog lookup should resolve known pak/record pair");
-    expect(record->data_size == frpak_bytes.size(),
-      "catalog record size should match source file size");
-
-    std::filesystem::remove_all(root);
-  }
+  std::filesystem::remove_all(root);
+}
 
 } // namespace
 

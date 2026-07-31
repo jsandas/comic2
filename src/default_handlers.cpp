@@ -56,23 +56,17 @@ void update_room_transition_from_player_bounds(RuntimeState &state) {
       return;
     }
 
-    state.pending_room_transition =
-        PendingRoomTransition{.target_room =
-                                  static_cast<std::uint16_t>(state.current_room -
-                                                             1),
-                              .target_player_x =
-                                  static_cast<std::int16_t>(kViewportWidthPixels -
-                                                            1)};
+    state.pending_room_transition = PendingRoomTransition{
+        .target_room = static_cast<std::uint16_t>(state.current_room - 1),
+        .target_player_x = static_cast<std::int16_t>(kViewportWidthPixels - 1)};
     state.flags.level_transition_pending = true;
     return;
   }
 
   if (state.player.x >= kViewportWidthPixels) {
-    state.pending_room_transition =
-        PendingRoomTransition{.target_room =
-                                  static_cast<std::uint16_t>(state.current_room +
-                                                             1),
-                              .target_player_x = 0};
+    state.pending_room_transition = PendingRoomTransition{
+        .target_room = static_cast<std::uint16_t>(state.current_room + 1),
+        .target_player_x = 0};
     state.flags.level_transition_pending = true;
   }
 }
@@ -112,8 +106,8 @@ void handle_level_transition(RuntimeState &state) {
   bool loaded = false;
   if (!candidate_state.assets_root.empty()) {
     loaded = load_room_tilemap_from_asset_root(
-        candidate_state, candidate_state.assets_root, candidate_state.current_level,
-        candidate_state.current_room);
+        candidate_state, candidate_state.assets_root,
+        candidate_state.current_level, candidate_state.current_room);
   }
   if (!loaded && !candidate_state.room_resource_bytes.empty()) {
     loaded = load_room_tilemap_from_resource_buffer(

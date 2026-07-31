@@ -358,14 +358,14 @@ void test_gate_e_room_transition_boundary_sequence() {
          "Gate E boundary setup tick should execute input stage");
   expect(state.flags.level_transition_pending,
          "Gate E boundary crossing should mark level transition pending");
-    expect(state.pending_room_transition.has_value(),
-      "Gate E boundary crossing should stage pending transition metadata");
-    expect(state.pending_room_transition->target_room == 4,
-      "Gate E boundary crossing should target next room");
-    expect(state.pending_room_transition->target_player_x == 0,
-      "Gate E right boundary crossing should target left-edge player x");
-    expect(state.current_room == 3,
-      "Gate E boundary crossing should defer room commit until transition load");
+  expect(state.pending_room_transition.has_value(),
+         "Gate E boundary crossing should stage pending transition metadata");
+  expect(state.pending_room_transition->target_room == 4,
+         "Gate E boundary crossing should target next room");
+  expect(state.pending_room_transition->target_player_x == 0,
+         "Gate E right boundary crossing should target left-edge player x");
+  expect(state.current_room == 3, "Gate E boundary crossing should defer room "
+                                  "commit until transition load");
 
   state.input = comic2::InputState{};
   const auto transition_tick = dispatcher.run_tick(state);
@@ -373,8 +373,8 @@ void test_gate_e_room_transition_boundary_sequence() {
          "Gate E transition tick should execute level transition stage");
   expect(!state.flags.level_transition_pending,
          "Gate E level transition hook should clear pending flag");
-    expect(!state.pending_room_transition.has_value(),
-      "Gate E level transition hook should consume pending metadata");
+  expect(!state.pending_room_transition.has_value(),
+         "Gate E level transition hook should consume pending metadata");
 }
 
 void test_gate_e_left_boundary_clamps_at_room_zero() {

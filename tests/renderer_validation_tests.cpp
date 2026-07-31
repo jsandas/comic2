@@ -402,78 +402,78 @@ void test_patterned_image_blit() {
          "patterned image plane 3 byte 1");
 }
 
-  void test_frpak_decode_on_demand_caches_result() {
-    comic2::RuntimeState state;
+void test_frpak_decode_on_demand_caches_result() {
+  comic2::RuntimeState state;
 
-    const auto stream = comic2::validation::make_known_rle_4plane_stream();
-    const auto catalog_file =
-        comic2::build_frpak_catalog_file("/tmp/FRPAK.001", stream, 1);
-    expect(catalog_file.has_value(), "catalog file should build for decode test");
+  const auto stream = comic2::validation::make_known_rle_4plane_stream();
+  const auto catalog_file =
+      comic2::build_frpak_catalog_file("/tmp/FRPAK.001", stream, 1);
+  expect(catalog_file.has_value(), "catalog file should build for decode test");
 
-    auto indexed_file = *catalog_file;
-    indexed_file.blob_offset = 0;
-    state.frpak_catalog.files.push_back(indexed_file);
-    state.sprite_resource_bytes = stream;
+  auto indexed_file = *catalog_file;
+  indexed_file.blob_offset = 0;
+  state.frpak_catalog.files.push_back(indexed_file);
+  state.sprite_resource_bytes = stream;
 
-    const auto decoded_first = comic2::decode_frpak_record(state, 1, 0);
-    expect(decoded_first.has_value(),
-      "first FRPAK decode should succeed for known stream");
-    expect(decoded_first->row_span_bytes == 2,
-      "decoded FRPAK row span should match fixture header");
-    expect(state.frpak_decode_cache.size() == 1,
-      "first FRPAK decode should populate cache");
+  const auto decoded_first = comic2::decode_frpak_record(state, 1, 0);
+  expect(decoded_first.has_value(),
+         "first FRPAK decode should succeed for known stream");
+  expect(decoded_first->row_span_bytes == 2,
+         "decoded FRPAK row span should match fixture header");
+  expect(state.frpak_decode_cache.size() == 1,
+         "first FRPAK decode should populate cache");
 
-    state.sprite_resource_bytes[2] = 0xFE;
-    state.sprite_resource_bytes[3] = 0xEF;
+  state.sprite_resource_bytes[2] = 0xFE;
+  state.sprite_resource_bytes[3] = 0xEF;
 
-    const auto decoded_second = comic2::decode_frpak_record(state, 1, 0);
-    expect(decoded_second.has_value(),
-      "cache hit FRPAK decode should return cached image");
-    expect(state.frpak_decode_cache.size() == 1,
-      "cache hit should not append duplicate cache entries");
-    expect(decoded_second->planes[0][0] == decoded_first->planes[0][0] &&
-          decoded_second->planes[0][1] == decoded_first->planes[0][1],
-      "cache hit should remain deterministic after source byte mutation");
-  }
+  const auto decoded_second = comic2::decode_frpak_record(state, 1, 0);
+  expect(decoded_second.has_value(),
+         "cache hit FRPAK decode should return cached image");
+  expect(state.frpak_decode_cache.size() == 1,
+         "cache hit should not append duplicate cache entries");
+  expect(decoded_second->planes[0][0] == decoded_first->planes[0][0] &&
+             decoded_second->planes[0][1] == decoded_first->planes[0][1],
+         "cache hit should remain deterministic after source byte mutation");
+}
 
-  void test_frpak_decode_invalid_record_id_fails() {
-    comic2::RuntimeState state;
-    const auto stream = comic2::validation::make_known_rle_4plane_stream();
-    const auto catalog_file =
-        comic2::build_frpak_catalog_file("/tmp/FRPAK.001", stream, 1);
-    expect(catalog_file.has_value(), "catalog file should build for lookup test");
+void test_frpak_decode_invalid_record_id_fails() {
+  comic2::RuntimeState state;
+  const auto stream = comic2::validation::make_known_rle_4plane_stream();
+  const auto catalog_file =
+      comic2::build_frpak_catalog_file("/tmp/FRPAK.001", stream, 1);
+  expect(catalog_file.has_value(), "catalog file should build for lookup test");
 
-    auto indexed_file = *catalog_file;
-    indexed_file.blob_offset = 0;
-    state.frpak_catalog.files.push_back(indexed_file);
-    state.sprite_resource_bytes = stream;
+  auto indexed_file = *catalog_file;
+  indexed_file.blob_offset = 0;
+  state.frpak_catalog.files.push_back(indexed_file);
+  state.sprite_resource_bytes = stream;
 
-    const auto decoded = comic2::decode_frpak_record(state, 1, 99);
-    expect(!decoded.has_value(),
-      "decode should fail cleanly for unknown record id");
-  }
+  const auto decoded = comic2::decode_frpak_record(state, 1, 99);
+  expect(!decoded.has_value(),
+         "decode should fail cleanly for unknown record id");
+}
 
-  void test_frpak_decode_rejects_out_of_range_record_metadata() {
-    comic2::RuntimeState state;
-    state.sprite_resource_bytes = {0x02, 0x00, 0x82, 0xAA};
+void test_frpak_decode_rejects_out_of_range_record_metadata() {
+  comic2::RuntimeState state;
+  state.sprite_resource_bytes = {0x02, 0x00, 0x82, 0xAA};
 
-    comic2::FrpakCatalogFile file;
-    file.pak_id = 1;
-    file.file_size = 4;
-    file.blob_offset = 0;
-    file.records.push_back(comic2::FrpakCatalogRecord{
-        .pak_id = 1,
-        .record_id = 0,
-        .data_offset = 3,
-        .data_size = 4,
-        .row_span_bytes = 2,
-    });
-    state.frpak_catalog.files.push_back(file);
+  comic2::FrpakCatalogFile file;
+  file.pak_id = 1;
+  file.file_size = 4;
+  file.blob_offset = 0;
+  file.records.push_back(comic2::FrpakCatalogRecord{
+      .pak_id = 1,
+      .record_id = 0,
+      .data_offset = 3,
+      .data_size = 4,
+      .row_span_bytes = 2,
+  });
+  state.frpak_catalog.files.push_back(file);
 
-    const auto decoded = comic2::decode_frpak_record(state, 1, 0);
-    expect(!decoded.has_value(),
-      "decode should fail when record metadata exceeds file bounds");
-  }
+  const auto decoded = comic2::decode_frpak_record(state, 1, 0);
+  expect(!decoded.has_value(),
+         "decode should fail when record metadata exceeds file bounds");
+}
 
 } // namespace
 
