@@ -343,78 +343,78 @@ void test_render_bootstrap_frame_uses_room_tile_data() {
         "tile border should remain accented at the far edge");
 }
 
-  void test_render_bootstrap_frame_asset_backed_hash_regression() {
-    auto state = comic2::make_default_runtime_state();
-    state.player.x = 16;
-    state.player.y = 16;
-    state.player.hp = 1;
+void test_render_bootstrap_frame_asset_backed_hash_regression() {
+  auto state = comic2::make_default_runtime_state();
+  state.player.x = 16;
+  state.player.y = 16;
+  state.player.hp = 1;
 
-    state.room_grid.tile_w = 2;
-    state.room_grid.tile_h = 1;
-    state.room_grid.row_pointers = {0};
-    state.room_grid.tile_data = {0x00, 0x01};
+  state.room_grid.tile_w = 2;
+  state.room_grid.tile_h = 1;
+  state.room_grid.row_pointers = {0};
+  state.room_grid.tile_data = {0x00, 0x01};
 
-    comic2::FrpakCatalogFile file;
-    file.pak_id = 1;
-    file.file_size = 1;
-    file.blob_offset = 0;
-    file.records.push_back(comic2::FrpakCatalogRecord{
+  comic2::FrpakCatalogFile file;
+  file.pak_id = 1;
+  file.file_size = 1;
+  file.blob_offset = 0;
+  file.records.push_back(comic2::FrpakCatalogRecord{
       .pak_id = 1,
       .record_id = 0,
       .data_offset = 0,
       .data_size = 1,
       .row_span_bytes = 0x1F40,
-    });
-    state.frpak_catalog.files.push_back(file);
-    state.frpak_decode_cache.push_back(comic2::FrpakDecodedRecordCacheEntry{
+  });
+  state.frpak_catalog.files.push_back(file);
+  state.frpak_decode_cache.push_back(comic2::FrpakDecodedRecordCacheEntry{
       .pak_id = 1,
       .record_id = 0,
       .image = make_asset_fixture_image(),
-    });
+  });
 
-    comic2::MemoryFramePresenter presenter;
-    comic2::render_bootstrap_frame(presenter, state);
+  comic2::MemoryFramePresenter presenter;
+  comic2::render_bootstrap_frame(presenter, state);
 
-    check(presenter.has_frame(),
-      "asset-backed bootstrap render should present a frame");
-    const auto hash =
+  check(presenter.has_frame(),
+        "asset-backed bootstrap render should present a frame");
+  const auto hash =
       comic2::validation::hash_surface_planes(presenter.last_frame());
-      constexpr std::uint64_t kExpectedHash = 0x1f693466a2ef8a45ULL;
-      check(hash == kExpectedHash,
+  constexpr std::uint64_t kExpectedHash = 0x1f693466a2ef8a45ULL;
+  check(hash == kExpectedHash,
         "asset-backed bootstrap frame hash regression mismatch");
-  }
+}
 
-  void test_render_bootstrap_frame_falls_back_when_asset_decode_fails() {
-    auto state = comic2::make_default_runtime_state();
-    state.player.x = 300;
-    state.player.y = 180;
-    state.room_grid.tile_w = 1;
-    state.room_grid.tile_h = 1;
-    state.room_grid.row_pointers = {0};
-    state.room_grid.tile_data = {0x02};
+void test_render_bootstrap_frame_falls_back_when_asset_decode_fails() {
+  auto state = comic2::make_default_runtime_state();
+  state.player.x = 300;
+  state.player.y = 180;
+  state.room_grid.tile_w = 1;
+  state.room_grid.tile_h = 1;
+  state.room_grid.row_pointers = {0};
+  state.room_grid.tile_data = {0x02};
 
-    comic2::FrpakCatalogFile file;
-    file.pak_id = 1;
-    file.file_size = 128;
-    file.blob_offset = 5000;
-    file.records.push_back(comic2::FrpakCatalogRecord{
+  comic2::FrpakCatalogFile file;
+  file.pak_id = 1;
+  file.file_size = 128;
+  file.blob_offset = 5000;
+  file.records.push_back(comic2::FrpakCatalogRecord{
       .pak_id = 1,
       .record_id = 0,
       .data_offset = 0,
       .data_size = 128,
       .row_span_bytes = 0x1F40,
-    });
-    state.frpak_catalog.files.push_back(file);
+  });
+  state.frpak_catalog.files.push_back(file);
 
-    comic2::MemoryFramePresenter presenter;
-    comic2::render_bootstrap_frame(presenter, state);
+  comic2::MemoryFramePresenter presenter;
+  comic2::render_bootstrap_frame(presenter, state);
 
-    check(presenter.has_frame(), "fallback render should still present a frame");
-    const auto &frame = presenter.last_frame();
-    check(read_color_index(frame, 8, 8) == 0x02,
-      "render should fall back to procedural tile rendering when asset "
-      "decode fails");
-  }
+  check(presenter.has_frame(), "fallback render should still present a frame");
+  const auto &frame = presenter.last_frame();
+  check(read_color_index(frame, 8, 8) == 0x02,
+        "render should fall back to procedural tile rendering when asset "
+        "decode fails");
+}
 
 void test_bootstrap_loader_reads_reference_room_data() {
   const std::optional<std::filesystem::path> reference_root =

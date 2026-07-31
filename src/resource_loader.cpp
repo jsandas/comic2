@@ -130,11 +130,10 @@ find_frpak_catalog_record(const FrpakCatalog &catalog, std::uint16_t pak_id,
     return std::nullopt;
   }
 
-  const auto it =
-      std::find_if(file->records.begin(), file->records.end(),
-                   [record_id](const FrpakCatalogRecord &record) {
-                     return record.record_id == record_id;
-                   });
+  const auto it = std::find_if(file->records.begin(), file->records.end(),
+                               [record_id](const FrpakCatalogRecord &record) {
+                                 return record.record_id == record_id;
+                               });
   return it != file->records.end() ? std::optional<FrpakCatalogRecord>(*it)
                                    : std::nullopt;
 }
@@ -391,13 +390,12 @@ load_initial_bootstrap_resources(RuntimeState &state,
         continue;
       }
 
-      const bool all_records_valid =
-          std::all_of(catalog_file->records.begin(),
-                      catalog_file->records.end(),
-                      [&](const FrpakCatalogRecord &record) {
-                        return validate_frpak_catalog_record_bounds(
-                            record, catalog_file->file_size);
-                      });
+      const bool all_records_valid = std::all_of(
+          catalog_file->records.begin(), catalog_file->records.end(),
+          [&](const FrpakCatalogRecord &record) {
+            return validate_frpak_catalog_record_bounds(
+                record, catalog_file->file_size);
+          });
       if (!all_records_valid) {
         continue;
       }

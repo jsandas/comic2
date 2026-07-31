@@ -226,8 +226,8 @@ bool normalize_asset_image_dimensions(Ega4PlaneImage &image) {
   return false;
 }
 
-bool extract_tile_from_asset(const Ega4PlaneImage &atlas, std::size_t tile_index,
-                             Ega4PlaneImage &tile) {
+bool extract_tile_from_asset(const Ega4PlaneImage &atlas,
+                             std::size_t tile_index, Ega4PlaneImage &tile) {
   if (atlas.width_bytes < 2 || atlas.height_rows < kTileSizePixels) {
     return false;
   }
@@ -270,7 +270,8 @@ bool extract_tile_from_asset(const Ega4PlaneImage &atlas, std::size_t tile_index
   return true;
 }
 
-bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame, const RuntimeState &state,
+bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame,
+                                  const RuntimeState &state,
                                   const Ega4PlaneImage &atlas) {
   if (!has_room_grid_data(state)) {
     return false;
