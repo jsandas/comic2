@@ -207,6 +207,138 @@ void draw_room_tilemap(EgaPlanarSurface &frame, const RuntimeState &state) {
   }
 }
 
+bool normalize_asset_image_dimensions(Ega4PlaneImage &image) {
+  if (image.width_bytes > 0 && image.height_rows > 0) {
+    return true;
+  }
+
+  if (image.row_span_bytes == 0) {
+    return false;
+  }
+
+  // Known FRPAK full-frame streams use a 40-byte row stride (320 pixels).
+  if (image.row_span_bytes % 40 == 0) {
+    image.width_bytes = 40;
+    image.height_rows = static_cast<std::uint16_t>(image.row_span_bytes / 40);
+    return image.height_rows > 0;
+  }
+
+  return false;
+}
+
+bool extract_tile_from_asset(const Ega4PlaneImage &atlas, std::size_t tile_index,
+                             Ega4PlaneImage &tile) {
+  if (atlas.width_bytes < 2 || atlas.height_rows < kTileSizePixels) {
+    return false;
+  }
+
+  const std::size_t tiles_per_row = atlas.width_bytes / 2;
+  const std::size_t tiles_per_col =
+      static_cast<std::size_t>(atlas.height_rows) / kTileSizePixels;
+  if (tiles_per_row == 0 || tiles_per_col == 0) {
+    return false;
+  }
+
+  const std::size_t tile_count = tiles_per_row * tiles_per_col;
+  const std::size_t wrapped_index = tile_index % tile_count;
+  const std::size_t src_tile_x_bytes = (wrapped_index % tiles_per_row) * 2;
+  const std::size_t src_tile_y_rows =
+      (wrapped_index / tiles_per_row) * kTileSizePixels;
+
+  tile = Ega4PlaneImage{};
+  tile.width_bytes = 2;
+  tile.height_rows = static_cast<std::uint16_t>(kTileSizePixels);
+  tile.row_span_bytes = static_cast<std::uint16_t>(2 * kTileSizePixels);
+
+  for (std::size_t plane = 0; plane < tile.planes.size(); ++plane) {
+    const auto &src = atlas.planes[plane];
+    auto &dst = tile.planes[plane];
+    dst.resize(static_cast<std::size_t>(tile.width_bytes) * tile.height_rows);
+
+    for (std::size_t row = 0; row < tile.height_rows; ++row) {
+      const std::size_t src_off =
+          (src_tile_y_rows + row) * atlas.width_bytes + src_tile_x_bytes;
+      const std::size_t dst_off = row * tile.width_bytes;
+      if (src_off + tile.width_bytes > src.size()) {
+        return false;
+      }
+      dst[dst_off] = src[src_off];
+      dst[dst_off + 1] = src[src_off + 1];
+    }
+  }
+
+  return true;
+}
+
+bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame, const RuntimeState &state,
+                                  const Ega4PlaneImage &atlas) {
+  if (!has_room_grid_data(state)) {
+    return false;
+  }
+  if (atlas.width_bytes < 2 || atlas.height_rows < kTileSizePixels) {
+    return false;
+  }
+
+  const std::size_t visible_tiles_x =
+      static_cast<std::size_t>(frame.width_pixels()) / kTileSizePixels;
+  const std::size_t visible_tiles_y =
+      static_cast<std::size_t>(frame.height_rows()) / kTileSizePixels;
+
+  Ega4PlaneImage tile;
+  for (std::size_t tile_y = 0;
+       tile_y < state.room_grid.tile_h && tile_y < visible_tiles_y; ++tile_y) {
+    for (std::size_t tile_x = 0;
+         tile_x < state.room_grid.tile_w && tile_x < visible_tiles_x;
+         ++tile_x) {
+      const std::uint8_t tile_id = read_room_tile(state, tile_x, tile_y);
+      if (!extract_tile_from_asset(atlas, tile_id, tile)) {
+        return false;
+      }
+
+      const std::size_t px0 = tile_x * kTileSizePixels;
+      const std::size_t py0 = tile_y * kTileSizePixels;
+      gfx_rle_blit_opaque_4plane(frame, px0, py0, tile);
+    }
+  }
+
+  return true;
+}
+
+bool draw_player_sprite_from_asset(EgaPlanarSurface &frame,
+                                   const RuntimeState &state,
+                                   const Ega4PlaneImage &atlas) {
+  const std::size_t sprite_index = static_cast<std::size_t>(state.player.hp);
+  Ega4PlaneImage sprite;
+  if (!extract_tile_from_asset(atlas, sprite_index, sprite)) {
+    return false;
+  }
+
+  const std::size_t px = static_cast<std::size_t>(std::max<std::int16_t>(
+      0, std::min<std::int16_t>(state.player.x, frame.width_pixels() - 16)));
+  const std::size_t py = static_cast<std::size_t>(std::max<std::int16_t>(
+      0, std::min<std::int16_t>(state.player.y, frame.height_rows() - 16)));
+  gfx_rle_blit_masked_or_4plane(frame, px, py, sprite);
+  return true;
+}
+
+std::optional<Ega4PlaneImage> try_decode_bootstrap_asset(RuntimeState &state) {
+  if (state.frpak_catalog.files.empty()) {
+    return std::nullopt;
+  }
+
+  const auto &file = state.frpak_catalog.files.front();
+  const auto decoded = decode_frpak_record(state, file.pak_id, 0);
+  if (!decoded.has_value()) {
+    return std::nullopt;
+  }
+
+  Ega4PlaneImage image = *decoded;
+  if (!normalize_asset_image_dimensions(image)) {
+    return std::nullopt;
+  }
+  return image;
+}
+
 void draw_player_marker(EgaPlanarSurface &frame, const RuntimeState &state) {
   const std::int32_t px0 = state.player.x;
   const std::int32_t py0 = state.player.y;
@@ -289,18 +421,29 @@ bool poll_bootstrap_input(RuntimeState &state) {
   }
 }
 
-void render_bootstrap_frame(IFramePresenter &presenter,
-                            const RuntimeState &state) {
+void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
   EgaPlanarSurface frame(320, 200);
   const bool has_room_grid = has_room_grid_data(state);
+  bool used_asset_background = false;
 
-  if (has_room_grid) {
+  if (const auto asset = try_decode_bootstrap_asset(state); asset.has_value()) {
+    used_asset_background = draw_room_tilemap_from_asset(frame, state, *asset);
+    if (used_asset_background) {
+      if (!draw_player_sprite_from_asset(frame, state, *asset)) {
+        draw_player_marker(frame, state);
+      }
+    }
+  }
+
+  if (!used_asset_background && has_room_grid) {
     draw_room_tilemap(frame, state);
-  } else {
+  } else if (!used_asset_background) {
     draw_fallback_background(frame, state);
   }
 
-  draw_player_marker(frame, state);
+  if (!used_asset_background) {
+    draw_player_marker(frame, state);
+  }
 
   presenter.present(frame);
 }

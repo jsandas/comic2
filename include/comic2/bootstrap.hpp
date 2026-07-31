@@ -57,7 +57,7 @@ FrameLoopSummary run_render_loop(
 
 bool poll_bootstrap_input(RuntimeState &state);
 void render_bootstrap_frame(IFramePresenter &presenter,
-                            const RuntimeState &state);
+                            RuntimeState &state);
 BootstrapTickSummary run_bootstrap_tick(RuntimeState &state,
                                         GameDispatcher &dispatcher,
                                         IFramePresenter &presenter);

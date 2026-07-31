@@ -547,10 +547,16 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 - `tests/renderer_validation_tests.cpp`
 
 ### 8.6.4 Asset-Backed Rendering Integration
-- [ ] Replace bootstrap tile-color visualization path with a resource-backed tile draw path for at least one room fixture.
-- [ ] Add one sprite draw path that uses decoded original plane data via existing blit adapters.
-- [ ] Keep fallback renderer available when assets are missing or decode fails.
-- [ ] Add frame-hash or plane-byte regression tests for at least one asset-backed render fixture.
+- [x] Replace bootstrap tile-color visualization path with a resource-backed tile draw path for at least one room fixture.
+- [x] Add one sprite draw path that uses decoded original plane data via existing blit adapters.
+- [x] Keep fallback renderer available when assets are missing or decode fails.
+- [x] Add frame-hash or plane-byte regression tests for at least one asset-backed render fixture.
+
+**Implementation details:**
+- `render_bootstrap_frame` now attempts FRPAK-backed decode first (via catalog+cache), normalizes full-frame payload dimensions, and renders room tiles by extracting 16x16 planar tiles from decoded atlas data.
+- Added a sprite draw path that overlays a 16x16 planar sprite cutout from the same decoded asset using masked OR blit.
+- Rendering path now gracefully falls back to existing procedural tile visualization and player marker when decode/catalog/image extraction fails.
+- Added deterministic bootstrap rendering tests for asset-backed frame hash regression and decode-failure fallback behavior.
 
 **Suggested touchpoints:**
 - `src/bootstrap.cpp`
@@ -573,7 +579,7 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 ### 8.6.6 Validation Gates (Phase 8.6)
 - [ ] Gate 8.6-A (Resolver): deterministic `(level, room)` mapping to expected source file/offset fixtures.
 - [ ] Gate 8.6-B (Transition): cross-room movement triggers correct room reload and stable player bounds.
-- [ ] Gate 8.6-C (Graphics): at least one decoded FRPAK-backed frame fixture passes hash/plane-byte checks.
+- [x] Gate 8.6-C (Graphics): at least one decoded FRPAK-backed frame fixture passes hash/plane-byte checks.
 - [ ] Gate 8.6-D (Failure): missing/corrupt data path stays controlled and preserves prior good runtime state.
 
 ### Revalidation Command
