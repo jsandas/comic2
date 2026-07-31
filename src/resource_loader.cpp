@@ -104,6 +104,10 @@ build_frpak_catalog_file(const std::filesystem::path &source_path,
   if (row_span == 0) {
     return std::nullopt;
   }
+  constexpr std::uint16_t kMaxRowSpan = 0x7FFF;
+  if (row_span > kMaxRowSpan) {
+    return std::nullopt;
+  }
 
   FrpakCatalogFile file;
   file.pak_id = pak_id;
@@ -159,10 +163,13 @@ std::optional<Ega4PlaneImage> decode_frpak_catalog_record(
     return std::nullopt;
   }
 
-  const std::size_t global_offset = file->blob_offset + record.data_offset;
-  if (global_offset > state.sprite_resource_bytes.size()) {
+  const std::size_t blob_bytes_remaining =
+      state.sprite_resource_bytes.size() - file->blob_offset;
+  if (record.data_offset > blob_bytes_remaining) {
     return std::nullopt;
   }
+
+  const std::size_t global_offset = file->blob_offset + record.data_offset;
   if (record.data_size > state.sprite_resource_bytes.size() - global_offset) {
     return std::nullopt;
   }

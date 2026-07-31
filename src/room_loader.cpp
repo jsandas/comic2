@@ -31,10 +31,12 @@ bool is_room_payload_candidate_name(std::string name) {
     return false;
   }
 
-  const bool room_index_is_digits = std::isdigit(name[2]) &&
-                                    std::isdigit(name[3]) &&
-                                    std::isdigit(name[4]);
-  const bool variant_is_digit = std::isdigit(name[6]);
+  const bool room_index_is_digits =
+      std::isdigit(static_cast<unsigned char>(name[2])) != 0 &&
+      std::isdigit(static_cast<unsigned char>(name[3])) != 0 &&
+      std::isdigit(static_cast<unsigned char>(name[4])) != 0;
+  const bool variant_is_digit =
+      std::isdigit(static_cast<unsigned char>(name[6])) != 0;
   return room_index_is_digits && variant_is_digit;
 }
 
@@ -48,8 +50,11 @@ discover_room_payload_candidates(const std::filesystem::path &root) {
     return candidates;
   }
 
-  for (const auto &entry : std::filesystem::directory_iterator(root, ec)) {
-    if (ec || !entry.is_regular_file()) {
+  for (std::filesystem::directory_iterator it(root, ec), end; !ec && it != end;
+       it.increment(ec)) {
+    const auto &entry = *it;
+    if (!entry.is_regular_file(ec) || ec) {
+      ec.clear();
       continue;
     }
 
