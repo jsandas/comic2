@@ -505,6 +505,172 @@ void test_room_loader_populates_runtime_state_from_resource_buffer() {
          "room loader should store decoded room bytes");
 }
 
+void test_room_loader_decodes_mapped_objects_from_payload() {
+  std::vector<std::uint8_t> decoded_room_bytes(0x2D2, 0x00);
+  decoded_room_bytes[0x2B0] = 0x02;
+  decoded_room_bytes[0x2B1] = 0x00;
+
+  // Record 0
+  decoded_room_bytes[0x2B2] = 0x01;
+  decoded_room_bytes[0x2B3] = 0x00;
+  decoded_room_bytes[0x2B4] = 0x03;
+  decoded_room_bytes[0x2B5] = 0x00;
+  decoded_room_bytes[0x2B6] = 0x34;
+  decoded_room_bytes[0x2B7] = 0x12;
+  decoded_room_bytes[0x2B8] = 0x02;
+  decoded_room_bytes[0x2B9] = 0x00;
+  decoded_room_bytes[0x2BA] = 0x64;
+  decoded_room_bytes[0x2BB] = 0x00;
+  decoded_room_bytes[0x2BC] = 0x32;
+  decoded_room_bytes[0x2BD] = 0x00;
+
+  // Record 1
+  decoded_room_bytes[0x2BE] = 0x01;
+  decoded_room_bytes[0x2BF] = 0x00;
+  decoded_room_bytes[0x2C0] = 0x03;
+  decoded_room_bytes[0x2C1] = 0x00;
+  decoded_room_bytes[0x2C2] = 0x78;
+  decoded_room_bytes[0x2C3] = 0x56;
+  decoded_room_bytes[0x2C4] = 0x01;
+  decoded_room_bytes[0x2C5] = 0x00;
+  decoded_room_bytes[0x2C6] = 0x2C;
+  decoded_room_bytes[0x2C7] = 0x01;
+  decoded_room_bytes[0x2C8] = 0x5A;
+  decoded_room_bytes[0x2C9] = 0x00;
+
+  const auto mapped = comic2::decode_room_mapped_objects(decoded_room_bytes);
+  expect(mapped.has_value(), "mapped object decode should succeed");
+  expect_eq(mapped->size(), 2, "mapped object decode should return 2 records");
+  expect((*mapped)[0].descriptor_ptr == 0x1234,
+         "first descriptor pointer mismatch");
+  expect((*mapped)[1].descriptor_ptr == 0x5678,
+         "second descriptor pointer mismatch");
+  expect((*mapped)[1].world_x == 300 && (*mapped)[1].world_y == 90,
+         "second mapped object world coords mismatch");
+}
+
+void test_room_loader_wires_runtime_tables_from_loaded_mapped_objects() {
+  std::vector<std::uint8_t> decoded_room_bytes(0x2D2, 0x00);
+  decoded_room_bytes[0x2A0] = 0x00;
+  decoded_room_bytes[0x2A1] = 0x00;
+  decoded_room_bytes[0x2A2] = 0x04;
+  decoded_room_bytes[0x2A3] = 0x00;
+  decoded_room_bytes[0x2A4] = 0x08;
+  decoded_room_bytes[0x2A5] = 0x00;
+
+  decoded_room_bytes[0x2B0] = 0x02;
+  decoded_room_bytes[0x2B1] = 0x00;
+
+  // Record 0 in room (0,3), inside viewport
+  decoded_room_bytes[0x2B2] = 0x00;
+  decoded_room_bytes[0x2B3] = 0x00;
+  decoded_room_bytes[0x2B4] = 0x03;
+  decoded_room_bytes[0x2B5] = 0x00;
+  decoded_room_bytes[0x2B6] = 0x10;
+  decoded_room_bytes[0x2B7] = 0x00;
+  decoded_room_bytes[0x2B8] = 0x07;
+  decoded_room_bytes[0x2B9] = 0x00;
+  decoded_room_bytes[0x2BA] = 0x14;
+  decoded_room_bytes[0x2BB] = 0x00;
+  decoded_room_bytes[0x2BC] = 0x1E;
+  decoded_room_bytes[0x2BD] = 0x00;
+
+  // Record 1 in room (0,3), outside viewport
+  decoded_room_bytes[0x2BE] = 0x00;
+  decoded_room_bytes[0x2BF] = 0x00;
+  decoded_room_bytes[0x2C0] = 0x03;
+  decoded_room_bytes[0x2C1] = 0x00;
+  decoded_room_bytes[0x2C2] = 0x20;
+  decoded_room_bytes[0x2C3] = 0x00;
+  decoded_room_bytes[0x2C4] = 0x08;
+  decoded_room_bytes[0x2C5] = 0x00;
+  decoded_room_bytes[0x2C6] = 0xF4;
+  decoded_room_bytes[0x2C7] = 0x01;
+  decoded_room_bytes[0x2C8] = 0x14;
+  decoded_room_bytes[0x2C9] = 0x00;
+
+  const std::vector<std::uint8_t> encoded_room_bytes =
+      encode_literal_signed_rle(decoded_room_bytes);
+
+  std::vector<std::uint8_t> resource_bytes(0x30 + encoded_room_bytes.size(),
+                                           0x00);
+  resource_bytes[2] = 0x03;
+  resource_bytes[3] = 0x00;
+  resource_bytes[0x04] = 0x04;
+  resource_bytes[0x05] = 0x00;
+  resource_bytes[0x06] = 0x03;
+  resource_bytes[0x07] = 0x00;
+  resource_bytes[0x08] = 0x30;
+  resource_bytes[0x09] = 0x00;
+  std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
+            resource_bytes.begin() + 0x30);
+
+  comic2::RuntimeState state;
+  const bool loaded = comic2::load_room_tilemap_from_resource_buffer(
+      state, resource_bytes, 3, 0);
+
+  expect(loaded, "room loader should succeed with mapped-object payload");
+  expect_eq(state.mapped_objects.size(), 2,
+            "room loader should populate mapped object table from payload");
+  expect_eq(state.active_entities.size(), 2,
+            "room loader should build active entity list from mapped objects");
+  expect_eq(state.runtime_slots.size(), 6,
+            "room loader should provision runtime slot table");
+  expect(state.activation_state.active_count == 1,
+         "runtime slot wiring should cull out-of-viewport descriptor");
+  expect(state.runtime_slots[0].mapped_object_ptr == 0,
+         "first runtime slot should point at first mapped object");
+}
+
+void test_room_loader_handles_corrupt_mapped_object_payload_stably() {
+  std::vector<std::uint8_t> decoded_room_bytes(0x2C4, 0x00);
+  decoded_room_bytes[0x2A0] = 0x00;
+  decoded_room_bytes[0x2A1] = 0x00;
+  decoded_room_bytes[0x2A2] = 0x04;
+  decoded_room_bytes[0x2A3] = 0x00;
+  decoded_room_bytes[0x2A4] = 0x08;
+  decoded_room_bytes[0x2A5] = 0x00;
+  decoded_room_bytes[0x2B0] = 0x08;
+  decoded_room_bytes[0x2B1] = 0x00;
+
+  const std::vector<std::uint8_t> encoded_room_bytes =
+      encode_literal_signed_rle(decoded_room_bytes);
+
+  std::vector<std::uint8_t> resource_bytes(0x30 + encoded_room_bytes.size(),
+                                           0x00);
+  resource_bytes[2] = 0x03;
+  resource_bytes[3] = 0x00;
+  resource_bytes[0x04] = 0x04;
+  resource_bytes[0x05] = 0x00;
+  resource_bytes[0x06] = 0x03;
+  resource_bytes[0x07] = 0x00;
+  resource_bytes[0x08] = 0x30;
+  resource_bytes[0x09] = 0x00;
+  std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
+            resource_bytes.begin() + 0x30);
+
+  comic2::RuntimeState state;
+  state.mapped_objects.push_back(
+      comic2::MappedObject12{.room_x = 1,
+                             .room_y = 1,
+                             .descriptor_ptr = 0x1234,
+                             .state_flags = 0,
+                             .world_x = 10,
+                             .world_y = 10});
+
+  const bool loaded = comic2::load_room_tilemap_from_resource_buffer(
+      state, resource_bytes, 3, 0);
+
+  expect(loaded,
+         "corrupt mapped-object payload should not fail room tilemap load");
+  expect(state.mapped_objects.empty(),
+         "corrupt mapped-object payload should clear mapped object table");
+  expect(state.active_entities.empty(),
+         "corrupt mapped-object payload should clear active entities");
+  expect(state.runtime_slots.empty(),
+         "corrupt mapped-object payload should keep runtime slots controlled");
+}
+
 void test_frpak_catalog_builds_file_index() {
   const std::vector<std::uint8_t> bytes = {
       0x40, 0x00, 0x01, 0x02, 0x03,
@@ -634,6 +800,9 @@ void run_subsystem_scaffold_tests() {
   test_room_loader_rejects_out_of_bounds_room_index();
   test_room_loader_rejects_sentinel_entries();
   test_room_loader_populates_runtime_state_from_resource_buffer();
+  test_room_loader_decodes_mapped_objects_from_payload();
+  test_room_loader_wires_runtime_tables_from_loaded_mapped_objects();
+  test_room_loader_handles_corrupt_mapped_object_payload_stably();
   test_frpak_catalog_builds_file_index();
   test_frpak_catalog_rejects_truncated_header();
   test_frpak_catalog_rejects_zero_row_span_header();

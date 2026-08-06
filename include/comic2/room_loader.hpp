@@ -40,6 +40,9 @@ std::optional<std::vector<std::uint16_t>>
 build_room_row_pointer_table(std::span<const std::uint8_t> decoded_room_bytes,
                              std::uint16_t tile_h);
 
+std::optional<std::vector<MappedObject12>>
+decode_room_mapped_objects(std::span<const std::uint8_t> decoded_room_bytes);
+
 bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
                                             std::span<const std::uint8_t> bytes,
                                             std::uint16_t level,

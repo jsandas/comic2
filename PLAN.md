@@ -565,10 +565,10 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 - `tests/integration_gates_tests.cpp`
 
 ### 8.6.5 Runtime Data Wiring for Entities
-- [ ] Load mapped object/entity descriptors from original room/resource payloads instead of synthetic scaffolds.
-- [ ] Populate `mapped_objects` and activation/runtime tables from decoded data before dispatch ticks.
-- [ ] Verify projectile/entity updates operate on loaded descriptors without changing dispatch order.
-- [ ] Add tests for descriptor decode, activation list build, and viewport slot population from real fixture bytes.
+- [x] Load mapped object/entity descriptors from original room/resource payloads instead of synthetic scaffolds.
+- [x] Populate `mapped_objects` and activation/runtime tables from decoded data before dispatch ticks.
+- [x] Verify projectile/entity updates operate on loaded descriptors without changing dispatch order.
+- [x] Add tests for descriptor decode, activation list build, and viewport slot population from real fixture bytes.
 
 **Suggested touchpoints:**
 - `src/entity_runtime.cpp`
@@ -583,7 +583,7 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 - [ ] Gate 8.6-D (Failure): missing/corrupt data path stays controlled and preserves prior good runtime state.
 
 ### Revalidation Command
-- [ ] `cmake --build build && ctest --test-dir build --output-on-failure`
+- [x] `cmake --build build && ctest --test-dir build --output-on-failure`
 
 ### Implementation Notes
 - Preserve bootstrap fallback behavior while incrementally enabling data-driven paths.

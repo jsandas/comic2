@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "comic2/entity_runtime.hpp"
 #include "comic2/resource_loader.hpp"
 
 namespace comic2 {
@@ -20,6 +21,32 @@ constexpr std::size_t kRoomRowPointerMapOffset = 0x2A0;
 constexpr std::size_t kRoomTableOffset = 0x04;
 constexpr std::size_t kRoomEntrySize = 6;
 constexpr std::uint16_t kSentinelEntry = 0xFFFFu;
+constexpr std::size_t kMappedObjectCountOffset = 0x2B0;
+constexpr std::size_t kMappedObjectTableOffset = 0x2B2;
+constexpr std::size_t kMappedObjectRecordSize = 12;
+
+std::uint16_t read_u16(std::span<const std::uint8_t> bytes, std::size_t off) {
+  return static_cast<std::uint16_t>(bytes[off] | (bytes[off + 1] << 8));
+}
+
+void hydrate_entity_runtime_for_room(RuntimeState &state) {
+  state.active_entities.clear();
+  state.runtime_slots.clear();
+  state.activation_state = EntityActivationState{};
+
+  if (state.mapped_objects.empty()) {
+    return;
+  }
+
+  ent_build_room_entity_list(state.mapped_objects, state.current_room,
+                             state.current_level, state.active_entities,
+                             state.activation_state);
+
+  const EntityViewportBounds viewport{};
+  ent_build_runtime_slots_for_viewport(
+      state.active_entities, state.mapped_objects, state.runtime_slots,
+      viewport, state.activation_state, state.activation_toggle);
+}
 
 bool is_room_payload_candidate_name(std::string name) {
   std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) {
@@ -158,6 +185,52 @@ build_room_row_pointer_table(std::span<const std::uint8_t> decoded_room_bytes,
   return row_pointers;
 }
 
+std::optional<std::vector<MappedObject12>>
+decode_room_mapped_objects(std::span<const std::uint8_t> decoded_room_bytes) {
+  if (decoded_room_bytes.size() < kMappedObjectCountOffset + 2) {
+    return std::vector<MappedObject12>{};
+  }
+
+  const std::uint16_t count =
+      read_u16(decoded_room_bytes, kMappedObjectCountOffset);
+  if (count == 0 || count == kSentinelEntry) {
+    return std::vector<MappedObject12>{};
+  }
+
+  const std::size_t needed_size =
+      kMappedObjectTableOffset + static_cast<std::size_t>(count) *
+                                     kMappedObjectRecordSize;
+  if (needed_size > decoded_room_bytes.size()) {
+    return std::nullopt;
+  }
+
+  std::vector<MappedObject12> mapped_objects;
+  mapped_objects.reserve(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    const std::size_t off =
+        kMappedObjectTableOffset + i * kMappedObjectRecordSize;
+
+    MappedObject12 obj{};
+    obj.room_x = read_u16(decoded_room_bytes, off + 0);
+    obj.room_y = read_u16(decoded_room_bytes, off + 2);
+    obj.descriptor_ptr = read_u16(decoded_room_bytes, off + 4);
+    obj.state_flags = read_u16(decoded_room_bytes, off + 6);
+    obj.world_x = read_u16(decoded_room_bytes, off + 8);
+    obj.world_y = read_u16(decoded_room_bytes, off + 10);
+
+    if (obj.room_x == kSentinelEntry && obj.room_y == kSentinelEntry &&
+        obj.descriptor_ptr == kSentinelEntry &&
+        obj.state_flags == kSentinelEntry && obj.world_x == kSentinelEntry &&
+        obj.world_y == kSentinelEntry) {
+      continue;
+    }
+
+    mapped_objects.push_back(obj);
+  }
+
+  return mapped_objects;
+}
+
 bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
                                             std::span<const std::uint8_t> bytes,
                                             std::uint16_t level,
@@ -187,6 +260,11 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
   state.room_grid.tile_h = spec->room_entry.tile_h;
   state.room_grid.row_pointers = *row_pointers;
   state.room_grid.tile_data = decoded.bytes;
+
+  const auto mapped_objects = decode_room_mapped_objects(decoded.bytes);
+  state.mapped_objects = mapped_objects.value_or(std::vector<MappedObject12>{});
+  hydrate_entity_runtime_for_room(state);
+
   return true;
 }
 
@@ -219,6 +297,11 @@ bool load_room_tilemap_from_resource_file(
   state.room_grid.tile_h = spec->room_entry.tile_h;
   state.room_grid.row_pointers = *row_pointers;
   state.room_grid.tile_data = decoded.bytes;
+
+  const auto mapped_objects = decode_room_mapped_objects(decoded.bytes);
+  state.mapped_objects = mapped_objects.value_or(std::vector<MappedObject12>{});
+  hydrate_entity_runtime_for_room(state);
+
   return true;
 }
 
