@@ -198,8 +198,8 @@ decode_room_mapped_objects(std::span<const std::uint8_t> decoded_room_bytes) {
   }
 
   const std::size_t needed_size =
-      kMappedObjectTableOffset + static_cast<std::size_t>(count) *
-                                     kMappedObjectRecordSize;
+      kMappedObjectTableOffset +
+      static_cast<std::size_t>(count) * kMappedObjectRecordSize;
   if (needed_size > decoded_room_bytes.size()) {
     return std::nullopt;
   }
