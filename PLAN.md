@@ -477,11 +477,11 @@ This phase is about getting the real game running, not full parity or complete c
 Move from bootstrap-style probing to deterministic, data-driven loading of levels, rooms, and graphics from original game files, with room transitions and rendering backed by decoded original assets.
 
 ### Exit Criteria
-- [ ] Level/room selection resolves through FRDATA indirection instead of hardcoded candidate filename scans.
-- [ ] Room transitions load the target room from original data files and commit state atomically.
+- [x] Level/room selection resolves through FRDATA indirection instead of hardcoded candidate filename scans.
+- [x] Room transitions load the target room from original data files and commit state atomically.
 - [x] FRPAK payloads are indexed and decoded through an explicit resource catalog/cache.
-- [ ] Rendering path consumes decoded original graphics for at least one verified tile/sprite path.
-- [ ] Integration tests cover cross-room load success and failure fallback behavior.
+- [x] Rendering path consumes decoded original graphics for at least one verified tile/sprite path.
+- [x] Integration tests cover cross-room load success and failure fallback behavior.
 
 ### 8.6.1 Resource Resolution Layer
 - [x] Introduce a dedicated resolver API (new module) that maps `(level, room, asset kind)` to concrete file path + offset metadata.
@@ -577,10 +577,10 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 - `tests/subsystem_scaffold_tests.cpp`
 
 ### 8.6.6 Validation Gates (Phase 8.6)
-- [ ] Gate 8.6-A (Resolver): deterministic `(level, room)` mapping to expected source file/offset fixtures.
-- [ ] Gate 8.6-B (Transition): cross-room movement triggers correct room reload and stable player bounds.
+- [x] Gate 8.6-A (Resolver): deterministic `(level, room)` mapping to expected source file/offset fixtures.
+- [x] Gate 8.6-B (Transition): cross-room movement triggers correct room reload and stable player bounds.
 - [x] Gate 8.6-C (Graphics): at least one decoded FRPAK-backed frame fixture passes hash/plane-byte checks.
-- [ ] Gate 8.6-D (Failure): missing/corrupt data path stays controlled and preserves prior good runtime state.
+- [x] Gate 8.6-D (Failure): missing/corrupt data path stays controlled and preserves prior good runtime state.
 
 ### Revalidation Command
 - [x] `cmake --build build && ctest --test-dir build --output-on-failure`
@@ -1068,3 +1068,40 @@ Required output format:
 4) Validation command result summary
 5) Any risks or follow-ups
 ```
+
+---
+
+## Phase 9: Comprehensive Gameplay Systems & Content Parity
+
+### Goal
+Transition from basic asset loading and input/frame loop integration to full gameplay parity, implementing entity behavior routines, item pickups, combat damage mechanics, HUD/UI rendering, audio synthesis, save/load state, and room transition presentation.
+
+### 9.1 Entity AI Behavior & Combat Dispatch
+- [ ] **Entity State Machine & Behavior Dispatch**: Implement the table-driven behavior function dispatch (`ent_update_object_behaviors`, `0x48ED` table) for enemy types (horizontal chase, jumping, bouncing, gravity-affected, shoot-at-player).
+- [ ] **Entity-Player Collision & Damage**: Implement player hit detection against active entities, HP subtraction, invulnerability frame timer (`comic_invuln_ticks`), and knockback/recoil physics.
+- [ ] **Item Pickups & Powerups**: Implement pickup logic for gems, firepower/speed upgrades, data disks, extra lives, and special mode items.
+- [ ] **Unit & Integration Tests**: Add deterministic test coverage for enemy AI motion, hit detection, damage application, and item collection.
+
+### 9.2 Complete Sound Interrupt & Audio Synth Backend
+- [ ] **Sound Interrupt Simulator**: Implement the sound command parser matching `loc_8C7` (INT 3 handler) and timer interrupt loop (`loc_683`).
+- [ ] **Audio Dispatch**: Connect gameplay events (jump, shoot, hit, pickup, death, level start) to sound effect stream offsets (`0x00DB`, `0x965E`, `0x9676`, `0x96B6`).
+- [ ] **Synthesizer Implementation**: Implement PC Speaker square-wave frequency synthesis and/or AdLib FM sound backend.
+- [ ] **Audio Tests**: Add tests verifying event trigger non-blocking safety and stream playback queue stability.
+
+### 9.3 Room Transition Presentation & Camera Systems
+- [ ] **Visual Transition Effects**: Implement room transition presentation routines mapped in Phase 5 (`room_transition_palette_wave`, `room_transition_reveal_sequence_a/b`, `room_transition_draw_reveal_quad`, split-buffer wipes).
+- [ ] **Player Transition Sequences**: Implement entry/exit animations (`room_transition_player_entry_sequence`, `room_transition_player_exit_sequence`).
+- [ ] **Camera Vertical Tracking**: Implement smooth Y-axis camera scrolling (`camera_update_y_follow_comic_clamped`).
+- [ ] **Transition Tests**: Add frame-hash tests verifying room transition visual transitions and camera tracking limits.
+
+### 9.4 HUD, UI, Menus & Save/Load Persistence
+- [ ] **HUD Status Bar**: Implement BCD counter displays (`hud_draw_two_digit_counter`, score, gems, lives) and inventory/mode icon overlays (`hud_update_mode_icons`).
+- [ ] **In-Game Menus & UI Panels**: Implement options list menu, key rebinding UI, and modal prompts (`ui_show_modal_prompt_wait_key`, `ui_render_option_list`).
+- [ ] **Save/Load State Persistence**: Implement snapshot serialisation and deserialisation matching original savegame format (`savegame_write_snapshot`, `savegame_read_snapshot`) and configuration (`FRCFG`).
+- [ ] **Cinematic Sequences**: Implement intro cinematic sequence (`play_intro_cinematic`), game selection panel (`ui_render_game_selection_panel`), and finale sequence.
+- [ ] **UI & Save Tests**: Add tests for BCD math, config load/save roundtrips, and savegame snapshot binary compatibility.
+
+### 9.5 End-to-End Playability & Oracle Alignment
+- [ ] **Full Game Loop Playability**: Verify end-to-end game progression from intro -> title screen -> level select -> room exploration -> boss/item progression -> game over/win.
+- [ ] **Oracle Replay Verification**: Replay recorded DOSBox input logs and compare frame-by-frame state snapshots against oracle dumps.
+
