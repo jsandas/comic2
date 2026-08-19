@@ -38,7 +38,8 @@ encode_literal_signed_rle(const std::vector<std::uint8_t> &bytes) {
   while (offset < bytes.size()) {
     const std::size_t chunk = std::min<std::size_t>(127, bytes.size() - offset);
     encoded.push_back(static_cast<std::uint8_t>(chunk));
-    encoded.insert(encoded.end(), bytes.begin() + static_cast<std::ptrdiff_t>(offset),
+    encoded.insert(encoded.end(),
+                   bytes.begin() + static_cast<std::ptrdiff_t>(offset),
                    bytes.begin() + static_cast<std::ptrdiff_t>(offset + chunk));
     offset += chunk;
   }
