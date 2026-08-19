@@ -260,6 +260,7 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
   state.room_grid.tile_h = spec->room_entry.tile_h;
   state.room_grid.row_pointers = *row_pointers;
   state.room_grid.tile_data = decoded.bytes;
+  state.room_resource_bytes.assign(bytes.begin(), bytes.end());
 
   const auto mapped_objects = decode_room_mapped_objects(decoded.bytes);
   state.mapped_objects = mapped_objects.value_or(std::vector<MappedObject12>{});
@@ -297,6 +298,7 @@ bool load_room_tilemap_from_resource_file(
   state.room_grid.tile_h = spec->room_entry.tile_h;
   state.room_grid.row_pointers = *row_pointers;
   state.room_grid.tile_data = decoded.bytes;
+  state.room_resource_bytes.assign(bytes.begin(), bytes.end());
 
   const auto mapped_objects = decode_room_mapped_objects(decoded.bytes);
   state.mapped_objects = mapped_objects.value_or(std::vector<MappedObject12>{});
