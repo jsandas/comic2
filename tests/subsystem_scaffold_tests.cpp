@@ -505,6 +505,42 @@ void test_room_loader_populates_runtime_state_from_resource_buffer() {
          "room loader should store decoded room bytes");
 }
 
+void test_room_loader_handles_self_referential_resource_bytes_span() {
+  std::vector<std::uint8_t> decoded_room_bytes(0x2C4, 0x00);
+  decoded_room_bytes[0x2A0] = 0x00;
+  decoded_room_bytes[0x2A1] = 0x00;
+  decoded_room_bytes[0x2A2] = 0x04;
+  decoded_room_bytes[0x2A3] = 0x00;
+  decoded_room_bytes[0x2A4] = 0x08;
+  decoded_room_bytes[0x2A5] = 0x00;
+
+  const std::vector<std::uint8_t> encoded_room_bytes =
+      encode_literal_signed_rle(decoded_room_bytes);
+
+  std::vector<std::uint8_t> resource_bytes(0x20 + encoded_room_bytes.size(),
+                                           0x00);
+  resource_bytes[2] = 0x03;
+  resource_bytes[3] = 0x00;
+  resource_bytes[0x04] = 0x04;
+  resource_bytes[0x05] = 0x00;
+  resource_bytes[0x06] = 0x03;
+  resource_bytes[0x07] = 0x00;
+  resource_bytes[0x08] = 0x20;
+  resource_bytes[0x09] = 0x00;
+  std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
+            resource_bytes.begin() + 0x20);
+
+  comic2::RuntimeState state;
+  state.room_resource_bytes = resource_bytes;
+
+  const bool loaded = comic2::load_room_tilemap_from_resource_buffer(
+      state, state.room_resource_bytes, 3, 0);
+
+  expect(loaded, "room loader should tolerate a self-referential span");
+  expect(state.room_resource_bytes == resource_bytes,
+         "room loader should preserve the copied resource bytes");
+}
+
 void test_room_loader_decodes_mapped_objects_from_payload() {
   std::vector<std::uint8_t> decoded_room_bytes(0x2D2, 0x00);
   decoded_room_bytes[0x2B0] = 0x02;
@@ -800,6 +836,7 @@ void run_subsystem_scaffold_tests() {
   test_room_loader_rejects_out_of_bounds_room_index();
   test_room_loader_rejects_sentinel_entries();
   test_room_loader_populates_runtime_state_from_resource_buffer();
+  test_room_loader_handles_self_referential_resource_bytes_span();
   test_room_loader_decodes_mapped_objects_from_payload();
   test_room_loader_wires_runtime_tables_from_loaded_mapped_objects();
   test_room_loader_handles_corrupt_mapped_object_payload_stably();
