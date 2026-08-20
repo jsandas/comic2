@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
 #include <limits>
 #include <stdexcept>
 #include <vector>
@@ -371,6 +373,41 @@ void test_room_loader_decodes_frdata_entry() {
   expect(entry->rle_data_off == 0x1234, "rle_data_off decode mismatch");
 }
 
+void test_room_loader_resolves_room_payload_location() {
+  std::vector<std::uint8_t> bytes(0x40, 0x00);
+  bytes[2] = 0x03;
+  bytes[3] = 0x00;
+  bytes[0x04] = 0x04;
+  bytes[0x05] = 0x00;
+  bytes[0x06] = 0x03;
+  bytes[0x07] = 0x00;
+  bytes[0x08] = 0x20;
+  bytes[0x09] = 0x00;
+
+  const std::optional<comic2::RoomLoadSpec> spec =
+      comic2::resolve_room_load_spec("/tmp/FRDATA.0", bytes, 3, 0,
+                                     comic2::ResourceAssetKind::RoomPayload);
+  expect(spec.has_value(), "resolver should map a valid room payload");
+  expect(spec->source_path == std::filesystem::path("/tmp/FRDATA.0"),
+         "resolver should preserve the source path");
+  expect(spec->table_offset == 0x04, "resolver should report table offset");
+  expect(spec->room_entry_offset == 0x04,
+         "resolver should report room entry offset");
+  expect(spec->resource_offset == 0x20,
+         "resolver should report room payload offset");
+  expect(spec->room_entry.tile_w == 4, "resolver should decode tile_w");
+  expect(spec->room_entry.tile_h == 3, "resolver should decode tile_h");
+  expect(spec->room_entry.rle_data_off == 0x20,
+         "resolver should decode payload offset");
+
+  const std::optional<comic2::RoomLoadSpec> table_spec =
+      comic2::resolve_room_load_spec("/tmp/FRDATA.0", bytes, 3, 0,
+                                     comic2::ResourceAssetKind::RoomTable);
+  expect(table_spec.has_value(), "resolver should map room table access");
+  expect(table_spec->resource_offset == 0x04,
+         "room table access should point at the room entry");
+}
+
 void test_room_loader_rejects_huge_offset() {
   const std::vector<std::uint8_t> bytes = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
@@ -396,6 +433,24 @@ void test_room_loader_rejects_out_of_bounds_room_index() {
       comic2::load_room_tilemap_from_resource_buffer(state, bytes, 3, 1);
   expect(!loaded,
          "room loader should reject a room index that is outside the table");
+}
+
+void test_room_loader_rejects_sentinel_entries() {
+  std::vector<std::uint8_t> bytes(0x10, 0x00);
+  bytes[2] = 0x03;
+  bytes[3] = 0x00;
+  bytes[0x04] = 0xFF;
+  bytes[0x05] = 0xFF;
+  bytes[0x06] = 0xFF;
+  bytes[0x07] = 0xFF;
+  bytes[0x08] = 0xFF;
+  bytes[0x09] = 0xFF;
+
+  const std::optional<comic2::RoomLoadSpec> spec =
+      comic2::resolve_room_load_spec("/tmp/FRDATA.0", bytes, 3, 0,
+                                     comic2::ResourceAssetKind::RoomPayload);
+  expect(!spec.has_value(),
+         "resolver should reject sentinel room entries as invalid");
 }
 
 void test_room_loader_populates_runtime_state_from_resource_buffer() {
@@ -450,6 +505,280 @@ void test_room_loader_populates_runtime_state_from_resource_buffer() {
          "room loader should store decoded room bytes");
 }
 
+void test_room_loader_decodes_mapped_objects_from_payload() {
+  std::vector<std::uint8_t> decoded_room_bytes(0x2D2, 0x00);
+  decoded_room_bytes[0x2B0] = 0x02;
+  decoded_room_bytes[0x2B1] = 0x00;
+
+  // Record 0
+  decoded_room_bytes[0x2B2] = 0x01;
+  decoded_room_bytes[0x2B3] = 0x00;
+  decoded_room_bytes[0x2B4] = 0x03;
+  decoded_room_bytes[0x2B5] = 0x00;
+  decoded_room_bytes[0x2B6] = 0x34;
+  decoded_room_bytes[0x2B7] = 0x12;
+  decoded_room_bytes[0x2B8] = 0x02;
+  decoded_room_bytes[0x2B9] = 0x00;
+  decoded_room_bytes[0x2BA] = 0x64;
+  decoded_room_bytes[0x2BB] = 0x00;
+  decoded_room_bytes[0x2BC] = 0x32;
+  decoded_room_bytes[0x2BD] = 0x00;
+
+  // Record 1
+  decoded_room_bytes[0x2BE] = 0x01;
+  decoded_room_bytes[0x2BF] = 0x00;
+  decoded_room_bytes[0x2C0] = 0x03;
+  decoded_room_bytes[0x2C1] = 0x00;
+  decoded_room_bytes[0x2C2] = 0x78;
+  decoded_room_bytes[0x2C3] = 0x56;
+  decoded_room_bytes[0x2C4] = 0x01;
+  decoded_room_bytes[0x2C5] = 0x00;
+  decoded_room_bytes[0x2C6] = 0x2C;
+  decoded_room_bytes[0x2C7] = 0x01;
+  decoded_room_bytes[0x2C8] = 0x5A;
+  decoded_room_bytes[0x2C9] = 0x00;
+
+  const auto mapped = comic2::decode_room_mapped_objects(decoded_room_bytes);
+  expect(mapped.has_value(), "mapped object decode should succeed");
+  expect_eq(mapped->size(), 2, "mapped object decode should return 2 records");
+  expect((*mapped)[0].descriptor_ptr == 0x1234,
+         "first descriptor pointer mismatch");
+  expect((*mapped)[1].descriptor_ptr == 0x5678,
+         "second descriptor pointer mismatch");
+  expect((*mapped)[1].world_x == 300 && (*mapped)[1].world_y == 90,
+         "second mapped object world coords mismatch");
+}
+
+void test_room_loader_wires_runtime_tables_from_loaded_mapped_objects() {
+  std::vector<std::uint8_t> decoded_room_bytes(0x2D2, 0x00);
+  decoded_room_bytes[0x2A0] = 0x00;
+  decoded_room_bytes[0x2A1] = 0x00;
+  decoded_room_bytes[0x2A2] = 0x04;
+  decoded_room_bytes[0x2A3] = 0x00;
+  decoded_room_bytes[0x2A4] = 0x08;
+  decoded_room_bytes[0x2A5] = 0x00;
+
+  decoded_room_bytes[0x2B0] = 0x02;
+  decoded_room_bytes[0x2B1] = 0x00;
+
+  // Record 0 in room (0,3), inside viewport
+  decoded_room_bytes[0x2B2] = 0x00;
+  decoded_room_bytes[0x2B3] = 0x00;
+  decoded_room_bytes[0x2B4] = 0x03;
+  decoded_room_bytes[0x2B5] = 0x00;
+  decoded_room_bytes[0x2B6] = 0x10;
+  decoded_room_bytes[0x2B7] = 0x00;
+  decoded_room_bytes[0x2B8] = 0x07;
+  decoded_room_bytes[0x2B9] = 0x00;
+  decoded_room_bytes[0x2BA] = 0x14;
+  decoded_room_bytes[0x2BB] = 0x00;
+  decoded_room_bytes[0x2BC] = 0x1E;
+  decoded_room_bytes[0x2BD] = 0x00;
+
+  // Record 1 in room (0,3), outside viewport
+  decoded_room_bytes[0x2BE] = 0x00;
+  decoded_room_bytes[0x2BF] = 0x00;
+  decoded_room_bytes[0x2C0] = 0x03;
+  decoded_room_bytes[0x2C1] = 0x00;
+  decoded_room_bytes[0x2C2] = 0x20;
+  decoded_room_bytes[0x2C3] = 0x00;
+  decoded_room_bytes[0x2C4] = 0x08;
+  decoded_room_bytes[0x2C5] = 0x00;
+  decoded_room_bytes[0x2C6] = 0xF4;
+  decoded_room_bytes[0x2C7] = 0x01;
+  decoded_room_bytes[0x2C8] = 0x14;
+  decoded_room_bytes[0x2C9] = 0x00;
+
+  const std::vector<std::uint8_t> encoded_room_bytes =
+      encode_literal_signed_rle(decoded_room_bytes);
+
+  std::vector<std::uint8_t> resource_bytes(0x30 + encoded_room_bytes.size(),
+                                           0x00);
+  resource_bytes[2] = 0x03;
+  resource_bytes[3] = 0x00;
+  resource_bytes[0x04] = 0x04;
+  resource_bytes[0x05] = 0x00;
+  resource_bytes[0x06] = 0x03;
+  resource_bytes[0x07] = 0x00;
+  resource_bytes[0x08] = 0x30;
+  resource_bytes[0x09] = 0x00;
+  std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
+            resource_bytes.begin() + 0x30);
+
+  comic2::RuntimeState state;
+  const bool loaded = comic2::load_room_tilemap_from_resource_buffer(
+      state, resource_bytes, 3, 0);
+
+  expect(loaded, "room loader should succeed with mapped-object payload");
+  expect_eq(state.mapped_objects.size(), 2,
+            "room loader should populate mapped object table from payload");
+  expect_eq(state.active_entities.size(), 2,
+            "room loader should build active entity list from mapped objects");
+  expect_eq(state.runtime_slots.size(), 6,
+            "room loader should provision runtime slot table");
+  expect(state.activation_state.active_count == 1,
+         "runtime slot wiring should cull out-of-viewport descriptor");
+  expect(state.runtime_slots[0].mapped_object_ptr == 0,
+         "first runtime slot should point at first mapped object");
+}
+
+void test_room_loader_handles_corrupt_mapped_object_payload_stably() {
+  std::vector<std::uint8_t> decoded_room_bytes(0x2C4, 0x00);
+  decoded_room_bytes[0x2A0] = 0x00;
+  decoded_room_bytes[0x2A1] = 0x00;
+  decoded_room_bytes[0x2A2] = 0x04;
+  decoded_room_bytes[0x2A3] = 0x00;
+  decoded_room_bytes[0x2A4] = 0x08;
+  decoded_room_bytes[0x2A5] = 0x00;
+  decoded_room_bytes[0x2B0] = 0x08;
+  decoded_room_bytes[0x2B1] = 0x00;
+
+  const std::vector<std::uint8_t> encoded_room_bytes =
+      encode_literal_signed_rle(decoded_room_bytes);
+
+  std::vector<std::uint8_t> resource_bytes(0x30 + encoded_room_bytes.size(),
+                                           0x00);
+  resource_bytes[2] = 0x03;
+  resource_bytes[3] = 0x00;
+  resource_bytes[0x04] = 0x04;
+  resource_bytes[0x05] = 0x00;
+  resource_bytes[0x06] = 0x03;
+  resource_bytes[0x07] = 0x00;
+  resource_bytes[0x08] = 0x30;
+  resource_bytes[0x09] = 0x00;
+  std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
+            resource_bytes.begin() + 0x30);
+
+  comic2::RuntimeState state;
+  state.mapped_objects.push_back(
+      comic2::MappedObject12{.room_x = 1,
+                             .room_y = 1,
+                             .descriptor_ptr = 0x1234,
+                             .state_flags = 0,
+                             .world_x = 10,
+                             .world_y = 10});
+
+  const bool loaded = comic2::load_room_tilemap_from_resource_buffer(
+      state, resource_bytes, 3, 0);
+
+  expect(loaded,
+         "corrupt mapped-object payload should not fail room tilemap load");
+  expect(state.mapped_objects.empty(),
+         "corrupt mapped-object payload should clear mapped object table");
+  expect(state.active_entities.empty(),
+         "corrupt mapped-object payload should clear active entities");
+  expect(state.runtime_slots.empty(),
+         "corrupt mapped-object payload should keep runtime slots controlled");
+}
+
+void test_frpak_catalog_builds_file_index() {
+  const std::vector<std::uint8_t> bytes = {
+      0x40, 0x00, 0x01, 0x02, 0x03,
+  };
+
+  const auto file =
+      comic2::build_frpak_catalog_file("/tmp/FRPAK.001", bytes, 1);
+  expect(file.has_value(), "frpak catalog should build for valid payload");
+  expect(file->pak_id == 1, "frpak catalog should preserve pak id");
+  expect(file->file_size == bytes.size(),
+         "frpak catalog should store file size");
+  expect(file->records.size() == 1,
+         "frpak catalog should expose a single direct-stream record");
+  expect(file->records[0].record_id == 0,
+         "frpak direct-stream record id should start at zero");
+  expect(file->records[0].data_offset == 0,
+         "frpak direct-stream record offset should be zero");
+  expect(file->records[0].data_size == bytes.size(),
+         "frpak direct-stream record size should match file size");
+  expect(file->records[0].row_span_bytes == 0x40,
+         "frpak direct-stream row span should decode from file header");
+}
+
+void test_frpak_catalog_rejects_truncated_header() {
+  const std::vector<std::uint8_t> bytes = {0x40};
+  const auto file =
+      comic2::build_frpak_catalog_file("/tmp/FRPAK.001", bytes, 1);
+  expect(!file.has_value(),
+         "frpak catalog should reject files smaller than header size");
+}
+
+void test_frpak_catalog_rejects_zero_row_span_header() {
+  const std::vector<std::uint8_t> bytes = {0x00, 0x00, 0x01};
+  const auto file =
+      comic2::build_frpak_catalog_file("/tmp/FRPAK.001", bytes, 1);
+  expect(!file.has_value(),
+         "frpak catalog should reject zero row-span headers");
+}
+
+void test_frpak_catalog_record_bounds_validation() {
+  const comic2::FrpakCatalogRecord valid{
+      .pak_id = 1,
+      .record_id = 0,
+      .data_offset = 2,
+      .data_size = 4,
+      .row_span_bytes = 0x20,
+  };
+  expect(comic2::validate_frpak_catalog_record_bounds(valid, 6),
+         "frpak bounds validator should accept in-range records");
+
+  const comic2::FrpakCatalogRecord offset_past_end{
+      .pak_id = 1,
+      .record_id = 1,
+      .data_offset = 7,
+      .data_size = 0,
+      .row_span_bytes = 0x20,
+  };
+  expect(!comic2::validate_frpak_catalog_record_bounds(offset_past_end, 6),
+         "frpak bounds validator should reject offsets beyond file size");
+
+  const comic2::FrpakCatalogRecord size_overflow{
+      .pak_id = 1,
+      .record_id = 2,
+      .data_offset = 4,
+      .data_size = 3,
+      .row_span_bytes = 0x20,
+  };
+  expect(!comic2::validate_frpak_catalog_record_bounds(size_overflow, 6),
+         "frpak bounds validator should reject records exceeding file size");
+}
+
+void test_bootstrap_populates_frpak_catalog_for_known_files() {
+  const auto root =
+      std::filesystem::temp_directory_path() / "comic2_frpak_catalog_fixture";
+  std::filesystem::remove_all(root);
+  std::filesystem::create_directories(root);
+
+  const std::vector<std::uint8_t> frpak_bytes = {
+      0x40, 0x00, 0xAA, 0xBB, 0xCC,
+  };
+  {
+    std::ofstream output(root / "FRPAK.001", std::ios::binary);
+    output.write(reinterpret_cast<const char *>(frpak_bytes.data()),
+                 static_cast<std::streamsize>(frpak_bytes.size()));
+  }
+
+  comic2::RuntimeState state;
+  const auto summary = comic2::load_initial_bootstrap_resources(state, root);
+
+  expect(summary.sprite_files_tried > 0,
+         "bootstrap should attempt sprite candidate discovery");
+  expect(state.frpak_catalog.files.size() == 1,
+         "bootstrap should index valid FRPAK files in catalog");
+  expect(state.frpak_catalog.files[0].pak_id == 1,
+         "bootstrap catalog should preserve FRPAK numeric id");
+  expect(state.frpak_catalog.files[0].records.size() == 1,
+         "bootstrap catalog should include one record for direct payload file");
+
+  const auto record =
+      comic2::find_frpak_catalog_record(state.frpak_catalog, 1, 0);
+  expect(record.has_value(),
+         "catalog lookup should resolve known pak/record pair");
+  expect(record->data_size == frpak_bytes.size(),
+         "catalog record size should match source file size");
+
+  std::filesystem::remove_all(root);
+}
+
 } // namespace
 
 void run_subsystem_scaffold_tests() {
@@ -466,7 +795,17 @@ void run_subsystem_scaffold_tests() {
   test_projectile_anim_frame_cycles();
   test_ent_activation_pipeline_integration();
   test_room_loader_decodes_frdata_entry();
+  test_room_loader_resolves_room_payload_location();
   test_room_loader_rejects_huge_offset();
   test_room_loader_rejects_out_of_bounds_room_index();
+  test_room_loader_rejects_sentinel_entries();
   test_room_loader_populates_runtime_state_from_resource_buffer();
+  test_room_loader_decodes_mapped_objects_from_payload();
+  test_room_loader_wires_runtime_tables_from_loaded_mapped_objects();
+  test_room_loader_handles_corrupt_mapped_object_payload_stably();
+  test_frpak_catalog_builds_file_index();
+  test_frpak_catalog_rejects_truncated_header();
+  test_frpak_catalog_rejects_zero_row_span_header();
+  test_frpak_catalog_record_bounds_validation();
+  test_bootstrap_populates_frpak_catalog_for_known_files();
 }

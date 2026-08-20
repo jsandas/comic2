@@ -477,17 +477,23 @@ This phase is about getting the real game running, not full parity or complete c
 Move from bootstrap-style probing to deterministic, data-driven loading of levels, rooms, and graphics from original game files, with room transitions and rendering backed by decoded original assets.
 
 ### Exit Criteria
-- [ ] Level/room selection resolves through FRDATA indirection instead of hardcoded candidate filename scans.
-- [ ] Room transitions load the target room from original data files and commit state atomically.
-- [ ] FRPAK payloads are indexed and decoded through an explicit resource catalog/cache.
-- [ ] Rendering path consumes decoded original graphics for at least one verified tile/sprite path.
-- [ ] Integration tests cover cross-room load success and failure fallback behavior.
+- [x] Level/room selection resolves through FRDATA indirection instead of hardcoded candidate filename scans.
+- [x] Room transitions load the target room from original data files and commit state atomically.
+- [x] FRPAK payloads are indexed and decoded through an explicit resource catalog/cache.
+- [x] Rendering path consumes decoded original graphics for at least one verified tile/sprite path.
+- [x] Integration tests cover cross-room load success and failure fallback behavior.
 
 ### 8.6.1 Resource Resolution Layer
-- [ ] Introduce a dedicated resolver API (new module) that maps `(level, room, asset kind)` to concrete file path + offset metadata.
-- [ ] Implement FRDATA table parsing for per-level room/resource indirection already documented in Phase 6.
-- [ ] Remove hardcoded room candidate arrays from bootstrap loading; keep only asset-root candidate discovery.
-- [ ] Add resolver unit tests for valid mapping, out-of-range room index, and sentinel/invalid entries.
+- [x] Introduce a dedicated resolver API (new module) that maps `(level, room, asset kind)` to concrete file path + offset metadata.
+- [x] Implement FRDATA table parsing for per-level room/resource indirection already documented in Phase 6.
+- [x] Remove hardcoded room candidate arrays from bootstrap loading; keep only asset-root candidate discovery.
+- [x] Add resolver unit tests for valid mapping, out-of-range room index, and sentinel/invalid entries.
+
+**Implementation details:**
+- Added resolver asset-kind typing and room metadata resolution path (`ResourceAssetKind`, `RoomLoadSpec`, `resolve_room_load_spec`) with explicit table/entry/resource offsets.
+- Refactored room decode/load path to consume resolver output and reject sentinel/invalid entries before decode.
+- Removed hardcoded FR000/FR001 room candidate arrays from bootstrap and replaced with dynamic room payload discovery (`FR###.#`) while preserving asset-root discovery and fallback behavior.
+- Added resolver-focused unit coverage for valid mapping offsets, out-of-range room index rejection, and sentinel-entry rejection.
 
 **Suggested touchpoints:**
 - `include/comic2/resource_loader.hpp`
@@ -497,13 +503,20 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 - `tests/subsystem_scaffold_tests.cpp`
 
 ### 8.6.2 Room Transition Data Reload
-- [ ] Update `handle_level_transition` to resolve and load the next room via the resolver instead of reusing stale in-memory bytes.
-- [ ] Ensure transition load is atomic: decode into temporary state, then commit only on success.
-- [ ] Keep graceful behavior on failure (no crash, controlled fallback/state preservation).
-- [ ] Add transition tests covering:
+- [x] Update `handle_level_transition` to resolve and load the next room via the resolver instead of reusing stale in-memory bytes.
+- [x] Ensure transition load is atomic: decode into temporary state, then commit only on success.
+- [x] Keep graceful behavior on failure (no crash, controlled fallback/state preservation).
+- [x] Add transition tests covering:
 	- successful right-edge room transition load
 	- left-edge transition at room 0 clamp behavior
 	- failed target-room load with stable prior runtime state
+
+**Implementation details:**
+- Transition boundary detection now stages pending target metadata (`target_room`, `target_player_x`) instead of mutating room/player state immediately.
+- `handle_level_transition` now performs resolver-backed reload into a temporary `RuntimeState` and commits only on successful room decode/load.
+- Transition load first attempts asset-root file resolution (`FR###.#` scan + resolver), then falls back to existing in-memory bytes when needed.
+- Failed loads consume pending transition flags but preserve prior room/grid/player runtime state.
+- Added deterministic tests for right-edge success path, room-0 left clamp behavior, and failed-load state preservation.
 
 **Suggested touchpoints:**
 - `src/default_handlers.cpp`
@@ -512,11 +525,20 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 - `tests/bootstrap_wiring_tests.cpp`
 
 ### 8.6.3 FRPAK Catalog and Decode Pipeline
-- [ ] Add a FRPAK catalog structure that records file id, record offsets, and decode metadata for sprite/tile resources.
-- [ ] Replace raw append of FRPAK bytes with cataloged storage and explicit record lookup APIs.
-- [ ] Add decode-on-demand path using existing RLE/4-plane decoders with bounds checks.
-- [ ] Add cache policy (initially simple): memoize decoded records by `(pak_id, record_id)`.
-- [ ] Add tests for malformed record headers, out-of-range offsets, and deterministic decode results.
+- [x] Add a FRPAK catalog structure that records file id, record offsets, and decode metadata for sprite/tile resources.
+- [x] Replace raw append of FRPAK bytes with cataloged storage and explicit record lookup APIs.
+- [x] Add decode-on-demand path using existing RLE/4-plane decoders with bounds checks.
+- [x] Add cache policy (initially simple): memoize decoded records by `(pak_id, record_id)`.
+- [x] Add tests for malformed record headers, out-of-range offsets, and deterministic decode results.
+
+**Implementation details (current slice):**
+- Added FRPAK catalog models (`FrpakCatalog`, `FrpakCatalogFile`, `FrpakCatalogRecord`) and runtime storage in `RuntimeState`.
+- Added explicit catalog APIs: build file catalog from payload bytes, catalog record lookup by `(pak_id, record_id)`, and record/file bounds validation.
+- Bootstrap FRPAK loading now indexes valid `FRPAK.001..007` payloads into catalog metadata with strict header/bounds checks.
+- Added tests for valid catalog construction, truncated/invalid headers, and out-of-range record bounds validation.
+- Added decode-on-demand APIs that decode catalog records from aggregated sprite payload bytes and reject invalid record ids/offsets.
+- Added deterministic memoization cache for decoded records (`pak_id`, `record_id`) with cache reset API for test/control flows.
+- Added renderer validation tests that verify first decode, cache-hit determinism, invalid record id failure, and out-of-range metadata failure.
 
 **Suggested touchpoints:**
 - `include/comic2/resource_formats.hpp`
@@ -525,10 +547,16 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 - `tests/renderer_validation_tests.cpp`
 
 ### 8.6.4 Asset-Backed Rendering Integration
-- [ ] Replace bootstrap tile-color visualization path with a resource-backed tile draw path for at least one room fixture.
-- [ ] Add one sprite draw path that uses decoded original plane data via existing blit adapters.
-- [ ] Keep fallback renderer available when assets are missing or decode fails.
-- [ ] Add frame-hash or plane-byte regression tests for at least one asset-backed render fixture.
+- [x] Replace bootstrap tile-color visualization path with a resource-backed tile draw path for at least one room fixture.
+- [x] Add one sprite draw path that uses decoded original plane data via existing blit adapters.
+- [x] Keep fallback renderer available when assets are missing or decode fails.
+- [x] Add frame-hash or plane-byte regression tests for at least one asset-backed render fixture.
+
+**Implementation details:**
+- `render_bootstrap_frame` now attempts FRPAK-backed decode first (via catalog+cache), normalizes full-frame payload dimensions, and renders room tiles by extracting 16x16 planar tiles from decoded atlas data.
+- Added a sprite draw path that overlays a 16x16 planar sprite cutout from the same decoded asset using masked OR blit.
+- Rendering path now gracefully falls back to existing procedural tile visualization and player marker when decode/catalog/image extraction fails.
+- Added deterministic bootstrap rendering tests for asset-backed frame hash regression and decode-failure fallback behavior.
 
 **Suggested touchpoints:**
 - `src/bootstrap.cpp`
@@ -537,10 +565,10 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 - `tests/integration_gates_tests.cpp`
 
 ### 8.6.5 Runtime Data Wiring for Entities
-- [ ] Load mapped object/entity descriptors from original room/resource payloads instead of synthetic scaffolds.
-- [ ] Populate `mapped_objects` and activation/runtime tables from decoded data before dispatch ticks.
-- [ ] Verify projectile/entity updates operate on loaded descriptors without changing dispatch order.
-- [ ] Add tests for descriptor decode, activation list build, and viewport slot population from real fixture bytes.
+- [x] Load mapped object/entity descriptors from original room/resource payloads instead of synthetic scaffolds.
+- [x] Populate `mapped_objects` and activation/runtime tables from decoded data before dispatch ticks.
+- [x] Verify projectile/entity updates operate on loaded descriptors without changing dispatch order.
+- [x] Add tests for descriptor decode, activation list build, and viewport slot population from real fixture bytes.
 
 **Suggested touchpoints:**
 - `src/entity_runtime.cpp`
@@ -549,13 +577,13 @@ Move from bootstrap-style probing to deterministic, data-driven loading of level
 - `tests/subsystem_scaffold_tests.cpp`
 
 ### 8.6.6 Validation Gates (Phase 8.6)
-- [ ] Gate 8.6-A (Resolver): deterministic `(level, room)` mapping to expected source file/offset fixtures.
-- [ ] Gate 8.6-B (Transition): cross-room movement triggers correct room reload and stable player bounds.
-- [ ] Gate 8.6-C (Graphics): at least one decoded FRPAK-backed frame fixture passes hash/plane-byte checks.
-- [ ] Gate 8.6-D (Failure): missing/corrupt data path stays controlled and preserves prior good runtime state.
+- [x] Gate 8.6-A (Resolver): deterministic `(level, room)` mapping to expected source file/offset fixtures.
+- [x] Gate 8.6-B (Transition): cross-room movement triggers correct room reload and stable player bounds.
+- [x] Gate 8.6-C (Graphics): at least one decoded FRPAK-backed frame fixture passes hash/plane-byte checks.
+- [x] Gate 8.6-D (Failure): missing/corrupt data path stays controlled and preserves prior good runtime state.
 
 ### Revalidation Command
-- [ ] `cmake --build build && ctest --test-dir build --output-on-failure`
+- [x] `cmake --build build && ctest --test-dir build --output-on-failure`
 
 ### Implementation Notes
 - Preserve bootstrap fallback behavior while incrementally enabling data-driven paths.
@@ -1040,3 +1068,40 @@ Required output format:
 4) Validation command result summary
 5) Any risks or follow-ups
 ```
+
+---
+
+## Phase 9: Comprehensive Gameplay Systems & Content Parity
+
+### Goal
+Transition from basic asset loading and input/frame loop integration to full gameplay parity, implementing entity behavior routines, item pickups, combat damage mechanics, HUD/UI rendering, audio synthesis, save/load state, and room transition presentation.
+
+### 9.1 Entity AI Behavior & Combat Dispatch
+- [ ] **Entity State Machine & Behavior Dispatch**: Implement the table-driven behavior function dispatch (`ent_update_object_behaviors`, `0x48ED` table) for enemy types (horizontal chase, jumping, bouncing, gravity-affected, shoot-at-player).
+- [ ] **Entity-Player Collision & Damage**: Implement player hit detection against active entities, HP subtraction, invulnerability frame timer (`comic_invuln_ticks`), and knockback/recoil physics.
+- [ ] **Item Pickups & Powerups**: Implement pickup logic for gems, firepower/speed upgrades, data disks, extra lives, and special mode items.
+- [ ] **Unit & Integration Tests**: Add deterministic test coverage for enemy AI motion, hit detection, damage application, and item collection.
+
+### 9.2 Complete Sound Interrupt & Audio Synth Backend
+- [ ] **Sound Interrupt Simulator**: Implement the sound command parser matching `loc_8C7` (INT 3 handler) and timer interrupt loop (`loc_683`).
+- [ ] **Audio Dispatch**: Connect gameplay events (jump, shoot, hit, pickup, death, level start) to sound effect stream offsets (`0x00DB`, `0x965E`, `0x9676`, `0x96B6`).
+- [ ] **Synthesizer Implementation**: Implement PC Speaker square-wave frequency synthesis and/or AdLib FM sound backend.
+- [ ] **Audio Tests**: Add tests verifying event trigger non-blocking safety and stream playback queue stability.
+
+### 9.3 Room Transition Presentation & Camera Systems
+- [ ] **Visual Transition Effects**: Implement room transition presentation routines mapped in Phase 5 (`room_transition_palette_wave`, `room_transition_reveal_sequence_a/b`, `room_transition_draw_reveal_quad`, split-buffer wipes).
+- [ ] **Player Transition Sequences**: Implement entry/exit animations (`room_transition_player_entry_sequence`, `room_transition_player_exit_sequence`).
+- [ ] **Camera Vertical Tracking**: Implement smooth Y-axis camera scrolling (`camera_update_y_follow_comic_clamped`).
+- [ ] **Transition Tests**: Add frame-hash tests verifying room transition visual transitions and camera tracking limits.
+
+### 9.4 HUD, UI, Menus & Save/Load Persistence
+- [ ] **HUD Status Bar**: Implement BCD counter displays (`hud_draw_two_digit_counter`, score, gems, lives) and inventory/mode icon overlays (`hud_update_mode_icons`).
+- [ ] **In-Game Menus & UI Panels**: Implement options list menu, key rebinding UI, and modal prompts (`ui_show_modal_prompt_wait_key`, `ui_render_option_list`).
+- [ ] **Save/Load State Persistence**: Implement snapshot serialisation and deserialisation matching original savegame format (`savegame_write_snapshot`, `savegame_read_snapshot`) and configuration (`FRCFG`).
+- [ ] **Cinematic Sequences**: Implement intro cinematic sequence (`play_intro_cinematic`), game selection panel (`ui_render_game_selection_panel`), and finale sequence.
+- [ ] **UI & Save Tests**: Add tests for BCD math, config load/save roundtrips, and savegame snapshot binary compatibility.
+
+### 9.5 End-to-End Playability & Oracle Alignment
+- [ ] **Full Game Loop Playability**: Verify end-to-end game progression from intro -> title screen -> level select -> room exploration -> boss/item progression -> game over/win.
+- [ ] **Oracle Replay Verification**: Replay recorded DOSBox input logs and compare frame-by-frame state snapshots against oracle dumps.
+

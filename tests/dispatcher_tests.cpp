@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
 #include <stdexcept>
 #include <vector>
 
@@ -27,6 +29,54 @@ encode_literal_signed_rle(const std::vector<std::uint8_t> &bytes) {
   }
   encoded.push_back(0x00);
   return encoded;
+}
+
+std::vector<std::uint8_t>
+make_room_resource_bytes(std::uint16_t level, std::uint16_t room,
+                         std::uint16_t tile_w, std::uint16_t tile_h,
+                         std::uint16_t payload_offset,
+                         const std::vector<std::uint8_t> &decoded_room_bytes) {
+  const std::vector<std::uint8_t> encoded_room_bytes =
+      encode_literal_signed_rle(decoded_room_bytes);
+
+  const std::size_t entry_offset = 0x04 + static_cast<std::size_t>(room) * 6;
+  const std::size_t min_header_size = entry_offset + 6;
+  const std::size_t min_payload_start =
+      std::max<std::size_t>(min_header_size, payload_offset);
+
+  std::vector<std::uint8_t> bytes(min_payload_start + encoded_room_bytes.size(),
+                                  0x00);
+
+  bytes[2] = static_cast<std::uint8_t>(level & 0xFF);
+  bytes[3] = static_cast<std::uint8_t>((level >> 8) & 0xFF);
+
+  bytes[entry_offset + 0] = static_cast<std::uint8_t>(tile_w & 0xFF);
+  bytes[entry_offset + 1] = static_cast<std::uint8_t>((tile_w >> 8) & 0xFF);
+  bytes[entry_offset + 2] = static_cast<std::uint8_t>(tile_h & 0xFF);
+  bytes[entry_offset + 3] = static_cast<std::uint8_t>((tile_h >> 8) & 0xFF);
+  bytes[entry_offset + 4] = static_cast<std::uint8_t>(payload_offset & 0xFF);
+  bytes[entry_offset + 5] =
+      static_cast<std::uint8_t>((payload_offset >> 8) & 0xFF);
+
+  std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
+            bytes.begin() + payload_offset);
+
+  return bytes;
+}
+
+std::vector<std::uint8_t> make_decoded_room_bytes(std::uint8_t first_tile,
+                                                  std::uint16_t row0,
+                                                  std::uint16_t row1,
+                                                  std::uint16_t row2) {
+  std::vector<std::uint8_t> decoded(0x2C4, 0x00);
+  decoded[0] = first_tile;
+  decoded[0x2A0] = static_cast<std::uint8_t>(row0 & 0xFF);
+  decoded[0x2A1] = static_cast<std::uint8_t>((row0 >> 8) & 0xFF);
+  decoded[0x2A2] = static_cast<std::uint8_t>(row1 & 0xFF);
+  decoded[0x2A3] = static_cast<std::uint8_t>((row1 >> 8) & 0xFF);
+  decoded[0x2A4] = static_cast<std::uint8_t>(row2 & 0xFF);
+  decoded[0x2A5] = static_cast<std::uint8_t>((row2 >> 8) & 0xFF);
+  return decoded;
 }
 
 void test_priority_order() {
@@ -374,6 +424,8 @@ void test_level_transition_loads_room_tilemap() {
   state.current_level = 1;
   state.current_room = 0;
   state.flags.level_transition_pending = true;
+  state.pending_room_transition =
+      comic2::PendingRoomTransition{.target_room = 0, .target_player_x = 0};
 
   std::vector<std::uint8_t> decoded_room_bytes(0x2C4, 0x00);
   decoded_room_bytes[0x2A0] = 0x00;
@@ -412,6 +464,132 @@ void test_level_transition_loads_room_tilemap() {
          "level transition should load the new room tile height");
   expect(state.room_grid.row_pointers == std::vector<std::uint16_t>{0, 4, 8},
          "level transition should build the row pointer table");
+}
+
+void test_level_transition_right_edge_reloads_target_room_from_assets() {
+  const auto root = std::filesystem::temp_directory_path() /
+                    "comic2_transition_right_edge_assets";
+  std::filesystem::remove_all(root);
+  std::filesystem::create_directories(root);
+
+  const auto decoded_room1 = make_decoded_room_bytes(0x22, 0, 5, 10);
+  const auto room_bytes =
+      make_room_resource_bytes(1, 1, 5, 3, 0x30, decoded_room1);
+  {
+    std::ofstream out(root / "FR900.0", std::ios::binary);
+    out.write(reinterpret_cast<const char *>(room_bytes.data()),
+              static_cast<std::streamsize>(room_bytes.size()));
+  }
+
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  comic2::RuntimeState state;
+  state.current_level = 1;
+  state.current_room = 0;
+  state.assets_root = root;
+  state.player.x = 320;
+  state.player.is_airborne = false;
+  state.player.is_physics_active = true;
+
+  const auto first = dispatcher.run_tick(state);
+  expect(first.stage == comic2::DispatchStage::GroundedPhysics,
+         "right-edge transition should be detected during grounded physics");
+  expect(state.flags.level_transition_pending,
+         "right-edge transition should schedule a pending level transition");
+  expect(state.pending_room_transition.has_value(),
+         "right-edge transition should record target room metadata");
+  expect(state.current_room == 0,
+         "room index should not commit before transition load succeeds");
+
+  const auto second = dispatcher.run_tick(state);
+  expect(second.stage == comic2::DispatchStage::LevelTransition,
+         "pending transition should route to level transition stage");
+  expect(!state.flags.level_transition_pending,
+         "level transition flag should be cleared after transition stage");
+  expect(!state.pending_room_transition.has_value(),
+         "pending transition metadata should be consumed");
+  expect(state.current_room == 1,
+         "successful transition should commit target room index");
+  expect(state.player.x == 0,
+         "successful right-edge transition should place player at left edge");
+  expect(state.room_grid.tile_w == 5 && state.room_grid.tile_h == 3,
+         "successful transition should load target room dimensions");
+  expect(state.room_grid.row_pointers == std::vector<std::uint16_t>{0, 5, 10},
+         "successful transition should rebuild target room row pointers");
+
+  std::filesystem::remove_all(root);
+}
+
+void test_level_transition_left_edge_room0_clamps_without_transition() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  comic2::RuntimeState state;
+  state.current_room = 0;
+  state.player.x = -1;
+  state.player.is_airborne = false;
+  state.player.is_physics_active = true;
+
+  const auto tick = dispatcher.run_tick(state);
+  expect(tick.stage == comic2::DispatchStage::GroundedPhysics,
+         "left-edge clamp should be handled in grounded physics");
+  expect(state.player.x == 0, "left-edge at room 0 should clamp player to x=0");
+  expect(!state.flags.level_transition_pending,
+         "left-edge at room 0 should not enqueue a room transition");
+  expect(!state.pending_room_transition.has_value(),
+         "left-edge at room 0 should not produce pending transition metadata");
+  expect(state.current_room == 0,
+         "left-edge at room 0 should keep room index unchanged");
+}
+
+void test_level_transition_failure_preserves_prior_runtime_state() {
+  const auto root = std::filesystem::temp_directory_path() /
+                    "comic2_transition_failure_assets";
+  std::filesystem::remove_all(root);
+  std::filesystem::create_directories(root);
+
+  {
+    std::ofstream out(root / "FR901.0", std::ios::binary);
+    const std::vector<std::uint8_t> malformed = {0x10, 0x00, 0x00, 0x00,
+                                                 0xFF, 0xFF, 0xFF, 0xFF};
+    out.write(reinterpret_cast<const char *>(malformed.data()),
+              static_cast<std::streamsize>(malformed.size()));
+  }
+
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  comic2::RuntimeState state;
+  state.current_level = 1;
+  state.current_room = 2;
+  state.assets_root = root;
+  state.player.x = 111;
+  state.room_grid.tile_w = 7;
+  state.room_grid.tile_h = 4;
+  state.room_grid.row_pointers = {0, 7, 14, 21};
+  state.room_grid.tile_data = {1, 2, 3, 4};
+  const auto before = state;
+
+  state.flags.level_transition_pending = true;
+  state.pending_room_transition =
+      comic2::PendingRoomTransition{.target_room = 3, .target_player_x = 0};
+
+  const auto tick = dispatcher.run_tick(state);
+  expect(tick.stage == comic2::DispatchStage::LevelTransition,
+         "pending transition should execute level transition stage");
+  expect(!state.flags.level_transition_pending,
+         "failed transition should still clear pending transition flag");
+  expect(!state.pending_room_transition.has_value(),
+         "failed transition should consume pending metadata");
+  expect(state.current_room == before.current_room,
+         "failed transition should preserve prior room index");
+  expect(state.player.x == before.player.x,
+         "failed transition should preserve prior player x");
+  expect(state.room_grid == before.room_grid,
+         "failed transition should preserve prior room grid state");
+
+  std::filesystem::remove_all(root);
 }
 
 comic2::RoomTileGrid make_projectile_floor_grid(std::uint8_t tile_id) {
@@ -564,6 +742,9 @@ void run_dispatcher_tests() {
   test_stage_flags_are_consumed_by_default_handlers();
   test_input_fallback_arms_grounded_physics_for_next_tick();
   test_level_transition_loads_room_tilemap();
+  test_level_transition_right_edge_reloads_target_room_from_assets();
+  test_level_transition_left_edge_room0_clamps_without_transition();
+  test_level_transition_failure_preserves_prior_runtime_state();
   test_projectile_scripted_tick_updates_deterministically();
   test_projectile_scripted_tick_deactivates_on_tile_collision();
   test_airborne_fallback_clamps_player_with_missing_room_support();

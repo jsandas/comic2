@@ -1,10 +1,12 @@
 #include "comic2/resource_loader.hpp"
 
+#include <algorithm>
 #include <array>
 #include <fstream>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "comic2/bootstrap.hpp"
 #include "comic2/room_loader.hpp"
@@ -13,6 +15,8 @@ namespace comic2 {
 namespace {
 
 constexpr std::size_t kMaxDecodedBytes = 0x10000;
+constexpr std::uint16_t kFrpakMinPakId = 1;
+constexpr std::uint16_t kFrpakMaxPakId = 999;
 
 std::uint16_t read_u16(std::span<const std::uint8_t> bytes, std::size_t off) {
   if (off + 1 >= bytes.size()) {
@@ -25,6 +29,35 @@ std::uint16_t read_u16(std::span<const std::uint8_t> bytes, std::size_t off) {
 bool path_exists(const std::filesystem::path &path) {
   return std::filesystem::exists(path) &&
          std::filesystem::is_regular_file(path);
+}
+
+std::optional<std::uint16_t>
+parse_frpak_id_from_path(const std::filesystem::path &path) {
+  const std::string ext = path.extension().string();
+  if (ext.size() != 4 || ext[0] != '.') {
+    return std::nullopt;
+  }
+
+  if (ext[1] < '0' || ext[1] > '9' || ext[2] < '0' || ext[2] > '9' ||
+      ext[3] < '0' || ext[3] > '9') {
+    return std::nullopt;
+  }
+
+  const auto pak_id = static_cast<std::uint16_t>(
+      (ext[1] - '0') * 100 + (ext[2] - '0') * 10 + (ext[3] - '0'));
+  if (pak_id < kFrpakMinPakId || pak_id > kFrpakMaxPakId) {
+    return std::nullopt;
+  }
+
+  return pak_id;
+}
+
+const FrpakCatalogFile *find_frpak_catalog_file(const FrpakCatalog &catalog,
+                                                std::uint16_t pak_id) {
+  const auto it = std::find_if(
+      catalog.files.begin(), catalog.files.end(),
+      [pak_id](const FrpakCatalogFile &file) { return file.pak_id == pak_id; });
+  return it != catalog.files.end() ? &(*it) : nullptr;
 }
 
 } // namespace
@@ -56,6 +89,132 @@ load_file_bytes(const std::filesystem::path &path) {
     }
   }
   return bytes;
+}
+
+std::optional<FrpakCatalogFile>
+build_frpak_catalog_file(const std::filesystem::path &source_path,
+                         std::span<const std::uint8_t> bytes,
+                         std::uint16_t pak_id) {
+  if (bytes.size() < sizeof(EgaRle4PlaneHeader)) {
+    return std::nullopt;
+  }
+
+  const std::uint16_t row_span = read_u16(bytes, 0);
+  if (row_span == 0) {
+    return std::nullopt;
+  }
+  constexpr std::uint16_t kMaxRowSpan = 0x7FFF;
+  if (row_span > kMaxRowSpan) {
+    return std::nullopt;
+  }
+
+  FrpakCatalogFile file;
+  file.pak_id = pak_id;
+  file.source_path = source_path;
+  file.file_size = bytes.size();
+  file.records.push_back(FrpakCatalogRecord{
+      .pak_id = pak_id,
+      .record_id = 0,
+      .data_offset = 0,
+      .data_size = bytes.size(),
+      .row_span_bytes = row_span,
+  });
+  return file;
+}
+
+std::optional<FrpakCatalogRecord>
+find_frpak_catalog_record(const FrpakCatalog &catalog, std::uint16_t pak_id,
+                          std::uint16_t record_id) {
+  const FrpakCatalogFile *file = find_frpak_catalog_file(catalog, pak_id);
+  if (file == nullptr) {
+    return std::nullopt;
+  }
+
+  const auto it = std::find_if(file->records.begin(), file->records.end(),
+                               [record_id](const FrpakCatalogRecord &record) {
+                                 return record.record_id == record_id;
+                               });
+  return it != file->records.end() ? std::optional<FrpakCatalogRecord>(*it)
+                                   : std::nullopt;
+}
+
+bool validate_frpak_catalog_record_bounds(const FrpakCatalogRecord &record,
+                                          std::size_t file_size) {
+  if (record.data_offset > file_size) {
+    return false;
+  }
+  return record.data_size <= (file_size - record.data_offset);
+}
+
+std::optional<Ega4PlaneImage>
+decode_frpak_catalog_record(const RuntimeState &state,
+                            const FrpakCatalogRecord &record) {
+  const FrpakCatalogFile *file =
+      find_frpak_catalog_file(state.frpak_catalog, record.pak_id);
+  if (file == nullptr) {
+    return std::nullopt;
+  }
+  if (!validate_frpak_catalog_record_bounds(record, file->file_size)) {
+    return std::nullopt;
+  }
+  if (file->blob_offset > state.sprite_resource_bytes.size()) {
+    return std::nullopt;
+  }
+
+  const std::size_t blob_bytes_remaining =
+      state.sprite_resource_bytes.size() - file->blob_offset;
+  if (record.data_offset > blob_bytes_remaining) {
+    return std::nullopt;
+  }
+
+  const std::size_t global_offset = file->blob_offset + record.data_offset;
+  if (record.data_size > state.sprite_resource_bytes.size() - global_offset) {
+    return std::nullopt;
+  }
+
+  try {
+    return decode_ega_4plane_rle(
+        std::span<const std::uint8_t>(state.sprite_resource_bytes)
+            .subspan(global_offset, record.data_size),
+        true);
+  } catch (const std::exception &) {
+    return std::nullopt;
+  }
+}
+
+std::optional<Ega4PlaneImage> decode_frpak_record(RuntimeState &state,
+                                                  std::uint16_t pak_id,
+                                                  std::uint16_t record_id) {
+  const auto cache_it = std::find_if(
+      state.frpak_decode_cache.begin(), state.frpak_decode_cache.end(),
+      [pak_id, record_id](const FrpakDecodedRecordCacheEntry &entry) {
+        return entry.pak_id == pak_id && entry.record_id == record_id;
+      });
+  if (cache_it != state.frpak_decode_cache.end()) {
+    return cache_it->image;
+  }
+
+  const auto record =
+      find_frpak_catalog_record(state.frpak_catalog, pak_id, record_id);
+  if (!record.has_value()) {
+    return std::nullopt;
+  }
+
+  const auto decoded = decode_frpak_catalog_record(state, *record);
+  if (!decoded.has_value()) {
+    return std::nullopt;
+  }
+
+  state.frpak_decode_cache.push_back(FrpakDecodedRecordCacheEntry{
+      .pak_id = pak_id,
+      .record_id = record_id,
+      .image = *decoded,
+  });
+  return decoded;
+}
+
+void clear_frpak_decode_cache(RuntimeState &state) {
+  state.frpak_decode_cache.clear();
 }
 
 SignedRleResult decode_signed_rle(std::span<const std::uint8_t> encoded) {
@@ -171,12 +330,6 @@ load_initial_bootstrap_resources(RuntimeState &state,
       root / "FRDATA.0",
       root / "FRDATA.1",
   };
-  const std::array room_candidates = {
-      root / "FR000.0", root / "FR000.1", root / "FR000.2", root / "FR001.0",
-      root / "FR001.1", root / "FR001.2", root / "FR001.3", root / "FR002.0",
-      root / "FR002.1", root / "FR002.2", root / "FR003.0", root / "FR003.1",
-      root / "FR003.2", root / "FR003.3",
-  };
   const std::array sprite_candidates = {
       root / "FRPAK.001", root / "FRPAK.002", root / "FRPAK.003",
       root / "FRPAK.004", root / "FRPAK.005", root / "FRPAK.006",
@@ -199,7 +352,8 @@ load_initial_bootstrap_resources(RuntimeState &state,
       state.room_resource_bytes = *bytes;
       // The FRDATA payload feeds both the metadata snapshot and the room
       // resource bytes in this bootstrap path.
-      if (load_room_tilemap_from_resource_buffer(state, *bytes, 0, 0)) {
+      if (load_room_tilemap_from_resource_file(state, candidate, *bytes, 0,
+                                               0)) {
         summary.room_grid_loaded = true;
         break;
       }
@@ -208,24 +362,9 @@ load_initial_bootstrap_resources(RuntimeState &state,
     }
   }
 
-  for (const auto &candidate : room_candidates) {
-    if (!path_exists(candidate)) {
-      continue;
-    }
-
-    try {
-      const auto bytes = load_file_bytes(candidate);
-      if (!bytes.has_value()) {
-        continue;
-      }
-
-      if (load_room_tilemap_from_resource_buffer(state, *bytes, 0, 0)) {
-        summary.room_grid_loaded = true;
-        break;
-      }
-    } catch (const std::exception &) {
-      // Keep the bootstrap tolerant of partial room-table payloads.
-    }
+  if (!summary.room_grid_loaded) {
+    summary.room_grid_loaded =
+        load_room_tilemap_from_asset_root(state, root, 0, 0);
   }
 
   for (const auto &candidate : sprite_candidates) {
@@ -240,8 +379,33 @@ load_initial_bootstrap_resources(RuntimeState &state,
         continue;
       }
 
+      const auto pak_id = parse_frpak_id_from_path(candidate);
+      if (!pak_id.has_value()) {
+        continue;
+      }
+
+      const auto catalog_file =
+          build_frpak_catalog_file(candidate, *bytes, *pak_id);
+      if (!catalog_file.has_value()) {
+        continue;
+      }
+
+      const bool all_records_valid = std::all_of(
+          catalog_file->records.begin(), catalog_file->records.end(),
+          [&](const FrpakCatalogRecord &record) {
+            return validate_frpak_catalog_record_bounds(
+                record, catalog_file->file_size);
+          });
+      if (!all_records_valid) {
+        continue;
+      }
+
+      FrpakCatalogFile indexed_file = *catalog_file;
+      indexed_file.blob_offset = state.sprite_resource_bytes.size();
+      state.frpak_catalog.files.push_back(indexed_file);
       state.sprite_resource_bytes.insert(state.sprite_resource_bytes.end(),
                                          bytes->begin(), bytes->end());
+      clear_frpak_decode_cache(state);
     } catch (const std::exception &) {
       // Missing or unreadable FRPAK payloads should not stop bootstrap.
     }

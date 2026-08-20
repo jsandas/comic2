@@ -9,6 +9,7 @@
 #include "comic2/projectiles.hpp"
 #include "comic2/renderer.hpp"
 #include "comic2/renderer_validation.hpp"
+#include "comic2/room_loader.hpp"
 
 namespace {
 
@@ -29,6 +30,22 @@ struct StateSnapshot {
 
   bool operator==(const StateSnapshot &) const = default;
 };
+
+std::vector<std::uint8_t>
+encode_literal_signed_rle(const std::vector<std::uint8_t> &bytes) {
+  std::vector<std::uint8_t> encoded;
+  std::size_t offset = 0;
+  while (offset < bytes.size()) {
+    const std::size_t chunk = std::min<std::size_t>(127, bytes.size() - offset);
+    encoded.push_back(static_cast<std::uint8_t>(chunk));
+    encoded.insert(encoded.end(),
+                   bytes.begin() + static_cast<std::ptrdiff_t>(offset),
+                   bytes.begin() + static_cast<std::ptrdiff_t>(offset + chunk));
+    offset += chunk;
+  }
+  encoded.push_back(0x00);
+  return encoded;
+}
 
 comic2::RoomTileGrid make_single_tile_grid(std::uint8_t tile_id) {
   comic2::RoomTileGrid grid;
@@ -310,6 +327,65 @@ void test_gate_c_hazard_flag_snapshot_progression() {
          "Gate C hazard tick should clear hazard flag");
 }
 
+void test_gate_86a_resolver_mapping_is_deterministic() {
+  std::vector<std::uint8_t> bytes(0x40, 0x00);
+  bytes[2] = 0x01;
+  bytes[3] = 0x00;
+  bytes[0x04] = 0x04;
+  bytes[0x05] = 0x00;
+  bytes[0x06] = 0x03;
+  bytes[0x07] = 0x00;
+  bytes[0x08] = 0x20;
+  bytes[0x09] = 0x00;
+
+  const auto spec = comic2::resolve_room_load_spec(
+      {}, bytes, 1, 0, comic2::ResourceAssetKind::RoomPayload);
+
+  expect(spec.has_value(), "Gate 8.6-A should resolve a valid room fixture");
+  expect(spec->level == 1, "Gate 8.6-A level should match the fixture");
+  expect(spec->room == 0, "Gate 8.6-A room should match the fixture");
+  expect(spec->resource_offset == 0x20,
+         "Gate 8.6-A resource offset should match the fixture");
+}
+
+void test_gate_86d_room_load_persists_resource_bytes_for_reentry() {
+  std::vector<std::uint8_t> room_bytes(0x2C4, 0x00);
+  room_bytes[0] = 0x01;
+  room_bytes[0x2A0] = 0x00;
+  room_bytes[0x2A1] = 0x00;
+  room_bytes[0x2A2] = 0x04;
+  room_bytes[0x2A3] = 0x00;
+  room_bytes[0x2A4] = 0x08;
+  room_bytes[0x2A5] = 0x00;
+
+  const std::vector<std::uint8_t> encoded_room_bytes =
+      encode_literal_signed_rle(room_bytes);
+
+  std::vector<std::uint8_t> resource_bytes(0x20 + encoded_room_bytes.size(),
+                                           0x00);
+  resource_bytes[2] = 0x01;
+  resource_bytes[3] = 0x00;
+  resource_bytes[0x04] = 0x04;
+  resource_bytes[0x05] = 0x00;
+  resource_bytes[0x06] = 0x03;
+  resource_bytes[0x07] = 0x00;
+  resource_bytes[0x08] = 0x20;
+  resource_bytes[0x09] = 0x00;
+  std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
+            resource_bytes.begin() + 0x20);
+
+  comic2::RuntimeState state;
+  state.current_level = 0;
+  state.current_room = 0;
+
+  const bool loaded = comic2::load_room_tilemap_from_resource_buffer(
+      state, resource_bytes, 1, 0);
+
+  expect(loaded, "Gate 8.6-D should load a valid room fixture");
+  expect(state.room_resource_bytes == resource_bytes,
+         "Gate 8.6-D should preserve the loaded room payload bytes");
+}
+
 void test_gate_d_room_fixture_alpha_hash_matches_oracle() {
   // Oracle capture hash for the deterministic room fixture alpha.
   constexpr std::uint64_t kOracleHash = 0x16e2201b96f48c65ULL;
@@ -358,10 +434,14 @@ void test_gate_e_room_transition_boundary_sequence() {
          "Gate E boundary setup tick should execute input stage");
   expect(state.flags.level_transition_pending,
          "Gate E boundary crossing should mark level transition pending");
-  expect(state.current_room == 4,
-         "Gate E boundary crossing should advance current_room");
-  expect(state.player.x == 0,
-         "Gate E right boundary crossing should wrap x to left edge");
+  expect(state.pending_room_transition.has_value(),
+         "Gate E boundary crossing should stage pending transition metadata");
+  expect(state.pending_room_transition->target_room == 4,
+         "Gate E boundary crossing should target next room");
+  expect(state.pending_room_transition->target_player_x == 0,
+         "Gate E right boundary crossing should target left-edge player x");
+  expect(state.current_room == 3, "Gate E boundary crossing should defer room "
+                                  "commit until transition load");
 
   state.input = comic2::InputState{};
   const auto transition_tick = dispatcher.run_tick(state);
@@ -369,6 +449,8 @@ void test_gate_e_room_transition_boundary_sequence() {
          "Gate E transition tick should execute level transition stage");
   expect(!state.flags.level_transition_pending,
          "Gate E level transition hook should clear pending flag");
+  expect(!state.pending_room_transition.has_value(),
+         "Gate E level transition hook should consume pending metadata");
 }
 
 void test_gate_e_left_boundary_clamps_at_room_zero() {
@@ -421,6 +503,8 @@ void run_integration_gate_tests() {
   test_gate_c_state_vectors_match_snapshots();
   test_gate_c_hazard_flag_snapshot_progression();
 
+  test_gate_86a_resolver_mapping_is_deterministic();
+  test_gate_86d_room_load_persists_resource_bytes_for_reentry();
   test_gate_d_room_fixture_alpha_hash_matches_oracle();
   test_gate_d_room_fixture_beta_hash_matches_oracle();
 

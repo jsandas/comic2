@@ -20,6 +20,7 @@
 #include "comic2/default_handlers.hpp"
 #include "comic2/game_state.hpp"
 #include "comic2/renderer.hpp"
+#include "comic2/renderer_validation.hpp"
 #include "comic2/resource_loader.hpp"
 
 namespace {
@@ -124,6 +125,30 @@ std::uint8_t read_color_index(const comic2::EgaPlanarSurface &frame,
     }
   }
   return index;
+}
+
+comic2::Ega4PlaneImage make_asset_fixture_image() {
+  comic2::Ega4PlaneImage image;
+  image.row_span_bytes = 0x1F40;
+  image.width_bytes = 40;
+  image.height_rows = 200;
+  for (auto &plane : image.planes) {
+    plane.assign(8000, 0x00);
+  }
+
+  // Tile 0 (x bytes 0..1): color index 1 (plane 0 set)
+  for (std::size_t row = 0; row < 16; ++row) {
+    image.planes[0][row * 40] = 0xFF;
+    image.planes[0][row * 40 + 1] = 0xFF;
+  }
+
+  // Tile 1 (x bytes 2..3): color index 2 (plane 1 set)
+  for (std::size_t row = 0; row < 16; ++row) {
+    image.planes[1][row * 40 + 2] = 0xFF;
+    image.planes[1][row * 40 + 3] = 0xFF;
+  }
+
+  return image;
 }
 
 void test_bootstrap_entry_runs_without_crashing() {
@@ -318,6 +343,79 @@ void test_render_bootstrap_frame_uses_room_tile_data() {
         "tile border should remain accented at the far edge");
 }
 
+void test_render_bootstrap_frame_asset_backed_hash_regression() {
+  auto state = comic2::make_default_runtime_state();
+  state.player.x = 16;
+  state.player.y = 16;
+  state.player.hp = 1;
+
+  state.room_grid.tile_w = 2;
+  state.room_grid.tile_h = 1;
+  state.room_grid.row_pointers = {0};
+  state.room_grid.tile_data = {0x00, 0x01};
+
+  comic2::FrpakCatalogFile file;
+  file.pak_id = 1;
+  file.file_size = 1;
+  file.blob_offset = 0;
+  file.records.push_back(comic2::FrpakCatalogRecord{
+      .pak_id = 1,
+      .record_id = 0,
+      .data_offset = 0,
+      .data_size = 1,
+      .row_span_bytes = 0x1F40,
+  });
+  state.frpak_catalog.files.push_back(file);
+  state.frpak_decode_cache.push_back(comic2::FrpakDecodedRecordCacheEntry{
+      .pak_id = 1,
+      .record_id = 0,
+      .image = make_asset_fixture_image(),
+  });
+
+  comic2::MemoryFramePresenter presenter;
+  comic2::render_bootstrap_frame(presenter, state);
+
+  check(presenter.has_frame(),
+        "asset-backed bootstrap render should present a frame");
+  const auto hash =
+      comic2::validation::hash_surface_planes(presenter.last_frame());
+  constexpr std::uint64_t kExpectedHash = 0x1f693466a2ef8a45ULL;
+  check(hash == kExpectedHash,
+        "asset-backed bootstrap frame hash regression mismatch");
+}
+
+void test_render_bootstrap_frame_falls_back_when_asset_decode_fails() {
+  auto state = comic2::make_default_runtime_state();
+  state.player.x = 300;
+  state.player.y = 180;
+  state.room_grid.tile_w = 1;
+  state.room_grid.tile_h = 1;
+  state.room_grid.row_pointers = {0};
+  state.room_grid.tile_data = {0x02};
+
+  comic2::FrpakCatalogFile file;
+  file.pak_id = 1;
+  file.file_size = 128;
+  file.blob_offset = 5000;
+  file.records.push_back(comic2::FrpakCatalogRecord{
+      .pak_id = 1,
+      .record_id = 0,
+      .data_offset = 0,
+      .data_size = 128,
+      .row_span_bytes = 0x1F40,
+  });
+  state.frpak_catalog.files.push_back(file);
+
+  comic2::MemoryFramePresenter presenter;
+  comic2::render_bootstrap_frame(presenter, state);
+
+  check(presenter.has_frame(), "fallback render should still present a frame");
+  const auto &frame = presenter.last_frame();
+  check(read_color_index(frame, 8, 8) == 0x02,
+        "render should fall back to procedural tile rendering when asset "
+        "decode fails");
+}
+
 void test_bootstrap_loader_reads_reference_room_data() {
   const std::optional<std::filesystem::path> reference_root =
       find_reference_assets_root();
@@ -371,6 +469,9 @@ void test_scene_bootstrap_discovers_reference_assets_from_repo_root() {
         "scene bootstrap should not use placeholder mode when assets exist");
   check(!summary.assets_root_used.empty(),
         "scene bootstrap should report the selected assets root");
+  check(state.assets_root == summary.assets_root_used,
+        "scene bootstrap should persist selected assets root into runtime "
+        "state");
   check(state.room_grid.tile_w > 0 && state.room_grid.tile_h > 0,
         "scene bootstrap should populate room grid dimensions");
   check(state.player.x >= 0 && state.player.x <= 319,
@@ -442,6 +543,8 @@ void run_bootstrap_wiring_tests() {
   test_render_loop_renders_multiple_frames();
   test_render_loop_updates_state_while_presenting_frames();
   test_render_bootstrap_frame_uses_room_tile_data();
+  test_render_bootstrap_frame_asset_backed_hash_regression();
+  test_render_bootstrap_frame_falls_back_when_asset_decode_fails();
   test_bootstrap_loader_reads_reference_room_data();
   test_scene_bootstrap_discovers_reference_assets_from_repo_root();
   test_scene_bootstrap_does_not_commit_failed_candidate_state();
