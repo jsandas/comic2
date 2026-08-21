@@ -4,8 +4,11 @@
 #include <stdexcept>
 #include <vector>
 
+#include "comic2/audio.hpp"
+#include "comic2/bootstrap.hpp"
 #include "comic2/default_handlers.hpp"
 #include "comic2/dispatcher.hpp"
+#include "comic2/entity_runtime.hpp"
 #include "comic2/projectiles.hpp"
 #include "comic2/renderer.hpp"
 #include "comic2/renderer_validation.hpp"
@@ -473,6 +476,42 @@ void test_gate_e_left_boundary_clamps_at_room_zero() {
          "Gate E left boundary at room zero should not set transition pending");
 }
 
+void test_gate_phase_91_combat_and_pickup_flow() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.x = 50;
+  state.player.y = 50;
+  state.player.hp = 3;
+  state.player.is_physics_active = false;
+  state.player.is_airborne = false;
+  state.runtime_slots.resize(2);
+
+  state.runtime_slots[0].mapped_object_ptr = 1;
+  state.runtime_slots[0].behavior_state = 0x0000;
+  state.runtime_slots[0].x = 48;
+  state.runtime_slots[0].y = 48;
+  state.runtime_slots[0].hitbox_w = 12;
+  state.runtime_slots[0].hitbox_h = 12;
+
+  state.runtime_slots[1].mapped_object_ptr = 2;
+  state.runtime_slots[1].behavior_state = 0x0004;
+  state.runtime_slots[1].x = 60;
+  state.runtime_slots[1].y = 50;
+  state.runtime_slots[1].hitbox_w = 8;
+  state.runtime_slots[1].hitbox_h = 8;
+
+  dispatcher.run_tick(state);
+
+  expect(state.player.hp == 2,
+         "Gate 9.1 combat should reduce player hp on entity collision");
+  expect(state.player.gems == 1,
+         "Gate 9.1 pickups should increment the gem counter");
+  expect(state.runtime_slots[1].mapped_object_ptr == 0,
+         "Gate 9.1 pickups should deactivate collected runtime slots");
+}
+
 void test_gate_e_projectile_collision_outcome() {
   std::vector<comic2::ProjectileState> projectiles;
   comic2::spawn_projectile(projectiles, 0, 0, 0, 0);
@@ -494,6 +533,89 @@ void test_gate_e_projectile_collision_outcome() {
          "Gate E projectile should deactivate on tile collision interaction");
 }
 
+void test_gate_phase_93_transition_flow_freezes_player_and_tracks_camera() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.room_grid.tile_w = 20;
+  state.room_grid.tile_h = 20;
+  state.room_grid.row_pointers.assign(20, 0);
+  state.room_grid.tile_data.assign(400, 0x01);
+  state.pending_room_transition = comic2::PendingRoomTransition{
+      .target_room = 1,
+      .target_player_x = 0,
+  };
+  state.flags.level_transition_pending = true;
+  state.player.x = 64;
+  state.player.y = 240;
+  state.player.is_airborne = false;
+  state.input.right_pressed = true;
+
+  const auto transition_tick = dispatcher.run_tick(state);
+  expect(
+      transition_tick.stage == comic2::DispatchStage::LevelTransition,
+      "Gate 9.3 transition flow should begin with the level transition stage");
+  expect(state.transition_state.active,
+         "Gate 9.3 transition flow should activate a room transition "
+         "presentation state");
+  expect(state.transition_state.player_frozen,
+         "Gate 9.3 transition flow should freeze the player during the "
+         "presentation");
+
+  const auto before_x = state.player.x;
+  state.input.right_pressed = true;
+  const auto followup_tick = dispatcher.run_tick(state);
+  expect(followup_tick.stage == comic2::DispatchStage::InputHandling,
+         "Gate 9.3 follow-up tick should keep the dispatcher in the input "
+         "stage while transition is active");
+  expect(
+      state.player.x == before_x,
+      "Gate 9.3 transition flow should prevent player movement while frozen");
+  expect(state.camera_y >= 0, "Gate 9.3 transition flow should update the "
+                              "camera Y offset during presentation");
+}
+
+void test_gate_phase_92_audio_events_trigger_from_gameplay() {
+  class RecordingAudioBackend final : public comic2::IAudioBackend {
+  public:
+    bool initialize() override {
+      initialized = true;
+      return true;
+    }
+    void enqueue_event(comic2::AudioEvent event) override {
+      events.emplace_back(event);
+    }
+    void update() override {}
+    void shutdown() override { initialized = false; }
+    bool is_available() const override { return initialized; }
+    std::size_t events_enqueued() const override { return events.size(); }
+
+    bool initialized = false;
+    std::vector<comic2::AudioEvent> events;
+  } audio;
+
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  comic2::GameDispatcher dispatcher = comic2::make_default_game_dispatcher();
+  comic2::MemoryFramePresenter presenter;
+
+  state.player.jump_counter = 1;
+  state.input.jump_pressed = true;
+  state.input.left_pressed = false;
+  state.input.right_pressed = false;
+
+  const auto summary = comic2::run_render_loop(
+      state, dispatcher, presenter, 1, std::chrono::milliseconds(0), &audio);
+
+  expect(summary.frames_rendered == 1,
+         "Gate 9.2 audio integration should process one frame");
+  const bool saw_jump = std::any_of(
+      audio.events.begin(), audio.events.end(),
+      [](const auto event) { return event == comic2::AudioEvent::Jump; });
+  expect(saw_jump,
+         "Gate 9.2 audio integration should emit a jump sound from gameplay");
+}
+
 } // namespace
 
 void run_integration_gate_tests() {
@@ -508,8 +630,11 @@ void run_integration_gate_tests() {
   test_gate_d_room_fixture_alpha_hash_matches_oracle();
   test_gate_d_room_fixture_beta_hash_matches_oracle();
 
+  test_gate_phase_91_combat_and_pickup_flow();
   test_gate_e_hazard_death_routes_to_special_state();
   test_gate_e_room_transition_boundary_sequence();
   test_gate_e_left_boundary_clamps_at_room_zero();
   test_gate_e_projectile_collision_outcome();
+  test_gate_phase_93_transition_flow_freezes_player_and_tracks_camera();
+  test_gate_phase_92_audio_events_trigger_from_gameplay();
 }

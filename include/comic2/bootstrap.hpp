@@ -23,6 +23,10 @@ struct FrameLoopSummary {
   int ticks_processed = 0;
   DispatchStage last_stage = DispatchStage::InputHandling;
   bool quit_requested = false;
+  std::uint64_t total_frame_time_us = 0;
+  std::uint64_t average_frame_time_us = 0;
+  std::uint64_t max_frame_time_us = 0;
+  std::size_t estimated_state_bytes = 0;
 };
 
 struct SceneBootstrapSummary {

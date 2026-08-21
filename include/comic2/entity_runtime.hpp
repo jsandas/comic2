@@ -7,6 +7,8 @@
 
 namespace comic2 {
 
+struct RuntimeState;
+
 struct EntityViewportBounds {
   std::int16_t min_x = 0;
   std::int16_t max_x = 319;
@@ -43,5 +45,8 @@ void ent_copy_descriptor_to_runtime_slot(const MappedObject12 &descriptor,
                                          std::uint16_t &activation_toggle);
 
 void ent_deactivate_runtime_slot(RuntimeEntitySlot32 &slot);
+
+void update_entity_behaviors(RuntimeState &state);
+void apply_entity_combat(RuntimeState &state);
 
 } // namespace comic2

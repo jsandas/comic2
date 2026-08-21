@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <optional>
 #include <thread>
@@ -12,7 +13,9 @@
 
 #include "comic2/default_handlers.hpp"
 #include "comic2/input_handler.hpp"
+#include "comic2/oracle.hpp"
 #include "comic2/resource_loader.hpp"
+#include "comic2/ui.hpp"
 
 namespace comic2 {
 
@@ -200,7 +203,8 @@ void draw_room_tilemap(EgaPlanarSurface &frame, const RuntimeState &state) {
       const std::uint8_t accent_color =
           static_cast<std::uint8_t>((base_color + 2U) & 0x0F);
       const auto px0 = static_cast<std::int32_t>(tile_x * kTileSizePixels);
-      const auto py0 = static_cast<std::int32_t>(tile_y * kTileSizePixels);
+      const auto py0 =
+          static_cast<std::int32_t>(tile_y * kTileSizePixels) - state.camera_y;
 
       draw_room_tile(frame, px0, py0, base_color, accent_color);
     }
@@ -297,8 +301,11 @@ bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame,
       }
 
       const std::size_t px0 = tile_x * kTileSizePixels;
-      const std::size_t py0 = tile_y * kTileSizePixels;
-      gfx_rle_blit_opaque_4plane(frame, px0, py0, tile);
+      const std::int32_t py0 =
+          static_cast<std::int32_t>(tile_y * kTileSizePixels) - state.camera_y;
+      gfx_rle_blit_opaque_4plane(
+          frame, px0, static_cast<std::size_t>(std::max<std::int32_t>(0, py0)),
+          tile);
     }
   }
 
@@ -342,7 +349,7 @@ std::optional<Ega4PlaneImage> try_decode_bootstrap_asset(RuntimeState &state) {
 
 void draw_player_marker(EgaPlanarSurface &frame, const RuntimeState &state) {
   const std::int32_t px0 = state.player.x;
-  const std::int32_t py0 = state.player.y;
+  const std::int32_t py0 = state.player.y - state.camera_y;
   const std::uint8_t body_color = state.player.is_airborne ? 0x0E : 0x0C;
 
   for (std::int32_t py = 0; py < 16; ++py) {
@@ -422,6 +429,49 @@ bool poll_bootstrap_input(RuntimeState &state) {
   }
 }
 
+void capture_oracle_trace_if_enabled(RuntimeState &state,
+                                     const GameDispatcher &dispatcher,
+                                     const std::vector<InputState> &inputs,
+                                     std::vector<ReplaySnapshot> &snapshots) {
+  if (!read_bootstrap_bool_env("COMIC2_ORACLE_REPLAY")) {
+    return;
+  }
+
+  const auto captured = capture_runtime_snapshots(
+      const_cast<RuntimeState &>(state), dispatcher, inputs);
+  snapshots.insert(snapshots.end(), captured.begin(), captured.end());
+
+  const char *log_path_env = std::getenv("COMIC2_ORACLE_LOG");
+  if (log_path_env == nullptr || *log_path_env == '\0') {
+    return;
+  }
+
+  std::ofstream out(log_path_env, std::ios::app);
+  if (!out) {
+    return;
+  }
+  for (const auto &snapshot : captured) {
+    out << "tick=" << snapshot.tick << " x=" << snapshot.player_x
+        << " y=" << snapshot.player_y << " x_vel=" << snapshot.player_x_vel
+        << " y_vel=" << snapshot.player_y_vel
+        << " grounded=" << (snapshot.grounded ? 1 : 0)
+        << " facing=" << (snapshot.facing_right ? 1 : 0)
+        << " hp=" << snapshot.hp << " score=" << snapshot.score
+        << " gems=" << snapshot.gems << " lives=" << snapshot.lives << "\n";
+  }
+}
+
+std::size_t estimate_runtime_state_bytes(const RuntimeState &state) {
+  std::size_t bytes = sizeof(RuntimeState);
+  bytes += state.room_grid.tile_data.size() * sizeof(std::uint8_t);
+  bytes += state.room_grid.row_pointers.size() * sizeof(std::uint16_t);
+  bytes += state.mapped_objects.size() * sizeof(MappedObject12);
+  bytes += state.active_entities.size() * sizeof(ActiveEntity8);
+  bytes += state.runtime_slots.size() * sizeof(RuntimeEntitySlot32);
+  bytes += state.projectiles.size() * sizeof(ProjectileState);
+  return bytes;
+}
+
 void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
   EgaPlanarSurface frame(320, 200);
   const bool has_room_grid = has_room_grid_data(state);
@@ -446,6 +496,22 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
     draw_player_marker(frame, state);
   }
 
+  if (state.transition_state.active) {
+    if (state.transition_state.effect_type == 0) {
+      room_transition_palette_wave(frame, state.transition_state);
+    } else {
+      room_transition_reveal_sequence_a(frame, state.transition_state);
+    }
+  }
+
+  if (state.ui.menu_state == MenuState::Pause ||
+      state.ui.menu_state == MenuState::Options ||
+      state.ui.menu_state == MenuState::Help ||
+      state.ui.menu_state == MenuState::GameSelect) {
+    ui_render_option_list(frame, state);
+  }
+
+  hud_render_overlay(frame, state);
   presenter.present(frame);
 }
 
@@ -481,10 +547,12 @@ FrameLoopSummary run_render_loop(RuntimeState &state,
   if (audio_backend != nullptr) {
     audio_enabled = audio_backend->initialize();
     if (audio_enabled) {
-      audio_backend->enqueue_event(AudioEvent::StartupChime);
+      queue_audio_event(state, AudioEvent::StartupChime);
+      flush_audio_events(state, audio_backend);
     }
   }
 
+  std::vector<ReplaySnapshot> oracle_snapshots;
   auto next_tick = std::chrono::steady_clock::now();
   bool was_airborne = state.player.is_airborne;
   std::uint8_t previous_hp = state.player.hp;
@@ -502,19 +570,32 @@ FrameLoopSummary run_render_loop(RuntimeState &state,
       break;
     }
 
+    const auto tick_start = std::chrono::steady_clock::now();
     const auto result = dispatcher.run_tick(state);
+    const auto tick_end = std::chrono::steady_clock::now();
+    const auto tick_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                             tick_end - tick_start)
+                             .count();
+    summary.total_frame_time_us += static_cast<std::uint64_t>(tick_us);
+    summary.max_frame_time_us = std::max(summary.max_frame_time_us,
+                                         static_cast<std::uint64_t>(tick_us));
 
     if (audio_enabled) {
       if (!was_airborne && state.player.is_airborne) {
-        audio_backend->enqueue_event(AudioEvent::Jump);
+        queue_audio_event(state, AudioEvent::Jump);
       }
       if (previous_hp > 0 && state.player.hp == 0) {
-        audio_backend->enqueue_event(AudioEvent::Hazard);
+        queue_audio_event(state, AudioEvent::Hazard);
       }
+      flush_audio_events(state, audio_backend);
       audio_backend->update();
     }
 
     render_bootstrap_frame(presenter, state);
+
+    std::vector<InputState> single_frame_inputs(1, state.input);
+    capture_oracle_trace_if_enabled(state, dispatcher, single_frame_inputs,
+                                    oracle_snapshots);
 
     summary.frames_rendered += 1;
     summary.ticks_processed += 1;
@@ -534,6 +615,13 @@ FrameLoopSummary run_render_loop(RuntimeState &state,
   if (audio_enabled) {
     audio_backend->shutdown();
   }
+
+  if (summary.frames_rendered > 0) {
+    summary.average_frame_time_us =
+        summary.total_frame_time_us /
+        static_cast<std::uint64_t>(summary.frames_rendered);
+  }
+  summary.estimated_state_bytes = estimate_runtime_state_bytes(state);
 
   return summary;
 }

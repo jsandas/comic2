@@ -1,5 +1,7 @@
 #include "comic2/projectiles.hpp"
 
+#include "comic2/audio.hpp"
+#include "comic2/game_state.hpp"
 #include "comic2/tile_collision.hpp"
 
 namespace comic2 {
@@ -11,7 +13,8 @@ void spawn_projectile(std::vector<ProjectileState> &projectiles, std::int16_t x,
 }
 
 void spawn_player_projectile(std::vector<ProjectileState> &projectiles,
-                             const ProjectileSpawnParams &params) {
+                             const ProjectileSpawnParams &params,
+                             RuntimeState *state) {
   const std::int16_t x_vel = params.facing_right ? 0x0010 : -0x0010;
 
   std::int16_t y = params.y + 4;
@@ -29,6 +32,9 @@ void spawn_player_projectile(std::vector<ProjectileState> &projectiles,
   projectile.active = true;
 
   projectiles.push_back(projectile);
+  if (state != nullptr) {
+    queue_audio_event(*state, AudioEvent::Shoot);
+  }
 }
 
 bool check_projectile_tile_collision(const ProjectileState &projectile,
