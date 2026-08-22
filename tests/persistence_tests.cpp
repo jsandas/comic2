@@ -54,9 +54,21 @@ void test_snapshot_roundtrip_preserves_state() {
          "menu state should roundtrip");
 }
 
+void test_config_loader_stops_at_truncated_payload() {
+  const std::vector<std::uint8_t> bytes{0x01, 0x05, 0x07};
+
+  comic2::RuntimeState loaded = comic2::make_default_runtime_state();
+  comic2::cfg_load_options_or_defaults(loaded, bytes);
+  expect(loaded.ui.music_volume == 0x05, "music volume should load from bytes");
+  expect(loaded.ui.sfx_volume == 0x07, "sfx volume should load from bytes");
+  expect(loaded.ui.display_scale == 0x01,
+         "display scale should remain default for truncated payload");
+}
+
 } // namespace
 
 void run_persistence_tests() {
   test_config_roundtrip_preserves_settings();
   test_snapshot_roundtrip_preserves_state();
+  test_config_loader_stops_at_truncated_payload();
 }

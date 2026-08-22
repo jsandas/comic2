@@ -29,9 +29,10 @@ constexpr std::uint16_t kBehaviorPowerup = 0x0005;
     kBehaviorGravity;
 [[maybe_unused]] constexpr std::uint16_t kBehaviorShootValue = kBehaviorShoot;
 
-using BehaviorFn = void (*)(RuntimeEntitySlot32 &, RuntimeState &);
+using BehaviorFn = void (*)(RuntimeEntitySlot32 &, const RuntimeState &);
 
-void apply_chase_behavior(RuntimeEntitySlot32 &slot, RuntimeState &state) {
+void apply_chase_behavior(RuntimeEntitySlot32 &slot,
+                          const RuntimeState &state) {
   if (state.player.x < slot.x) {
     slot.x -= 1;
   } else if (state.player.x > slot.x) {
@@ -39,7 +40,7 @@ void apply_chase_behavior(RuntimeEntitySlot32 &slot, RuntimeState &state) {
   }
 }
 
-void apply_bounce_behavior(RuntimeEntitySlot32 &slot, RuntimeState &) {
+void apply_bounce_behavior(RuntimeEntitySlot32 &slot, const RuntimeState &) {
   slot.param_a = static_cast<std::int16_t>((slot.param_a + 1) % 2);
   if (slot.param_a == 0) {
     slot.y -= 1;
@@ -48,7 +49,7 @@ void apply_bounce_behavior(RuntimeEntitySlot32 &slot, RuntimeState &) {
   }
 }
 
-void apply_jump_behavior(RuntimeEntitySlot32 &slot, RuntimeState &) {
+void apply_jump_behavior(RuntimeEntitySlot32 &slot, const RuntimeState &) {
   if (slot.param_a == 0) {
     slot.param_a = 1;
     slot.y -= 3;
@@ -57,11 +58,12 @@ void apply_jump_behavior(RuntimeEntitySlot32 &slot, RuntimeState &) {
   }
 }
 
-void apply_gravity_behavior(RuntimeEntitySlot32 &slot, RuntimeState &) {
+void apply_gravity_behavior(RuntimeEntitySlot32 &slot, const RuntimeState &) {
   slot.y += 1;
 }
 
-void apply_shoot_behavior(RuntimeEntitySlot32 &slot, RuntimeState &state) {
+void apply_shoot_behavior(RuntimeEntitySlot32 &slot,
+                          const RuntimeState &state) {
   if (state.player.x < slot.x) {
     slot.x -= 1;
   } else if (state.player.x > slot.x) {

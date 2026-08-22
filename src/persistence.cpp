@@ -39,11 +39,16 @@ void cfg_load_options_or_defaults(RuntimeState &state,
   }
 
   std::size_t offset = 0;
-  const std::uint8_t version = bytes.size() > offset ? bytes[offset++] : 0;
+  const std::uint8_t version = bytes[offset++];
   (void)version;
-  if (bytes.size() >= 3) {
+
+  if (offset < bytes.size()) {
     state.ui.music_volume = bytes[offset++];
+  }
+  if (offset < bytes.size()) {
     state.ui.sfx_volume = bytes[offset++];
+  }
+  if (offset < bytes.size()) {
     state.ui.display_scale = bytes[offset++];
   }
 }

@@ -61,7 +61,7 @@ std::uint8_t bcd_increment(std::uint8_t value) {
   }
   const auto high = static_cast<std::uint8_t>((value >> 4) & 0x0F);
   if (high < 0x09) {
-    return static_cast<std::uint8_t>(((high + 1) << 4) | 0x00);
+    return static_cast<std::uint8_t>((high + 1) << 4);
   }
   return 0x99;
 }
@@ -100,7 +100,8 @@ void hud_render_overlay(EgaPlanarSurface &surface, const RuntimeState &state) {
   }
 }
 
-void ui_render_option_list(EgaPlanarSurface &surface, RuntimeState &state) {
+void ui_render_option_list(EgaPlanarSurface &surface,
+                           const RuntimeState &state) {
   draw_rect(surface, 40, 20, 240, 120, 0x04);
   for (std::size_t i = 0; i < state.ui.option_labels.size(); ++i) {
     const bool is_selected = i == state.ui.selected_option_index;
@@ -110,6 +111,7 @@ void ui_render_option_list(EgaPlanarSurface &surface, RuntimeState &state) {
   }
 }
 
+// cppcheck-suppress unusedFunction ; reserved for Phase 10
 void ui_render_game_selection_panel(EgaPlanarSurface &surface,
                                     const RuntimeState &state) {
   draw_rect(surface, 20, 20, 280, 140, 0x02);
@@ -119,6 +121,7 @@ void ui_render_game_selection_panel(EgaPlanarSurface &surface,
   }
 }
 
+// cppcheck-suppress unusedFunction ; reserved for Phase 10
 bool ui_show_modal_prompt_wait_key(RuntimeState &state,
                                    const std::string &prompt,
                                    std::uint8_t awaited_key) {
@@ -145,6 +148,7 @@ void ui_option_list_input_loop(RuntimeState &state, const InputState &input) {
   }
 }
 
+// cppcheck-suppress unusedFunction ; reserved for Phase 10
 void ui_edit_selected_option_text(RuntimeState &state,
                                   const std::string &text) {
   if (state.ui.selected_option_index < state.ui.option_labels.size()) {
@@ -165,6 +169,7 @@ void ui_select_next_valid_option(RuntimeState &state) {
   state.ui.selected_option_index = next;
 }
 
+// cppcheck-suppress unusedFunction ; reserved for Phase 10
 bool ui_select_prev_valid_option(RuntimeState &state) {
   if (state.ui.option_labels.empty()) {
     return false;
@@ -181,6 +186,7 @@ bool ui_select_prev_valid_option(RuntimeState &state) {
   return true;
 }
 
+// cppcheck-suppress unusedFunction ; reserved for Phase 10
 bool play_intro_cinematic(EgaPlanarSurface &surface, RuntimeState &state) {
   draw_rect(surface, 0, 0, 320, 200, 0x00);
   draw_rect(surface, 40, 50, 240, 100, 0x0F);
@@ -189,6 +195,7 @@ bool play_intro_cinematic(EgaPlanarSurface &surface, RuntimeState &state) {
   return true;
 }
 
+// cppcheck-suppress unusedFunction ; reserved for Phase 10
 bool event_finale_transition_sequence(EgaPlanarSurface &surface,
                                       RuntimeState &state) {
   draw_rect(surface, 0, 0, 320, 200, 0x08);

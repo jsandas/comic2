@@ -13,7 +13,8 @@ std::uint8_t bcd_increment(std::uint8_t value);
 std::uint8_t bcd_decrement(std::uint8_t value);
 
 void hud_render_overlay(EgaPlanarSurface &surface, const RuntimeState &state);
-void ui_render_option_list(EgaPlanarSurface &surface, RuntimeState &state);
+void ui_render_option_list(EgaPlanarSurface &surface,
+                           const RuntimeState &state);
 void ui_render_game_selection_panel(EgaPlanarSurface &surface,
                                     const RuntimeState &state);
 

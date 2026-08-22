@@ -233,6 +233,7 @@ void room_transition_reveal_sequence_a(EgaPlanarSurface &surface,
                                    static_cast<std::uint8_t>(0x0F));
 }
 
+// cppcheck-suppress unusedFunction ; reserved for Phase 10
 void room_transition_reveal_sequence_b(EgaPlanarSurface &surface,
                                        const RoomTransitionState &transition) {
   const std::int32_t width =
