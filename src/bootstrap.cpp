@@ -286,12 +286,23 @@ bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame,
 
   const std::size_t visible_tiles_x =
       static_cast<std::size_t>(frame.width_pixels()) / kTileSizePixels;
-  const std::size_t visible_tiles_y =
-      static_cast<std::size_t>(frame.height_rows()) / kTileSizePixels;
 
   Ega4PlaneImage tile;
-  for (std::size_t tile_y = 0;
-       tile_y < state.room_grid.tile_h && tile_y < visible_tiles_y; ++tile_y) {
+  for (std::size_t tile_y = 0; tile_y < state.room_grid.tile_h; ++tile_y) {
+    const std::int32_t py0 =
+        static_cast<std::int32_t>(tile_y * kTileSizePixels) - state.camera_y;
+
+    // Skip tiles that are completely off-screen
+    if (py0 + kTileSizePixels <= 0) {
+      continue; // Tile is completely above viewport
+    }
+    if (py0 >= static_cast<std::int32_t>(frame.height_rows())) {
+      break; // All remaining tiles are below viewport
+    }
+    if (py0 < 0) {
+      continue; // Tile is partially above viewport (no clipping support yet)
+    }
+
     for (std::size_t tile_x = 0;
          tile_x < state.room_grid.tile_w && tile_x < visible_tiles_x;
          ++tile_x) {
@@ -301,11 +312,8 @@ bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame,
       }
 
       const std::size_t px0 = tile_x * kTileSizePixels;
-      const std::int32_t py0 =
-          static_cast<std::int32_t>(tile_y * kTileSizePixels) - state.camera_y;
-      gfx_rle_blit_opaque_4plane(
-          frame, px0, static_cast<std::size_t>(std::max<std::int32_t>(0, py0)),
-          tile);
+      gfx_rle_blit_opaque_4plane(frame, px0, static_cast<std::size_t>(py0),
+                                 tile);
     }
   }
 
@@ -546,9 +554,13 @@ FrameLoopSummary run_render_loop(RuntimeState &state,
   bool audio_enabled = false;
   if (audio_backend != nullptr) {
     audio_enabled = audio_backend->initialize();
+    state.audio.audio_enabled = audio_enabled;
     if (audio_enabled) {
       queue_audio_event(state, AudioEvent::StartupChime);
       flush_audio_events(state, audio_backend);
+    } else {
+      // Clear any accumulated events if audio failed to initialize
+      state.audio.pending_events.clear();
     }
   }
 
@@ -596,8 +608,8 @@ FrameLoopSummary run_render_loop(RuntimeState &state,
     if (read_bootstrap_bool_env("COMIC2_ORACLE_REPLAY")) {
       std::vector<InputState> single_frame_inputs(1, state.input);
       RuntimeState oracle_state = state;
-      capture_oracle_trace_if_enabled(oracle_state, dispatcher, single_frame_inputs,
-                                      oracle_snapshots);
+      capture_oracle_trace_if_enabled(oracle_state, dispatcher,
+                                      single_frame_inputs, oracle_snapshots);
     }
 
     summary.frames_rendered += 1;

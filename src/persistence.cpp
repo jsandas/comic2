@@ -94,8 +94,8 @@ void savegame_read_snapshot(RuntimeState &state,
   }
   const auto score_lo = bytes[offset++];
   const auto score_hi = bytes[offset++];
-  state.player.score =
-      static_cast<std::uint16_t>(score_lo | (static_cast<std::uint16_t>(score_hi) << 8));
+  state.player.score = static_cast<std::uint16_t>(
+      score_lo | (static_cast<std::uint16_t>(score_hi) << 8));
 
   if (offset < bytes.size()) {
     state.player.gems = bytes[offset++];
@@ -115,10 +115,6 @@ void savegame_read_snapshot(RuntimeState &state,
   if (offset < bytes.size()) {
     state.ui.menu_state = static_cast<MenuState>(bytes[offset++]);
   }
-  state.player.gems = bytes[offset++];
-  state.player.lives = bytes[offset++];
-  state.player.hp = bytes[offset++];
-  state.ui.menu_state = static_cast<MenuState>(bytes[offset++]);
 }
 
 } // namespace comic2

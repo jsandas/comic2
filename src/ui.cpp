@@ -33,7 +33,8 @@ void write_bcd_digit(EgaPlanarSurface &surface, std::size_t x, std::size_t y,
     }
 
     for (std::size_t plane = 0; plane < 4; ++plane) {
-      const std::uint8_t byte_value = ((kColorIndex >> plane) & 0x1U) ? mask : 0;
+      const std::uint8_t byte_value =
+          ((kColorIndex >> plane) & 0x1U) ? mask : 0;
       surface.set_plane_byte(plane, x_byte, y + row, byte_value);
     }
   }
