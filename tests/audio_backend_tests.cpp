@@ -168,6 +168,31 @@ void test_run_render_loop_skips_audio_when_initialization_fails() {
          "audio backend shutdown should not run when initialization fails");
 }
 
+void test_sound_command_parser_and_synthesizer_work() {
+  comic2::SoundPlaybackState state{};
+  const auto play_result = comic2::handle_sound_command(
+      state, comic2::SoundCommand::Play, 0x00DB, 0x0000, 0x02);
+
+  expect(play_result.playing,
+         "sound command parser should mark playback active for play requests");
+  expect(play_result.priority == 0x02,
+         "sound command parser should preserve requested priority");
+  expect(state.is_playing,
+         "sound playback state should activate after a play command");
+
+  const auto samples = comic2::synthesize_sound_samples(
+      comic2::make_stream_for_event(comic2::AudioEvent::Jump), 22050, 8);
+
+  expect(!samples.empty(),
+         "synthesizer should produce audio samples for jump events");
+  expect(samples.front() != 0 || samples.back() != 0,
+         "synthesizer should output non-zero waveform data");
+
+  comic2::advance_sound_stream(state, 22050);
+  expect(state.tick_remaining > 0,
+         "sound playback should advance into its first note duration");
+}
+
 void test_null_audio_backend_accepts_events() {
   comic2::NullAudioBackend null_audio;
   expect(null_audio.initialize(),
@@ -190,5 +215,6 @@ void run_audio_backend_tests() {
   test_run_render_loop_audio_lifecycle_and_startup_event();
   test_run_render_loop_emits_jump_event_on_takeoff();
   test_run_render_loop_skips_audio_when_initialization_fails();
+  test_sound_command_parser_and_synthesizer_work();
   test_null_audio_backend_accepts_events();
 }

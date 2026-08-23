@@ -6,6 +6,7 @@
 #include <span>
 #include <vector>
 
+#include "comic2/game_state.hpp"
 #include "comic2/resource_formats.hpp"
 
 namespace comic2 {
@@ -118,5 +119,21 @@ void gfx_rle_blit_opaque_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
 void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
                                    std::size_t y_rows,
                                    const Ega4PlaneImage &image_data);
+
+void room_transition_palette_wave(EgaPlanarSurface &surface,
+                                  const RoomTransitionState &transition);
+void room_transition_reveal_sequence_a(EgaPlanarSurface &surface,
+                                       const RoomTransitionState &transition);
+void room_transition_reveal_sequence_b(EgaPlanarSurface &surface,
+                                       const RoomTransitionState &transition);
+void room_transition_draw_reveal_quad(EgaPlanarSurface &surface,
+                                      std::int32_t x0, std::int32_t y0,
+                                      std::int32_t width, std::int32_t height,
+                                      std::uint8_t color);
+void room_transition_player_entry_sequence(RuntimeState &state);
+void room_transition_player_exit_sequence(RuntimeState &state);
+void camera_update_y_follow_comic_clamped(RuntimeState &state,
+                                          std::int32_t viewport_height,
+                                          std::int32_t room_height);
 
 } // namespace comic2

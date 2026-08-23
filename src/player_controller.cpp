@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "comic2/audio.hpp"
+
 namespace comic2 {
 
 namespace detail {
@@ -40,6 +42,12 @@ bool trigger_fall_if_no_support(RuntimeState &state,
 } // namespace detail
 
 void apply_input_tick(RuntimeState &state, const PlayerMotionConfig &motion) {
+  if (state.transition_state.player_frozen) {
+    state.player.x_vel = 0;
+    return;
+  }
+
+  const bool was_airborne = state.player.is_airborne;
   detail::apply_horizontal_movement(state, motion);
 
   if (state.input.jump_pressed && state.player.jump_counter > 0) {
@@ -47,12 +55,21 @@ void apply_input_tick(RuntimeState &state, const PlayerMotionConfig &motion) {
     state.player.is_physics_active = true;
     state.player.y_vel = motion.jump_impulse;
     --state.player.jump_counter;
+    if (!was_airborne) {
+      queue_audio_event(state, AudioEvent::Jump);
+    }
   }
 }
 
 void apply_grounded_physics_tick(RuntimeState &state,
                                  const PlayerMotionConfig &motion,
                                  const TileCollisionConfig &collision) {
+  if (state.transition_state.player_frozen) {
+    state.player.x_vel = 0;
+    return;
+  }
+
+  const bool was_airborne = state.player.is_airborne;
   detail::apply_horizontal_movement(state, motion);
 
   if (state.input.jump_pressed && state.player.jump_counter > 0) {
@@ -60,6 +77,9 @@ void apply_grounded_physics_tick(RuntimeState &state,
     state.player.is_physics_active = true;
     state.player.y_vel = motion.jump_impulse;
     --state.player.jump_counter;
+    if (!was_airborne) {
+      queue_audio_event(state, AudioEvent::Jump);
+    }
     return;
   }
 
@@ -79,6 +99,11 @@ void apply_grounded_physics_tick(RuntimeState &state,
 void apply_airborne_physics_tick(RuntimeState &state,
                                  const PlayerMotionConfig &motion,
                                  const TileCollisionConfig &collision) {
+  if (state.transition_state.player_frozen) {
+    state.player.x_vel = 0;
+    return;
+  }
+
   if (state.input.jump_pressed && state.player.y_vel < 0 &&
       state.player.jump_counter > 0) {
     state.player.y_vel = motion.jump_impulse;

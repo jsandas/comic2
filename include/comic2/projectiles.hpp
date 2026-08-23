@@ -41,7 +41,8 @@ void spawn_projectile(std::vector<ProjectileState> &projectiles, std::int16_t x,
                       std::int16_t y, std::int16_t x_vel, std::int16_t y_vel);
 
 void spawn_player_projectile(std::vector<ProjectileState> &projectiles,
-                             const ProjectileSpawnParams &params);
+                             const ProjectileSpawnParams &params,
+                             RuntimeState *state = nullptr);
 
 void update_projectiles(std::vector<ProjectileState> &projectiles,
                         const ProjectileBounds &bounds,

@@ -11,7 +11,11 @@ RuntimeState make_default_runtime_state() {
   state.player.facing_right = true;
   state.player.hp = 12;
   state.player.firepower = 1;
+  state.player.gems = 0;
+  state.player.lives = 3;
+  state.player.invuln_ticks = 0;
   state.activation_toggle = 1;
+  state.camera_y = 0;
 
   return state;
 }

@@ -3,8 +3,10 @@
 #include <cstdint>
 #include <filesystem>
 #include <optional>
+#include <string>
 #include <vector>
 
+#include "comic2/audio.hpp"
 #include "comic2/entity_runtime.hpp"
 #include "comic2/projectiles.hpp"
 #include "comic2/resource_formats.hpp"
@@ -12,11 +14,20 @@
 
 namespace comic2 {
 
+enum class MenuState {
+  None = 0,
+  Pause = 1,
+  Options = 2,
+  Help = 3,
+  GameSelect = 4,
+};
+
 struct InputState {
   bool jump_pressed = false;
   bool left_pressed = false;
   bool right_pressed = false;
   bool down_pressed = false;
+  bool pause_pressed = false;
 
   bool operator==(const InputState &) const = default;
 };
@@ -36,6 +47,11 @@ struct PlayerState {
   std::uint8_t jump_counter = 0;
   std::uint8_t hp = 12;
   std::uint8_t firepower = 1;
+  std::uint8_t gems = 0;
+  std::uint8_t lives = 3;
+  std::uint16_t score = 0;
+  std::uint8_t invuln_ticks = 0;
+  std::uint8_t damage_recoil_ticks = 0;
 
   bool operator==(const PlayerState &) const = default;
 };
@@ -59,6 +75,33 @@ struct PendingRoomTransition {
   bool operator==(const PendingRoomTransition &) const = default;
 };
 
+struct RoomTransitionState {
+  bool active = false;
+  bool player_frozen = false;
+  std::uint16_t effect_type = 0;
+  std::uint16_t frame_index = 0;
+  std::uint16_t tick_count = 0;
+  std::int16_t player_entry_offset = 0;
+  std::int16_t player_exit_offset = 0;
+
+  bool operator==(const RoomTransitionState &) const = default;
+};
+
+struct UiState {
+  MenuState menu_state = MenuState::None;
+  std::size_t selected_option_index = 0;
+  std::vector<std::string> option_labels;
+  std::uint8_t active_mode_mask = 0;
+  std::uint8_t inventory_mask = 0;
+  std::uint8_t cinematic_frame = 0;
+  std::uint8_t music_volume = 4;
+  std::uint8_t sfx_volume = 4;
+  std::uint8_t display_scale = 1;
+  bool modal_active = false;
+  std::uint8_t awaited_key = 0;
+  std::string modal_prompt;
+};
+
 struct RuntimeState {
   std::uint16_t current_level = 0;
   std::uint16_t current_room = 0;
@@ -76,6 +119,9 @@ struct RuntimeState {
   PlayerState player;
   InputState input;
   DispatcherFlags flags;
+  UiState ui;
+  std::int32_t camera_y = 0;
+  RoomTransitionState transition_state;
 
   std::vector<MappedObject12> mapped_objects;
   std::vector<ActiveEntity8> active_entities;
@@ -84,8 +130,7 @@ struct RuntimeState {
   std::uint16_t activation_toggle = 1;
 
   std::vector<ProjectileState> projectiles;
-
-  bool operator==(const RuntimeState &) const = default;
+  AudioDispatchState audio;
 };
 
 RuntimeState make_default_runtime_state();

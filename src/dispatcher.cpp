@@ -14,6 +14,10 @@ DispatchStage GameDispatcher::choose_stage(const RuntimeState &state) {
   const auto &flags = state.flags;
   const auto &player = state.player;
 
+  if (state.transition_state.active) {
+    return DispatchStage::InputHandling;
+  }
+
   if (flags.level_transition_pending) {
     return DispatchStage::LevelTransition;
   }

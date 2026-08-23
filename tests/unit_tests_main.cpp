@@ -17,12 +17,17 @@
 extern void run_bootstrap_wiring_tests();
 extern void run_audio_backend_tests();
 extern void run_dispatcher_tests();
+extern void run_entity_runtime_tests();
 extern void run_integration_gate_tests();
+extern void run_oracle_test_suite();
+extern void run_end_to_end_test_suite();
+extern void run_persistence_tests();
 extern void run_player_controller_tests();
 extern void run_renderer_tests();
 extern void run_renderer_validation_tests();
 extern void run_subsystem_scaffold_tests();
 extern void run_tile_collision_tests();
+extern void run_ui_tests();
 
 namespace {
 
@@ -239,12 +244,17 @@ int main() {
     run_audio_backend_tests();
     run_bootstrap_wiring_tests();
     run_dispatcher_tests();
+    run_entity_runtime_tests();
     run_integration_gate_tests();
+    run_oracle_test_suite();
+    run_end_to_end_test_suite();
+    run_persistence_tests();
     run_player_controller_tests();
     run_renderer_tests();
     run_renderer_validation_tests();
     run_subsystem_scaffold_tests();
     run_tile_collision_tests();
+    run_ui_tests();
     std::cout << "comic2_unit_tests: OK\n";
     return 0;
   } catch (const std::exception &ex) {

@@ -1,7 +1,9 @@
 #include <cstdint>
 #include <stdexcept>
 
+#include "comic2/game_state.hpp"
 #include "comic2/renderer.hpp"
+#include "comic2/renderer_validation.hpp"
 
 namespace {
 
@@ -39,12 +41,51 @@ void test_presenter_copies_frame() {
          "presenter did not retain frame copy");
 }
 
+void test_transition_effects_are_deterministic() {
+  comic2::EgaPlanarSurface surface(320, 200);
+  surface.clear(0x00);
+
+  comic2::RoomTransitionState transition{};
+  transition.active = true;
+  transition.effect_type = 0;
+  transition.frame_index = 3;
+  comic2::room_transition_palette_wave(surface, transition);
+  const auto palette_hash = comic2::validation::hash_surface_planes(surface);
+  expect(palette_hash != 0x0ULL,
+         "palette wave should alter the frame deterministically");
+
+  comic2::EgaPlanarSurface reveal(320, 200);
+  reveal.clear(0x00);
+  transition.effect_type = 1;
+  transition.frame_index = 2;
+  comic2::room_transition_reveal_sequence_a(reveal, transition);
+  const auto reveal_hash = comic2::validation::hash_surface_planes(reveal);
+  expect(reveal_hash != 0x0ULL,
+         "reveal sequence A should alter the frame deterministically");
+}
+
+void test_camera_y_clamps_to_room_bounds() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.room_grid.tile_w = 20;
+  state.room_grid.tile_h = 20;
+  state.room_grid.row_pointers.assign(20, 0);
+  state.room_grid.tile_data.assign(400, 0x01);
+  state.player.y = 480;
+  state.camera_y = 0;
+
+  comic2::camera_update_y_follow_comic_clamped(state, 200, 320);
+  expect(state.camera_y == 120,
+         "camera Y should clamp to the room-height viewport limit");
+}
+
 } // namespace
 
 void run_renderer_tests() {
   test_surface_geometry();
   test_surface_plane_rw();
   test_presenter_copies_frame();
+  test_transition_effects_are_deterministic();
+  test_camera_y_clamps_to_room_bounds();
 
   // EgaPageFlipper tests
   {

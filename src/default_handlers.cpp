@@ -3,7 +3,9 @@
 #include <limits>
 #include <utility>
 
+#include "comic2/audio.hpp"
 #include "comic2/player_controller.hpp"
+#include "comic2/renderer.hpp"
 #include "comic2/room_loader.hpp"
 #include "comic2/tile_collision.hpp"
 
@@ -71,6 +73,31 @@ void update_room_transition_from_player_bounds(RuntimeState &state) {
   }
 }
 
+void advance_transition_state(RuntimeState &state) {
+  auto &transition = state.transition_state;
+  if (!transition.active) {
+    transition.player_frozen = false;
+    return;
+  }
+
+  constexpr std::uint16_t kTransitionDurationTicks = 32;
+
+  transition.player_frozen = true;
+  transition.frame_index =
+      static_cast<std::uint16_t>(transition.frame_index + 1U);
+  transition.tick_count =
+      static_cast<std::uint16_t>(transition.tick_count + 1U);
+  if (transition.tick_count >= kTransitionDurationTicks) {
+    transition.active = false;
+    transition.player_frozen = false;
+    return;
+  }
+
+  camera_update_y_follow_comic_clamped(
+      state, kViewportHeightPixels,
+      std::max<std::int32_t>(0, state.room_grid.tile_h * 16));
+}
+
 void apply_default_airborne_physics(RuntimeState &state) {
   apply_airborne_physics_tick(state, kDefaultMotion, kDefaultCollision);
   if (!has_floor_support_data(state)) {
@@ -102,6 +129,18 @@ void handle_level_transition(RuntimeState &state) {
   RuntimeState candidate_state = state;
   candidate_state.current_room = pending->target_room;
   candidate_state.player.x = pending->target_player_x;
+  candidate_state.transition_state.active = true;
+  candidate_state.transition_state.player_frozen = true;
+  candidate_state.transition_state.effect_type = static_cast<std::uint16_t>(
+      (candidate_state.current_room + candidate_state.current_level) % 2U);
+  candidate_state.transition_state.frame_index = 0;
+  candidate_state.transition_state.tick_count = 0;
+  room_transition_player_entry_sequence(candidate_state);
+  camera_update_y_follow_comic_clamped(
+      candidate_state, kViewportHeightPixels,
+      std::max<std::int32_t>(0, candidate_state.room_grid.tile_h * 16));
+
+  state.transition_state = candidate_state.transition_state;
 
   bool loaded = false;
   if (!candidate_state.assets_root.empty()) {
@@ -117,6 +156,20 @@ void handle_level_transition(RuntimeState &state) {
 
   if (loaded) {
     state = std::move(candidate_state);
+    queue_audio_event(state, AudioEvent::LevelStart);
+  } else {
+    state.transition_state.active = true;
+    state.transition_state.player_frozen = true;
+    state.transition_state.effect_type =
+        candidate_state.transition_state.effect_type;
+    state.transition_state.frame_index =
+        candidate_state.transition_state.frame_index;
+    state.transition_state.tick_count =
+        candidate_state.transition_state.tick_count;
+    state.transition_state.player_entry_offset =
+        candidate_state.transition_state.player_entry_offset;
+    state.transition_state.player_exit_offset =
+        candidate_state.transition_state.player_exit_offset;
   }
 }
 
@@ -129,6 +182,8 @@ void handle_special_logic2(RuntimeState &state) {
 }
 
 void handle_airborne_physics(RuntimeState &state) {
+  update_entity_behaviors(state);
+  apply_entity_combat(state);
   apply_default_airborne_physics(state);
   state.player.is_physics_active = state.player.is_airborne;
 }
@@ -138,6 +193,8 @@ void handle_timed_overlay(RuntimeState &state) {
 }
 
 void handle_grounded_physics(RuntimeState &state) {
+  update_entity_behaviors(state);
+  apply_entity_combat(state);
   apply_default_grounded_physics(state);
   state.player.is_physics_active = state.player.is_airborne;
 }
@@ -156,6 +213,7 @@ void handle_distance_interaction(RuntimeState &state) {
 
 void handle_tile_hazard(RuntimeState &state) {
   state.player.hp = 0;
+  queue_audio_event(state, AudioEvent::Death);
   state.flags.player_special_state_active = true;
   state.flags.tile_hazard_triggered = false;
 }
@@ -163,6 +221,15 @@ void handle_tile_hazard(RuntimeState &state) {
 void handle_player_special_state(const RuntimeState &state) { (void)state; }
 
 void handle_input_fallback(RuntimeState &state) {
+  if (state.transition_state.active) {
+    state.transition_state.player_frozen = true;
+    advance_transition_state(state);
+    room_transition_player_exit_sequence(state);
+    return;
+  }
+
+  update_entity_behaviors(state);
+  apply_entity_combat(state);
   apply_input_tick(state, kDefaultMotion);
   update_room_transition_from_player_bounds(state);
   update_player_hazard_state(state, kDefaultCollision);

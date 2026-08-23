@@ -1,9 +1,111 @@
 #include "comic2/entity_runtime.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstring>
 
+#include "comic2/audio.hpp"
+#include "comic2/game_state.hpp"
+
 namespace comic2 {
+
+namespace {
+constexpr std::int16_t kPlayerHitboxWidth = 16;
+constexpr std::int16_t kPlayerHitboxHeight = 32;
+constexpr std::uint8_t kInvulnerabilityTicks = 12;
+constexpr std::int16_t kDamageKnockback = 6;
+constexpr std::uint16_t kBehaviorChase = 0x0001;
+constexpr std::uint16_t kBehaviorBounce = 0x0002;
+constexpr std::uint16_t kBehaviorJump = 0x0003;
+constexpr std::uint16_t kBehaviorGravity = 0x0006;
+constexpr std::uint16_t kBehaviorShoot = 0x0007;
+constexpr std::uint16_t kBehaviorGem = 0x0004;
+constexpr std::uint16_t kBehaviorPowerup = 0x0005;
+
+[[maybe_unused]] constexpr std::uint16_t kBehaviorChaseValue = kBehaviorChase;
+[[maybe_unused]] constexpr std::uint16_t kBehaviorBounceValue = kBehaviorBounce;
+[[maybe_unused]] constexpr std::uint16_t kBehaviorJumpValue = kBehaviorJump;
+[[maybe_unused]] constexpr std::uint16_t kBehaviorGravityValue =
+    kBehaviorGravity;
+[[maybe_unused]] constexpr std::uint16_t kBehaviorShootValue = kBehaviorShoot;
+
+using BehaviorFn = void (*)(RuntimeEntitySlot32 &, const RuntimeState &);
+
+void apply_chase_behavior(RuntimeEntitySlot32 &slot,
+                          const RuntimeState &state) {
+  if (state.player.x < slot.x) {
+    slot.x -= 1;
+  } else if (state.player.x > slot.x) {
+    slot.x += 1;
+  }
+}
+
+void apply_bounce_behavior(RuntimeEntitySlot32 &slot, const RuntimeState &) {
+  slot.param_a = static_cast<std::int16_t>((slot.param_a + 1) % 2);
+  if (slot.param_a == 0) {
+    slot.y -= 1;
+  } else {
+    slot.y += 1;
+  }
+}
+
+void apply_jump_behavior(RuntimeEntitySlot32 &slot, const RuntimeState &) {
+  if (slot.param_a == 0) {
+    slot.param_a = 1;
+    slot.y -= 3;
+  } else {
+    slot.y -= 1;
+  }
+}
+
+void apply_gravity_behavior(RuntimeEntitySlot32 &slot, const RuntimeState &) {
+  slot.y += 1;
+}
+
+void apply_shoot_behavior(RuntimeEntitySlot32 &slot,
+                          const RuntimeState &state) {
+  if (state.player.x < slot.x) {
+    slot.x -= 1;
+  } else if (state.player.x > slot.x) {
+    slot.x += 1;
+  }
+  if (state.player.y < slot.y) {
+    slot.y -= 1;
+  } else if (state.player.y > slot.y) {
+    slot.y += 1;
+  }
+}
+
+const std::array<BehaviorFn, 8> kBehaviorTable = {
+    nullptr,
+    apply_chase_behavior,
+    apply_bounce_behavior,
+    apply_jump_behavior,
+    nullptr,
+    nullptr,
+    apply_gravity_behavior,
+    apply_shoot_behavior,
+};
+
+bool collides_with_player(const RuntimeEntitySlot32 &slot,
+                          const RuntimeState &state) {
+  const std::int16_t player_left = state.player.x;
+  const std::int16_t player_top = state.player.y;
+  const std::int16_t player_right = player_left + kPlayerHitboxWidth;
+  const std::int16_t player_bottom = player_top + kPlayerHitboxHeight;
+
+  const std::int16_t slot_w = slot.hitbox_w > 0 ? slot.hitbox_w : 16;
+  const std::int16_t slot_h = slot.hitbox_h > 0 ? slot.hitbox_h : 16;
+  const std::int16_t slot_left = slot.x;
+  const std::int16_t slot_top = slot.y;
+  const std::int16_t slot_right = slot_left + slot_w;
+  const std::int16_t slot_bottom = slot_top + slot_h;
+
+  return (slot_right > player_left) && (slot_left < player_right) &&
+         (slot_bottom > player_top) && (slot_top < player_bottom);
+}
+
+} // namespace
 
 bool is_runtime_slot_active(const RuntimeEntitySlot32 &slot) {
   return slot.mapped_object_ptr != 0;
@@ -116,6 +218,78 @@ void ent_copy_descriptor_to_runtime_slot(const MappedObject12 &descriptor,
   slot.mapped_object_ptr = behavior_ptr;
 
   activation_toggle ^= 3;
+}
+
+void update_entity_behaviors(RuntimeState &state) {
+  for (auto &slot : state.runtime_slots) {
+    if (!is_runtime_slot_active(slot)) {
+      continue;
+    }
+
+    const auto behavior = slot.behavior_state & 0x000F;
+    if (behavior < static_cast<std::uint16_t>(kBehaviorTable.size())) {
+      const auto fn = kBehaviorTable[behavior];
+      if (fn != nullptr) {
+        fn(slot, state);
+      }
+    }
+  }
+}
+
+void apply_entity_combat(RuntimeState &state) {
+  if (state.player.invuln_ticks > 0) {
+    --state.player.invuln_ticks;
+  }
+  if (state.player.damage_recoil_ticks > 0) {
+    --state.player.damage_recoil_ticks;
+  }
+
+  bool damage_applied = false;
+  std::int16_t recoil_x = 0;
+  std::int16_t recoil_y = 0;
+  for (auto &slot : state.runtime_slots) {
+    if (!is_runtime_slot_active(slot)) {
+      continue;
+    }
+
+    if (!collides_with_player(slot, state)) {
+      continue;
+    }
+
+    const auto behavior = slot.behavior_state & 0x000F;
+    if (behavior == kBehaviorGem) {
+      ++state.player.gems;
+      deactivate_runtime_slot(slot);
+      continue;
+    }
+    if (behavior == kBehaviorPowerup) {
+      state.player.firepower = static_cast<std::uint8_t>(
+          std::min<std::uint8_t>(state.player.firepower + 1, 8));
+      deactivate_runtime_slot(slot);
+      continue;
+    }
+
+    if (damage_applied || state.player.invuln_ticks != 0) {
+      continue;
+    }
+
+    if (state.player.hp > 0) {
+      --state.player.hp;
+    }
+    if (state.player.hp == 0) {
+      queue_audio_event(state, AudioEvent::Death);
+    } else {
+      queue_audio_event(state, AudioEvent::Hit);
+    }
+    state.player.invuln_ticks = kInvulnerabilityTicks;
+    state.player.damage_recoil_ticks = 4;
+    recoil_x -= kDamageKnockback;
+    recoil_y -= 2;
+    damage_applied = true;
+  }
+
+  state.player.x += recoil_x;
+  state.player.y += recoil_y;
 }
 
 } // namespace comic2

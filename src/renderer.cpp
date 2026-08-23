@@ -27,6 +27,44 @@ std::size_t checked_offset(const EgaPlanarSurface &surface, std::size_t x_byte,
   return y_row * surface.row_stride_bytes() + x_byte;
 }
 
+void set_surface_pixel(EgaPlanarSurface &surface, std::int32_t x,
+                       std::int32_t y, std::uint8_t color_index) {
+  if (x < 0 || y < 0 || x >= surface.width_pixels() ||
+      y >= surface.height_rows()) {
+    return;
+  }
+
+  const auto x_byte = static_cast<std::size_t>(x / 8);
+  const auto bit = static_cast<std::uint8_t>(7 - (x % 8));
+  const auto mask = static_cast<std::uint8_t>(1U << bit);
+  const auto y_row = static_cast<std::size_t>(y);
+
+  for (std::size_t plane = 0; plane < EgaPlanarSurface::kPlaneCount; ++plane) {
+    auto value = surface.get_plane_byte(plane, x_byte, y_row);
+    if ((color_index >> plane) & 0x1U) {
+      value = static_cast<std::uint8_t>(value | mask);
+    } else {
+      value =
+          static_cast<std::uint8_t>(value & static_cast<std::uint8_t>(~mask));
+    }
+    surface.set_plane_byte(plane, x_byte, y_row, value);
+  }
+}
+
+void fill_surface_rect(EgaPlanarSurface &surface, std::int32_t x0,
+                       std::int32_t y0, std::int32_t width, std::int32_t height,
+                       std::uint8_t color_index) {
+  if (width <= 0 || height <= 0) {
+    return;
+  }
+
+  for (std::int32_t y = y0; y < y0 + height; ++y) {
+    for (std::int32_t x = x0; x < x0 + width; ++x) {
+      set_surface_pixel(surface, x, y, color_index);
+    }
+  }
+}
+
 } // namespace
 
 EgaPlanarSurface::EgaPlanarSurface(std::uint16_t width_pixels,
@@ -169,6 +207,88 @@ void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
       }
     }
   }
+}
+
+void room_transition_palette_wave(EgaPlanarSurface &surface,
+                                  const RoomTransitionState &transition) {
+  for (std::int32_t y = 0; y < surface.height_rows(); ++y) {
+    const auto band =
+        static_cast<std::int32_t>((y + transition.frame_index * 4) % 16);
+    const auto color = static_cast<std::uint8_t>(band & 0x0F);
+    if (band < 8) {
+      for (std::int32_t x = 0; x < surface.width_pixels(); x += 8) {
+        set_surface_pixel(surface, x, y, color);
+      }
+    }
+  }
+}
+
+void room_transition_reveal_sequence_a(EgaPlanarSurface &surface,
+                                       const RoomTransitionState &transition) {
+  const std::int32_t size =
+      16 + static_cast<std::int32_t>(transition.frame_index * 12);
+  const std::int32_t x0 = (surface.width_pixels() - size) / 2;
+  const std::int32_t y0 = (surface.height_rows() - size) / 2;
+  room_transition_draw_reveal_quad(surface, x0, y0, size, size,
+                                   static_cast<std::uint8_t>(0x0F));
+}
+
+// cppcheck-suppress unusedFunction ; reserved for Phase 10
+void room_transition_reveal_sequence_b(EgaPlanarSurface &surface,
+                                       const RoomTransitionState &transition) {
+  const std::int32_t width =
+      24 + static_cast<std::int32_t>(transition.frame_index * 8);
+  const std::int32_t height =
+      24 + static_cast<std::int32_t>(transition.frame_index * 6);
+  const std::int32_t x0 =
+      32 + static_cast<std::int32_t>(transition.frame_index % 4) * 8;
+  const std::int32_t y0 =
+      24 + static_cast<std::int32_t>(transition.frame_index % 3) * 10;
+  room_transition_draw_reveal_quad(surface, x0, y0, width, height,
+                                   static_cast<std::uint8_t>(0x07));
+}
+
+void room_transition_draw_reveal_quad(EgaPlanarSurface &surface,
+                                      std::int32_t x0, std::int32_t y0,
+                                      std::int32_t width, std::int32_t height,
+                                      std::uint8_t color) {
+  if (width <= 0 || height <= 0) {
+    return;
+  }
+
+  fill_surface_rect(surface, x0, y0, width, 2, color);
+  fill_surface_rect(surface, x0, y0 + height - 2, width, 2, color);
+  fill_surface_rect(surface, x0, y0, 2, height, color);
+  fill_surface_rect(surface, x0 + width - 2, y0, 2, height, color);
+}
+
+void room_transition_player_entry_sequence(RuntimeState &state) {
+  auto &transition = state.transition_state;
+  transition.player_entry_offset =
+      static_cast<std::int16_t>(transition.frame_index * 2);
+  transition.player_frozen = true;
+}
+
+void room_transition_player_exit_sequence(RuntimeState &state) {
+  auto &transition = state.transition_state;
+  transition.player_exit_offset =
+      static_cast<std::int16_t>(transition.frame_index * 2);
+  transition.player_frozen = true;
+}
+
+void camera_update_y_follow_comic_clamped(RuntimeState &state,
+                                          std::int32_t viewport_height,
+                                          std::int32_t room_height) {
+  if (viewport_height <= 0) {
+    state.camera_y = 0;
+    return;
+  }
+
+  const std::int32_t room_pixels = std::max<std::int32_t>(room_height, 0);
+  const std::int32_t max_camera_y =
+      std::max<std::int32_t>(0, room_pixels - viewport_height);
+  const std::int32_t target_y = state.player.y - viewport_height / 2;
+  state.camera_y = std::clamp(target_y, 0, max_camera_y);
 }
 
 void MemoryFramePresenter::present(const EgaPlanarSurface &frame) {
