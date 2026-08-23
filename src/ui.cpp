@@ -16,11 +16,25 @@ void write_bcd_digit(EgaPlanarSurface &surface, std::size_t x, std::size_t y,
     value = 9;
   }
   const std::uint8_t glyph = static_cast<std::uint8_t>('0' + value);
+  constexpr std::uint8_t kColorIndex = 0x0F;
+
+  if ((x % 8) != 0) {
+    // Unaligned digits are not supported by this byte-oriented helper yet.
+    return;
+  }
+
+  const std::size_t x_byte = x / 8;
   for (std::size_t row = 0; row < 8; ++row) {
+    std::uint8_t mask = 0;
     for (std::size_t col = 0; col < 8; ++col) {
       if ((glyph + row + col) % 7 != 0) {
-        surface.set_plane_byte(0, (x + col) / 8, y + row, 0x0F);
+        mask = static_cast<std::uint8_t>(mask | (1U << (7 - col)));
       }
+    }
+
+    for (std::size_t plane = 0; plane < 4; ++plane) {
+      const std::uint8_t byte_value = ((kColorIndex >> plane) & 0x1U) ? mask : 0;
+      surface.set_plane_byte(plane, x_byte, y + row, byte_value);
     }
   }
 }
@@ -35,9 +49,24 @@ void write_two_digit_counter(EgaPlanarSurface &surface, std::size_t x,
 
 void draw_rect(EgaPlanarSurface &surface, std::size_t x, std::size_t y,
                std::size_t w, std::size_t h, std::uint8_t color) {
+  if (w == 0 || h == 0) {
+    return;
+  }
+  if ((x % 8) != 0 || (w % 8) != 0) {
+    // Unaligned rects would need bit masking; keep the helper byte-aligned.
+    return;
+  }
+
+  const std::size_t start_byte = x / 8;
+  const std::size_t byte_count = w / 8;
+
   for (std::size_t py = 0; py < h; ++py) {
-    for (std::size_t px = 0; px < w; ++px) {
-      surface.set_plane_byte(0, (x + px) / 8, y + py, color);
+    const std::size_t y_row = y + py;
+    for (std::size_t plane = 0; plane < 4; ++plane) {
+      const std::uint8_t byte_value = ((color >> plane) & 0x1U) ? 0xFF : 0x00;
+      for (std::size_t i = 0; i < byte_count; ++i) {
+        surface.set_plane_byte(plane, start_byte + i, y_row, byte_value);
+      }
     }
   }
 }

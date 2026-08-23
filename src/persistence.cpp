@@ -85,11 +85,36 @@ void savegame_read_snapshot(RuntimeState &state,
   std::size_t offset = 0;
   const auto version = bytes[offset++];
   (void)version;
+
   state.current_level = read_u16(bytes, offset);
   state.current_room = read_u16(bytes, offset);
+
+  if (offset + 2 > bytes.size()) {
+    return;
+  }
   const auto score_lo = bytes[offset++];
   const auto score_hi = bytes[offset++];
-  state.player.score = static_cast<std::uint16_t>(score_lo | (score_hi << 8));
+  state.player.score =
+      static_cast<std::uint16_t>(score_lo | (static_cast<std::uint16_t>(score_hi) << 8));
+
+  if (offset < bytes.size()) {
+    state.player.gems = bytes[offset++];
+  } else {
+    return;
+  }
+  if (offset < bytes.size()) {
+    state.player.lives = bytes[offset++];
+  } else {
+    return;
+  }
+  if (offset < bytes.size()) {
+    state.player.hp = bytes[offset++];
+  } else {
+    return;
+  }
+  if (offset < bytes.size()) {
+    state.ui.menu_state = static_cast<MenuState>(bytes[offset++]);
+  }
   state.player.gems = bytes[offset++];
   state.player.lives = bytes[offset++];
   state.player.hp = bytes[offset++];

@@ -593,9 +593,12 @@ FrameLoopSummary run_render_loop(RuntimeState &state,
 
     render_bootstrap_frame(presenter, state);
 
-    std::vector<InputState> single_frame_inputs(1, state.input);
-    capture_oracle_trace_if_enabled(state, dispatcher, single_frame_inputs,
-                                    oracle_snapshots);
+    if (read_bootstrap_bool_env("COMIC2_ORACLE_REPLAY")) {
+      std::vector<InputState> single_frame_inputs(1, state.input);
+      RuntimeState oracle_state = state;
+      capture_oracle_trace_if_enabled(oracle_state, dispatcher, single_frame_inputs,
+                                      oracle_snapshots);
+    }
 
     summary.frames_rendered += 1;
     summary.ticks_processed += 1;

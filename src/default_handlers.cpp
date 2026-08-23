@@ -80,11 +80,19 @@ void advance_transition_state(RuntimeState &state) {
     return;
   }
 
+  constexpr std::uint16_t kTransitionDurationTicks = 32;
+
   transition.player_frozen = true;
   transition.frame_index =
       static_cast<std::uint16_t>(transition.frame_index + 1U);
   transition.tick_count =
       static_cast<std::uint16_t>(transition.tick_count + 1U);
+  if (transition.tick_count >= kTransitionDurationTicks) {
+    transition.active = false;
+    transition.player_frozen = false;
+    return;
+  }
+
   camera_update_y_follow_comic_clamped(
       state, kViewportHeightPixels,
       std::max<std::int32_t>(0, state.room_grid.tile_h * 16));
