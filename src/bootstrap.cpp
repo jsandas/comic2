@@ -302,7 +302,9 @@ bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame,
     if (py0 < 0) {
       continue; // Tile is partially above viewport (no clipping support yet)
     }
-
+    if (py0 + kTileSizePixels > static_cast<std::int32_t>(frame.height_rows())) {
+      break; // Tile is partially below viewport (no clipping support yet)
+    }
     for (std::size_t tile_x = 0;
          tile_x < state.room_grid.tile_w && tile_x < visible_tiles_x;
          ++tile_x) {

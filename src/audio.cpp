@@ -229,10 +229,11 @@ SoundStream make_stream_for_event(AudioEvent event) {
 std::vector<std::int16_t> synthesize_sound_samples(const SoundStream &stream,
                                                    int sample_rate,
                                                    int sample_count) {
-  std::vector<std::int16_t> samples(static_cast<std::size_t>(sample_count), 0);
   if (sample_count <= 0 || stream.words.empty()) {
-    return samples;
+    return {};
   }
+
+  std::vector<std::int16_t> samples(static_cast<std::size_t>(sample_count), 0);
 
   const std::uint16_t divisor = stream.words.front();
   const std::uint16_t duration = stream.words.size() > 1 ? stream.words[1] : 1;
