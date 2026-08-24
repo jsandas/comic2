@@ -141,7 +141,34 @@ void reset_player_respawn_state(RuntimeState &state) {
   state.ui.modal_active = false;
   state.ui.modal_prompt.clear();
   state.ui.modal_game_over = false;
+  state.ui.game_over = false;
   state.flags.player_special_state_active = false;
+}
+
+void reset_runtime_for_new_game(RuntimeState &state) {
+  state.player = PlayerState{};
+  state.player.x = 64;
+  state.player.y = 96;
+  state.player.is_physics_active = true;
+  state.player.facing_right = true;
+  state.player.hp = 12;
+  state.player.firepower = 1;
+  state.player.gems = 0;
+  state.player.lives = 3;
+  state.player.invuln_ticks = 0;
+  state.current_room = 0;
+  state.current_level = 0;
+  state.pending_room_transition.reset();
+  state.flags = DispatcherFlags{};
+  state.ui = UiState{};
+  state.transition_state = RoomTransitionState{};
+  state.projectiles.clear();
+  state.runtime_slots.clear();
+  state.active_entities.clear();
+  state.mapped_objects.clear();
+  state.activation_state = EntityActivationState{};
+  state.activation_toggle = 1;
+  state.camera_y = 0;
 }
 
 } // namespace
@@ -305,9 +332,30 @@ void handle_tile_hazard(RuntimeState &state) {
 void handle_player_special_state(RuntimeState &state) {
   state.flags.player_special_state_active = true;
 
+  if (state.ui.game_over) {
+    const bool restart_requested = state.ui.modal_confirmed ||
+                                   state.input.jump_pressed ||
+                                   state.input.pause_pressed ||
+                                   state.input.right_pressed ||
+                                   state.input.left_pressed;
+    if (restart_requested) {
+      reset_runtime_for_new_game(state);
+      state.flags.player_special_state_active = false;
+      return;
+    }
+
+    if (!state.ui.modal_active) {
+      state.ui.modal_active = true;
+      state.ui.modal_prompt = "Game Over";
+      state.ui.modal_game_over = true;
+    }
+    return;
+  }
+
   if (state.ui.modal_active && state.ui.modal_confirmed) {
     state.ui.modal_confirmed = false;
     if (state.ui.modal_game_over) {
+      state.ui.game_over = true;
       state.ui.modal_active = true;
       state.ui.modal_prompt = "Game Over";
       return;
@@ -328,6 +376,7 @@ void handle_player_special_state(RuntimeState &state) {
         state.ui.modal_active = true;
         state.ui.modal_prompt = "Game Over";
         state.ui.modal_game_over = true;
+        state.ui.game_over = true;
         return;
       }
 
@@ -342,6 +391,7 @@ void handle_player_special_state(RuntimeState &state) {
     state.ui.modal_active = true;
     state.ui.modal_prompt = "Game Over";
     state.ui.modal_game_over = true;
+    state.ui.game_over = true;
   }
 }
 

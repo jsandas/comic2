@@ -122,6 +122,7 @@ struct UiState {
   std::string modal_prompt;
   bool modal_confirmed = false;
   bool modal_game_over = false;
+  bool game_over = false;
 };
 
 struct RuntimeState {

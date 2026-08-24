@@ -471,6 +471,63 @@ void test_confirming_continue_respawns_player() {
          "confirming continue should clear the attack overlay state");
 }
 
+void test_game_over_confirm_restarts_runtime_state() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.lives = 0;
+  state.player.score = 125;
+  state.player.gems = 3;
+  state.player.firepower = 2;
+  state.player.x = 77;
+  state.player.y = 91;
+  state.player.is_airborne = true;
+  state.player.y_vel = -3;
+  state.ui.modal_active = true;
+  state.ui.modal_prompt = "Game Over";
+  state.ui.modal_game_over = true;
+  state.ui.game_over = true;
+  state.flags.player_special_state_active = true;
+
+  state.ui.modal_confirmed = true;
+  comic2::handle_player_special_state(state);
+
+  expect(!state.ui.modal_active,
+         "confirming game over should clear the modal and begin restart");
+  expect(!state.ui.game_over,
+         "game-over confirmation should clear the terminal game-over state");
+  expect(state.player.lives == 3,
+         "game-over confirmation should restore the default life count");
+  expect(state.player.score == 0,
+         "game-over confirmation should reset the score for a fresh run");
+  expect(state.player.gems == 0,
+         "game-over confirmation should reset collected gems for a fresh run");
+  expect(state.player.x == 64,
+         "game-over confirmation should reset the player to the default spawn x");
+  expect(state.player.y == 96,
+         "game-over confirmation should reset the player to the default spawn y");
+  expect(!state.flags.player_special_state_active,
+         "game-over confirmation should exit the special state flow");
+}
+
+void test_game_over_input_restarts_without_modal_confirm() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.lives = 0;
+  state.ui.modal_active = true;
+  state.ui.modal_prompt = "Game Over";
+  state.ui.modal_game_over = true;
+  state.ui.game_over = true;
+  state.flags.player_special_state_active = true;
+  state.input.jump_pressed = true;
+
+  comic2::handle_player_special_state(state);
+
+  expect(!state.ui.game_over,
+         "jump input should clear the game-over terminal state");
+  expect(state.player.lives == 3,
+         "jump input should restart the run from the default life count");
+  expect(!state.ui.modal_active,
+         "jump input should dismiss the game-over modal during restart");
+}
+
 void test_down_input_cycles_active_mode_mask() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.ui.active_mode_mask = 0;
@@ -966,6 +1023,8 @@ void run_dispatcher_tests() {
   test_death_flow_prompts_when_lives_are_exhausted();
   test_death_countdown_decrements_lives_and_respawns_at_spawn();
   test_confirming_continue_respawns_player();
+  test_game_over_confirm_restarts_runtime_state();
+  test_game_over_input_restarts_without_modal_confirm();
   test_down_input_cycles_active_mode_mask();
   test_progression_state_updates_inventory_bits();
   test_progression_state_keeps_inventory_bits_stable();

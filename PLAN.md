@@ -1144,7 +1144,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [x] **Death Sequence**: Death animation, sound cue, and gameplay freeze are now handled in the default death path.
 - [x] **Lives Decrement**: Lives decrement and countdown-based continue gating now work in the special-state handler.
 - [x] **Respawn Logic**: Respawn/reset flow now restores the player to a safe spawn position and clears transient state on continue.
-- [ ] **Game Over Screen**: Continue/title-screen game-over handling is not yet implemented.
+- [x] **Game Over Screen**: Terminal game-over handling now enters a clear game-over state, supports restart input, and resets the runtime for a fresh run.
 - [x] **Invulnerability Frames**: Invulnerability timer handling is now reflected in the bootstrap render path with deterministic blinking while the player is invulnerable.
 - [x] **Death Flow Tests**: End-to-end death/respawn/game-over tests are now present for the countdown and respawn path.
 
