@@ -286,6 +286,10 @@ void apply_entity_combat(RuntimeState &state) {
     }
     state.player.invuln_ticks = kInvulnerabilityTicks;
     state.player.damage_recoil_ticks = 4;
+    state.player.animation_state =
+        static_cast<std::uint8_t>(PlayerAnimationState::Hurt);
+    state.player.animation_frame = 0;
+    state.player.animation_ticks = 0;
     recoil_x -= kDamageKnockback;
     recoil_y -= 2;
     damage_applied = true;

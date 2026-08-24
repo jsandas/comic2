@@ -74,6 +74,32 @@ void test_entity_damage_and_invulnerability_flow() {
   expect(state.player.x < 50, "damage should apply knockback recoil");
 }
 
+void test_damage_sets_hurt_animation_state() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.x = 50;
+  state.player.y = 50;
+  state.player.hp = 8;
+  state.player.invuln_ticks = 0;
+  state.player.animation_state =
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::Idle);
+
+  state.runtime_slots.resize(1);
+  state.runtime_slots[0].mapped_object_ptr = 1;
+  state.runtime_slots[0].behavior_state = 0x0000;
+  state.runtime_slots[0].x = 48;
+  state.runtime_slots[0].y = 48;
+  state.runtime_slots[0].hitbox_w = 12;
+  state.runtime_slots[0].hitbox_h = 12;
+
+  comic2::apply_entity_combat(state);
+
+  expect(state.player.animation_state ==
+             static_cast<std::uint8_t>(comic2::PlayerAnimationState::Hurt),
+         "damage should switch the player into the hurt animation state");
+  expect(state.player.animation_frame == 0,
+         "hurt animation should reset the frame index for a fresh flash");
+}
+
 void test_pickups_update_state_and_remove_collectibles() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.player.x = 50;
@@ -115,5 +141,6 @@ void test_pickups_update_state_and_remove_collectibles() {
 void run_entity_runtime_tests() {
   test_entity_behavior_dispatch_handles_chase_bounce_and_jump();
   test_entity_damage_and_invulnerability_flow();
+  test_damage_sets_hurt_animation_state();
   test_pickups_update_state_and_remove_collectibles();
 }

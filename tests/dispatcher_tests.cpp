@@ -429,6 +429,22 @@ void test_progression_state_updates_inventory_bits() {
          "progression state should mark the player as having an active mode");
 }
 
+void test_progression_state_keeps_inventory_bits_stable() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.gems = 0;
+  state.player.firepower = 1;
+  state.player.lives = 0;
+  state.ui.active_mode_mask = 0x01;
+  state.ui.inventory_mask = 0x03;
+
+  comic2::update_progression_state(state);
+
+  expect(state.ui.inventory_mask == 0x03U,
+         "progression state should preserve already-known inventory bits");
+  expect(state.ui.active_mode_mask == 0x01U,
+         "progression state should preserve already-known active mode bits");
+}
+
 void test_tile_hazard_stage_instantly_kills_player() {
   comic2::GameDispatcher dispatcher;
   comic2::install_default_stage_hooks(dispatcher);
@@ -875,6 +891,7 @@ void run_dispatcher_tests() {
   test_confirming_continue_respawns_player();
   test_down_input_cycles_active_mode_mask();
   test_progression_state_updates_inventory_bits();
+  test_progression_state_keeps_inventory_bits_stable();
   test_tile_hazard_stage_instantly_kills_player();
   test_stage_flags_are_consumed_by_default_handlers();
   test_input_fallback_arms_grounded_physics_for_next_tick();

@@ -1119,6 +1119,8 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [x] Basic player animation state definitions and animation-aware sprite-frame selection are implemented and covered by regression tests.
 - [x] Death-flow countdown and modal prompt handling are implemented and covered by regression tests.
 - [x] Modal-confirm resolution for respawn vs game-over is implemented and covered by regression tests.
+- [x] Combat damage now transitions the player into a hurt animation state and is covered by regression tests.
+- [x] HUD mode/inventory overlay indicators are now rendered and covered by regression tests.
 - [ ] The wider visual-fidelity, progression, event-script, mode-system, palette, timing, and validation-gate work remains pending.
 
 ### 10.1 Sprite Rendering Pipeline (Player, Entities, Projectiles & Items)

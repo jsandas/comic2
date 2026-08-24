@@ -136,14 +136,18 @@ void hud_render_overlay(EgaPlanarSurface &surface, const RuntimeState &state) {
   write_two_digit_counter(surface, 56, 188, state.player.gems);
   write_two_digit_counter(surface, 104, 188, state.player.lives);
 
+  draw_rect(surface, 144, 188, 8, 8, 0x0F);
+  draw_rect(surface, 152, 188, 8, 8, 0x0E);
+  draw_rect(surface, 160, 188, 8, 8, 0x0C);
+
   if ((state.ui.active_mode_mask & 0x01U) != 0U) {
-    draw_rect(surface, 152, 188, 8, 8, 0x0F);
+    draw_rect(surface, 144, 188, 8, 8, 0x0F);
   }
   if ((state.ui.inventory_mask & 0x01U) != 0U) {
-    draw_rect(surface, 168, 188, 8, 8, 0x0E);
+    draw_rect(surface, 152, 188, 8, 8, 0x0E);
   }
   if ((state.ui.inventory_mask & 0x02U) != 0U) {
-    draw_rect(surface, 184, 188, 8, 8, 0x0C);
+    draw_rect(surface, 160, 188, 8, 8, 0x0C);
   }
 }
 
