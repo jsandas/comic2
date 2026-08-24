@@ -120,6 +120,9 @@ void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
                                    std::size_t y_rows,
                                    const Ega4PlaneImage &image_data);
 
+void draw_runtime_entity_sprites(EgaPlanarSurface &frame,
+                                 const RuntimeState &state);
+
 void room_transition_palette_wave(EgaPlanarSurface &surface,
                                   const RoomTransitionState &transition);
 void room_transition_reveal_sequence_a(EgaPlanarSurface &surface,

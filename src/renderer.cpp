@@ -135,6 +135,43 @@ void EgaPageFlipper::present_and_flip_page() {
   active_page_ ^= 0x2000;
 }
 
+namespace {
+
+std::uint8_t resolve_entity_color(const RuntimeEntitySlot32 &slot) {
+  const std::uint16_t seed = static_cast<std::uint16_t>(
+      slot.behavior_state + slot.mapped_object_ptr + slot.type_flags);
+  return static_cast<std::uint8_t>(((seed & 0x0F) | 0x01U) & 0x0FU);
+}
+
+Ega4PlaneImage make_entity_placeholder_sprite(const RuntimeEntitySlot32 &slot) {
+  Ega4PlaneImage sprite{};
+  constexpr std::uint16_t kSpriteWidthBytes = 2;
+  constexpr std::uint16_t kSpriteHeightRows = 16;
+  sprite.width_bytes = kSpriteWidthBytes;
+  sprite.height_rows = kSpriteHeightRows;
+  sprite.row_span_bytes = static_cast<std::uint16_t>(kSpriteWidthBytes *
+                                                     kSpriteHeightRows);
+
+  const std::uint8_t color = resolve_entity_color(slot);
+  for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
+    auto &plane_bytes = sprite.planes[plane];
+    plane_bytes.assign(static_cast<std::size_t>(sprite.width_bytes) *
+                           sprite.height_rows,
+                       0x00);
+    if ((color >> plane) & 0x1U) {
+      for (std::size_t row = 0; row < sprite.height_rows; ++row) {
+        const std::size_t row_off = row * sprite.width_bytes;
+        plane_bytes[row_off] = 0xFF;
+        plane_bytes[row_off + 1] = 0xFF;
+      }
+    }
+  }
+
+  return sprite;
+}
+
+} // namespace
+
 void gfx_rle_blit_opaque_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
                                 std::size_t y_rows,
                                 const Ega4PlaneImage &image_data) {
@@ -206,6 +243,34 @@ void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
         dest_plane[dest_offset + i] |= source_plane[source_offset + i];
       }
     }
+  }
+}
+
+void draw_runtime_entity_sprites(EgaPlanarSurface &frame,
+                                 const RuntimeState &state) {
+  const std::int32_t max_x =
+      std::max<std::int32_t>(0, static_cast<std::int32_t>(frame.width_pixels()) -
+                                     16);
+  const std::int32_t max_y =
+      std::max<std::int32_t>(0, static_cast<std::int32_t>(frame.height_rows()) -
+                                     16);
+
+  for (const auto &slot : state.runtime_slots) {
+    if (!is_runtime_slot_active(slot)) {
+      continue;
+    }
+
+    const std::int32_t px0 = slot.x;
+    const std::int32_t py0 = slot.y - state.camera_y;
+    if (px0 < -16 || py0 < -16) {
+      continue;
+    }
+
+    const std::int32_t clamped_x = std::max<std::int32_t>(0, std::min(px0, max_x));
+    const std::int32_t clamped_y = std::max<std::int32_t>(0, std::min(py0, max_y));
+    const auto sprite = make_entity_placeholder_sprite(slot);
+    gfx_rle_blit_masked_or_4plane(frame, static_cast<std::size_t>(clamped_x),
+                                  static_cast<std::size_t>(clamped_y), sprite);
   }
 }
 

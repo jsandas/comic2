@@ -343,6 +343,37 @@ void test_render_bootstrap_frame_uses_room_tile_data() {
         "tile border should remain accented at the far edge");
 }
 
+void test_render_bootstrap_frame_renders_active_runtime_entities() {
+  auto state_without_entities = comic2::make_default_runtime_state();
+  state_without_entities.player.x = 128;
+  state_without_entities.player.y = 128;
+  state_without_entities.room_grid.tile_w = 0;
+  state_without_entities.room_grid.tile_h = 0;
+  state_without_entities.runtime_slots.clear();
+
+  auto state_with_entities = state_without_entities;
+  state_with_entities.runtime_slots.resize(1);
+  state_with_entities.runtime_slots[0].mapped_object_ptr = 1;
+  state_with_entities.runtime_slots[0].behavior_state = 0x0004;
+  state_with_entities.runtime_slots[0].x = 8;
+  state_with_entities.runtime_slots[0].y = 8;
+
+  comic2::MemoryFramePresenter without_entities;
+  comic2::render_bootstrap_frame(without_entities, state_without_entities);
+
+  comic2::MemoryFramePresenter with_entities;
+  comic2::render_bootstrap_frame(with_entities, state_with_entities);
+
+  const auto &frame_without = without_entities.last_frame();
+  const auto &frame_with = with_entities.last_frame();
+  const auto color_without = read_color_index(frame_without, 8, 8);
+  const auto color_with = read_color_index(frame_with, 8, 8);
+
+  check(color_with != color_without,
+        "active runtime entities should change the rendered frame at their "
+        "sprite position");
+}
+
 void test_render_bootstrap_frame_hides_player_on_invuln_blink_frames() {
   auto state = comic2::make_default_runtime_state();
   state.player.x = 0;
@@ -562,6 +593,7 @@ void run_bootstrap_wiring_tests() {
   test_render_loop_renders_multiple_frames();
   test_render_loop_updates_state_while_presenting_frames();
   test_render_bootstrap_frame_uses_room_tile_data();
+  test_render_bootstrap_frame_renders_active_runtime_entities();
   test_render_bootstrap_frame_hides_player_on_invuln_blink_frames();
   test_render_bootstrap_frame_asset_backed_hash_regression();
   test_render_bootstrap_frame_falls_back_when_asset_decode_fails();

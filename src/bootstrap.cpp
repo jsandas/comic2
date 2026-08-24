@@ -519,20 +519,24 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
   EgaPlanarSurface frame(320, 200);
   const bool has_room_grid = has_room_grid_data(state);
   bool used_asset_background = false;
+  std::optional<Ega4PlaneImage> asset;
 
-  if (const auto asset = try_decode_bootstrap_asset(state); asset.has_value()) {
+  if ((asset = try_decode_bootstrap_asset(state)).has_value()) {
     used_asset_background = draw_room_tilemap_from_asset(frame, state, *asset);
-    if (used_asset_background && should_render_player_sprite(state)) {
-      if (!draw_player_sprite_from_asset(frame, state, *asset)) {
-        draw_player_marker(frame, state);
-      }
-    }
   }
 
   if (!used_asset_background && has_room_grid) {
     draw_room_tilemap(frame, state);
   } else if (!used_asset_background) {
     draw_fallback_background(frame, state);
+  }
+
+  draw_runtime_entity_sprites(frame, state);
+
+  if (used_asset_background && should_render_player_sprite(state)) {
+    if (!draw_player_sprite_from_asset(frame, state, *asset)) {
+      draw_player_marker(frame, state);
+    }
   }
 
   if (!used_asset_background && should_render_player_sprite(state)) {

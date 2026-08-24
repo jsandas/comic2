@@ -1125,7 +1125,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 
 ### 10.1 Sprite Rendering Pipeline (Player, Entities, Projectiles & Items)
 - [x] **Player Sprite Sheet Integration**: The bootstrap render path now selects a player sprite frame from an animation-aware state model instead of relying only on HP data.
-- [ ] **Entity Sprite Rendering**: Runtime entity slots still need per-entity sprite resolution and draw calls.
+- [x] **Entity Sprite Rendering**: Runtime entity slots now render a simple placeholder sprite in the bootstrap frame path, using the runtime slot state and existing blit helpers.
 - [ ] **Projectile Sprite Rendering**: Projectile sprite selection and draw integration remain pending.
 - [ ] **Item/Pickup Sprite Rendering**: Collectible item sprite rendering remains pending.
 - [ ] **Draw Order & Clipping**: Background → entity → projectile → player → HUD ordering and viewport clipping are not yet implemented.
