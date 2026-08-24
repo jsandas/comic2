@@ -331,6 +331,21 @@ void update_player_mode_cycle(RuntimeState &state) {
   state.ui.active_mode_mask = next_mask;
 }
 
+void update_progression_state(RuntimeState &state) {
+  if (state.player.gems > 0) {
+    state.ui.inventory_mask =
+        static_cast<std::uint8_t>(state.ui.inventory_mask | 0x01U);
+  }
+  if (state.player.firepower > 1) {
+    state.ui.inventory_mask =
+        static_cast<std::uint8_t>(state.ui.inventory_mask | 0x02U);
+  }
+  if (state.player.lives > 0) {
+    state.ui.active_mode_mask =
+        static_cast<std::uint8_t>(state.ui.active_mode_mask | 0x01U);
+  }
+}
+
 void handle_input_fallback(RuntimeState &state) {
   if (state.transition_state.active) {
     state.transition_state.player_frozen = true;
@@ -343,6 +358,7 @@ void handle_input_fallback(RuntimeState &state) {
   apply_entity_combat(state);
   apply_input_tick(state, kDefaultMotion);
   update_player_mode_cycle(state);
+  update_progression_state(state);
   update_room_transition_from_player_bounds(state);
   update_player_hazard_state(state, kDefaultCollision);
 

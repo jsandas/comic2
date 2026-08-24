@@ -410,6 +410,24 @@ void test_down_input_cycles_active_mode_mask() {
          "repeated down input should advance the active mode mask again");
 }
 
+void test_progression_state_updates_inventory_bits() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.gems = 3;
+  state.player.firepower = 2;
+  state.player.lives = 2;
+  state.ui.active_mode_mask = 0;
+  state.ui.inventory_mask = 0;
+
+  comic2::update_progression_state(state);
+
+  expect((state.ui.inventory_mask & 0x01U) != 0U,
+         "progression state should mark collected gems in the inventory mask");
+  expect((state.ui.inventory_mask & 0x02U) != 0U,
+         "progression state should mark increased firepower in the inventory mask");
+  expect((state.ui.active_mode_mask & 0x01U) != 0U,
+         "progression state should mark the player as having an active mode");
+}
+
 void test_tile_hazard_stage_instantly_kills_player() {
   comic2::GameDispatcher dispatcher;
   comic2::install_default_stage_hooks(dispatcher);
@@ -855,6 +873,7 @@ void run_dispatcher_tests() {
   test_death_flow_prompts_when_lives_are_exhausted();
   test_confirming_continue_respawns_player();
   test_down_input_cycles_active_mode_mask();
+  test_progression_state_updates_inventory_bits();
   test_tile_hazard_stage_instantly_kills_player();
   test_stage_flags_are_consumed_by_default_handlers();
   test_input_fallback_arms_grounded_physics_for_next_tick();
