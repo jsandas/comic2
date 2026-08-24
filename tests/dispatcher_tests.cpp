@@ -364,6 +364,45 @@ void test_death_flow_prompts_when_lives_are_exhausted() {
                                    "modal when the final life is exhausted");
 }
 
+void test_death_countdown_decrements_lives_and_respawns_at_spawn() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.hp = 0;
+  state.player.lives = 2;
+  state.player.x = 42;
+  state.player.y = 18;
+  state.player.x_vel = 4;
+  state.player.y_vel = -3;
+  state.player.is_airborne = true;
+  state.player.facing_right = false;
+  state.flags.player_special_state_active = true;
+
+  comic2::handle_tile_hazard(state);
+  comic2::handle_player_special_state(state);
+  comic2::handle_player_special_state(state);
+  comic2::handle_player_special_state(state);
+
+  expect(state.player.lives == 1,
+         "death countdown should decrement lives once when it completes");
+  expect(state.ui.modal_active,
+         "death countdown should open the continue prompt while lives remain");
+  expect(state.ui.modal_prompt == "Continue?",
+         "death countdown should present the continue prompt when respawn is available");
+
+  state.ui.modal_confirmed = true;
+  comic2::handle_player_special_state(state);
+
+  expect(state.player.x == 160,
+         "confirming continue should respawn the player at the default spawn x");
+  expect(state.player.y == 160,
+         "confirming continue should respawn the player at the default spawn y");
+  expect(state.player.x_vel == 0,
+         "confirming continue should clear horizontal velocity on respawn");
+  expect(state.player.y_vel == 0,
+         "confirming continue should clear vertical velocity on respawn");
+  expect(!state.player.is_airborne,
+         "confirming continue should clear airborne state on respawn");
+}
+
 void test_confirming_continue_respawns_player() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.player.hp = 0;
@@ -888,6 +927,7 @@ void run_dispatcher_tests() {
   test_player_animation_handler_advances_walk_cycle();
   test_attack_handler_uses_attack_overlay_state();
   test_death_flow_prompts_when_lives_are_exhausted();
+  test_death_countdown_decrements_lives_and_respawns_at_spawn();
   test_confirming_continue_respawns_player();
   test_down_input_cycles_active_mode_mask();
   test_progression_state_updates_inventory_bits();

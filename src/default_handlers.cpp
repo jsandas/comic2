@@ -118,6 +118,11 @@ void apply_default_grounded_physics(RuntimeState &state) {
 
 void reset_player_respawn_state(RuntimeState &state) {
   state.player.hp = 12;
+  state.player.x = 160;
+  state.player.y = 160;
+  state.player.x_vel = 0;
+  state.player.y_vel = 0;
+  state.player.is_airborne = false;
   state.player.invuln_ticks = 0;
   state.player.damage_recoil_ticks = 0;
   state.player.death_timer_ticks = 0;

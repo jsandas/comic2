@@ -1141,12 +1141,12 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [x] **Animation Tests**: Deterministic animation progression and frame-selection tests are now present.
 
 ### 10.3 Death, Lives & Game-Over Flow
-- [ ] **Death Sequence**: Death animation, sound cue, and gameplay freeze are not yet implemented.
-- [ ] **Lives Decrement**: Lives decrement and HUD update logic remain pending.
-- [ ] **Respawn Logic**: Respawn/reset flow is still pending.
+- [x] **Death Sequence**: Death animation, sound cue, and gameplay freeze are now handled in the default death path.
+- [x] **Lives Decrement**: Lives decrement and countdown-based continue gating now work in the special-state handler.
+- [x] **Respawn Logic**: Respawn/reset flow now restores the player to a safe spawn position and clears transient state on continue.
 - [ ] **Game Over Screen**: Continue/title-screen game-over handling is not yet implemented.
 - [x] **Invulnerability Frames**: Invulnerability timer handling is now reflected in the bootstrap render path with deterministic blinking while the player is invulnerable.
-- [ ] **Death Flow Tests**: End-to-end death/respawn/game-over tests are still pending.
+- [x] **Death Flow Tests**: End-to-end death/respawn/game-over tests are now present for the countdown and respawn path.
 
 ### 10.4 Level Progression & World Model
 - [ ] **Level Completion Conditions**: Level-completion detection is not yet implemented.
