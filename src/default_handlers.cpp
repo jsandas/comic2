@@ -144,6 +144,9 @@ void reset_player_respawn_state(RuntimeState &state) {
   state.ui.modal_prompt.clear();
   state.ui.modal_game_over = false;
   state.ui.game_over = false;
+  state.ui.level_complete_modal = false;
+  state.level_complete = false;
+  state.level_completion_gems_required = 0;
   state.flags.player_special_state_active = false;
 }
 
@@ -160,6 +163,8 @@ void reset_runtime_for_new_game(RuntimeState &state) {
   state.player.invuln_ticks = 0;
   state.current_room = 0;
   state.current_level = 0;
+  state.level_complete = false;
+  state.level_completion_gems_required = 0;
   state.pending_room_transition.reset();
   state.flags = DispatcherFlags{};
   state.ui = UiState{};
@@ -334,6 +339,27 @@ void handle_tile_hazard(RuntimeState &state) {
 void handle_player_special_state(RuntimeState &state) {
   state.flags.player_special_state_active = true;
 
+  if (state.level_complete && state.ui.level_complete_modal) {
+    if (state.ui.modal_confirmed) {
+      state.ui.modal_confirmed = false;
+      state.ui.modal_active = false;
+      state.ui.modal_prompt.clear();
+      state.ui.level_complete_modal = false;
+      state.level_complete = false;
+      state.level_completion_gems_required = 0;
+      reset_runtime_for_new_game(state);
+      return;
+    }
+
+    if (!state.ui.modal_active) {
+      state.ui.modal_active = true;
+      state.ui.modal_prompt = "Level Complete!";
+      state.ui.modal_game_over = false;
+      state.ui.level_complete_modal = true;
+    }
+    return;
+  }
+
   if (state.ui.game_over) {
     const bool restart_requested = state.ui.modal_confirmed ||
                                    state.input.jump_pressed ||
@@ -458,6 +484,18 @@ void update_progression_state(RuntimeState &state) {
 }
 
 void handle_input_fallback(RuntimeState &state) {
+  if (state.level_complete) {
+    if (!state.ui.level_complete_modal) {
+      state.ui.modal_active = true;
+      state.ui.modal_prompt = "Level Complete!";
+      state.ui.modal_game_over = false;
+      state.ui.level_complete_modal = true;
+      state.flags.player_special_state_active = true;
+      state.transition_state.player_frozen = true;
+    }
+    return;
+  }
+
   if (state.transition_state.active) {
     state.transition_state.player_frozen = true;
     advance_transition_state(state);
@@ -472,6 +510,16 @@ void handle_input_fallback(RuntimeState &state) {
   update_player_mode_activation(state);
   update_player_mode_effect(state);
   update_progression_state(state);
+  if (state.player.gems >= state.level_completion_gems_required &&
+      state.level_completion_gems_required > 0U) {
+    state.level_complete = true;
+    state.ui.modal_active = true;
+    state.ui.modal_prompt = "Level Complete!";
+    state.ui.modal_game_over = false;
+    state.ui.level_complete_modal = true;
+    state.flags.player_special_state_active = true;
+    state.transition_state.player_frozen = true;
+  }
   update_room_transition_from_player_bounds(state);
   update_player_hazard_state(state, kDefaultCollision);
 

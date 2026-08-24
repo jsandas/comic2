@@ -1149,7 +1149,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [x] **Death Flow Tests**: End-to-end death/respawn/game-over tests are now present for the countdown and respawn path.
 
 ### 10.4 Level Progression & World Model
-- [ ] **Level Completion Conditions**: Level-completion detection is not yet implemented.
+- [x] **Level Completion Conditions**: Basic level-completion detection is now implemented via gem-threshold tracking, completion-state flags, and a completion modal.
 - [ ] **Level-to-Level Transition**: Level transition, room reset, and resource swap logic remain pending.
 - [ ] **Level Resource Isolation**: FRPAK/resource-cache invalidation on level change is pending.
 - [ ] **Game Win / Finale**: Finale sequence wiring is pending.

@@ -570,6 +570,34 @@ void test_mode_effect_countdown_expires_after_ticks() {
          "mode effect countdown should reach zero when expired");
 }
 
+void test_level_completion_activates_when_gem_threshold_is_met() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.gems = 2;
+  state.level_completion_gems_required = 2;
+
+  comic2::handle_input_fallback(state);
+
+  expect(state.level_complete,
+         "gem collection should mark the level as complete once the threshold is met");
+  expect(state.ui.modal_active,
+         "level completion should open the completion modal");
+  expect(state.ui.modal_prompt == "Level Complete!",
+         "level completion should present a clear completion prompt");
+}
+
+void test_level_completion_does_not_trigger_before_threshold() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.gems = 1;
+  state.level_completion_gems_required = 2;
+
+  comic2::handle_input_fallback(state);
+
+  expect(!state.level_complete,
+         "level completion should stay pending before the gem threshold is met");
+  expect(!state.ui.modal_active,
+         "level completion should not open a modal before the threshold is met");
+}
+
 void test_progression_state_updates_inventory_bits() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.player.gems = 3;
@@ -1056,6 +1084,8 @@ void run_dispatcher_tests() {
   test_down_input_cycles_active_mode_mask();
   test_mode_activation_starts_effect_and_consumes_selected_mode();
   test_mode_effect_countdown_expires_after_ticks();
+  test_level_completion_activates_when_gem_threshold_is_met();
+  test_level_completion_does_not_trigger_before_threshold();
   test_progression_state_updates_inventory_bits();
   test_progression_state_keeps_inventory_bits_stable();
   test_tile_hazard_stage_instantly_kills_player();

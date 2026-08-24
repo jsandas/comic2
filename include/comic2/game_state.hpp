@@ -126,6 +126,7 @@ struct UiState {
   bool modal_confirmed = false;
   bool modal_game_over = false;
   bool game_over = false;
+  bool level_complete_modal = false;
 };
 
 struct RuntimeState {
@@ -146,6 +147,8 @@ struct RuntimeState {
   InputState input;
   DispatcherFlags flags;
   UiState ui;
+  bool level_complete = false;
+  std::uint8_t level_completion_gems_required = 0;
   std::int32_t camera_y = 0;
   RoomTransitionState transition_state;
 
