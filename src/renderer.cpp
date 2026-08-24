@@ -138,9 +138,35 @@ void EgaPageFlipper::present_and_flip_page() {
 namespace {
 
 std::uint8_t resolve_entity_color(const RuntimeEntitySlot32 &slot) {
+  const auto behavior = slot.behavior_state & 0x000F;
+  if (behavior == kBehaviorGem) {
+    return 0x03U;
+  }
+  if (behavior == kBehaviorPowerup) {
+    return 0x0CU;
+  }
+
   const std::uint16_t seed = static_cast<std::uint16_t>(
       slot.behavior_state + slot.mapped_object_ptr + slot.type_flags);
   return static_cast<std::uint8_t>(((seed & 0x0F) | 0x01U) & 0x0FU);
+}
+
+void set_sprite_pixel(Ega4PlaneImage &sprite, std::size_t x_pixels,
+                      std::size_t y_rows, std::uint8_t color) {
+  if (x_pixels >= 16U || y_rows >= 16U) {
+    return;
+  }
+
+  const std::size_t x_byte = x_pixels / 8U;
+  const std::uint8_t bit = static_cast<std::uint8_t>(7U - (x_pixels % 8U));
+  const std::size_t row_off = y_rows * static_cast<std::size_t>(sprite.width_bytes);
+
+  for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
+    if ((color >> plane) & 0x1U) {
+      sprite.planes[plane][row_off + x_byte] |=
+          static_cast<std::uint8_t>(1U << bit);
+    }
+  }
 }
 
 Ega4PlaneImage make_entity_placeholder_sprite(const RuntimeEntitySlot32 &slot) {
@@ -153,11 +179,36 @@ Ega4PlaneImage make_entity_placeholder_sprite(const RuntimeEntitySlot32 &slot) {
                                                      kSpriteHeightRows);
 
   const std::uint8_t color = resolve_entity_color(slot);
-  for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
-    auto &plane_bytes = sprite.planes[plane];
+  for (auto &plane_bytes : sprite.planes) {
     plane_bytes.assign(static_cast<std::size_t>(sprite.width_bytes) *
                            sprite.height_rows,
                        0x00);
+  }
+
+  const auto behavior = slot.behavior_state & 0x000F;
+  if (behavior == kBehaviorGem) {
+    set_sprite_pixel(sprite, 0, 0, color);
+    set_sprite_pixel(sprite, 8, 4, color);
+    set_sprite_pixel(sprite, 9, 4, color);
+    set_sprite_pixel(sprite, 8, 5, color);
+    set_sprite_pixel(sprite, 9, 5, color);
+    set_sprite_pixel(sprite, 8, 6, color);
+    return sprite;
+  }
+
+  if (behavior == kBehaviorPowerup) {
+    set_sprite_pixel(sprite, 0, 0, color);
+    set_sprite_pixel(sprite, 7, 4, color);
+    set_sprite_pixel(sprite, 8, 4, color);
+    set_sprite_pixel(sprite, 7, 5, color);
+    set_sprite_pixel(sprite, 8, 5, color);
+    set_sprite_pixel(sprite, 7, 6, color);
+    set_sprite_pixel(sprite, 8, 6, color);
+    return sprite;
+  }
+
+  for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
+    auto &plane_bytes = sprite.planes[plane];
     if ((color >> plane) & 0x1U) {
       for (std::size_t row = 0; row < sprite.height_rows; ++row) {
         const std::size_t row_off = row * sprite.width_bytes;

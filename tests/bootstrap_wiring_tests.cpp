@@ -374,6 +374,65 @@ void test_render_bootstrap_frame_renders_active_runtime_entities() {
         "sprite position");
 }
 
+void test_render_bootstrap_frame_distinguishes_pickups_from_enemies() {
+  auto state = comic2::make_default_runtime_state();
+  state.player.x = 64;
+  state.player.y = 64;
+  state.room_grid.tile_w = 0;
+  state.room_grid.tile_h = 0;
+
+  auto background_state = state;
+  background_state.runtime_slots.clear();
+
+  auto enemy_state = state;
+  enemy_state.runtime_slots.clear();
+  enemy_state.runtime_slots.resize(1);
+  enemy_state.runtime_slots[0].mapped_object_ptr = 1;
+  enemy_state.runtime_slots[0].behavior_state = 0x0001;
+  enemy_state.runtime_slots[0].x = 0;
+  enemy_state.runtime_slots[0].y = 0;
+
+  auto gem_state = state;
+  gem_state.runtime_slots.clear();
+  gem_state.runtime_slots.resize(1);
+  gem_state.runtime_slots[0].mapped_object_ptr = 1;
+  gem_state.runtime_slots[0].behavior_state = 0x0004;
+  gem_state.runtime_slots[0].x = 0;
+  gem_state.runtime_slots[0].y = 0;
+
+  auto powerup_state = state;
+  powerup_state.runtime_slots.clear();
+  powerup_state.runtime_slots.resize(1);
+  powerup_state.runtime_slots[0].mapped_object_ptr = 1;
+  powerup_state.runtime_slots[0].behavior_state = 0x0005;
+  powerup_state.runtime_slots[0].x = 0;
+  powerup_state.runtime_slots[0].y = 0;
+
+  comic2::MemoryFramePresenter background_presenter;
+  comic2::render_bootstrap_frame(background_presenter, background_state);
+
+  comic2::MemoryFramePresenter enemy_presenter;
+  comic2::render_bootstrap_frame(enemy_presenter, enemy_state);
+
+  comic2::MemoryFramePresenter gem_presenter;
+  comic2::render_bootstrap_frame(gem_presenter, gem_state);
+
+  comic2::MemoryFramePresenter powerup_presenter;
+  comic2::render_bootstrap_frame(powerup_presenter, powerup_state);
+
+  const auto background_color = read_color_index(background_presenter.last_frame(), 8, 4);
+  const auto enemy_sample = read_color_index(enemy_presenter.last_frame(), 8, 4);
+  const auto gem_sample = read_color_index(gem_presenter.last_frame(), 8, 4);
+  const auto powerup_sample = read_color_index(powerup_presenter.last_frame(), 7, 4);
+
+  check(enemy_sample != background_color,
+        "enemy placeholder sprites should change a sample pixel in the sprite");
+  check(gem_sample != background_color,
+        "gem pickups should render a visible compact sprite");
+  check(powerup_sample != gem_sample,
+        "powerups should render with a distinct pickup pattern from gems");
+}
+
 void test_render_bootstrap_frame_renders_active_projectiles() {
   auto state_without_projectiles = comic2::make_default_runtime_state();
   state_without_projectiles.player.x = 64;
@@ -635,6 +694,7 @@ void run_bootstrap_wiring_tests() {
   test_render_loop_updates_state_while_presenting_frames();
   test_render_bootstrap_frame_uses_room_tile_data();
   test_render_bootstrap_frame_renders_active_runtime_entities();
+  test_render_bootstrap_frame_distinguishes_pickups_from_enemies();
   test_render_bootstrap_frame_renders_active_projectiles();
   test_render_bootstrap_frame_hides_player_on_invuln_blink_frames();
   test_render_bootstrap_frame_asset_backed_hash_regression();

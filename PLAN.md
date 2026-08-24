@@ -1127,7 +1127,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [x] **Player Sprite Sheet Integration**: The bootstrap render path now selects a player sprite frame from an animation-aware state model instead of relying only on HP data.
 - [x] **Entity Sprite Rendering**: Runtime entity slots now render a simple placeholder sprite in the bootstrap frame path, using the runtime slot state and existing blit helpers.
 - [x] **Projectile Sprite Rendering**: Projectile sprite selection and draw integration are now wired into the bootstrap render path using a simple placeholder sprite.
-- [ ] **Item/Pickup Sprite Rendering**: Collectible item sprite rendering remains pending.
+- [x] **Item/Pickup Sprite Rendering**: Collectible item sprites now render in the bootstrap path using runtime-slot behavior codes, with distinct gem and powerup placeholder patterns covered by regression tests.
 - [ ] **Draw Order & Clipping**: Background → entity → projectile → player → HUD ordering and viewport clipping are not yet implemented.
 - [ ] **Shift-4 Rendering Support**: Shift-4 masked-blit support remains pending.
 - [ ] **Sprite Rendering Tests**: Frame-hash regression coverage for room rendering and clipping is still pending.
