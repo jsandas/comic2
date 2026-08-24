@@ -7,6 +7,10 @@
 
 namespace comic2 {
 
+inline constexpr std::uint8_t kModeSpeedBoost = 0x01U;
+inline constexpr std::uint8_t kModeInvulnerability = 0x02U;
+inline constexpr std::uint8_t kModeJumpBoost = 0x03U;
+
 struct PlayerMotionConfig {
   std::int16_t walk_step = 8;
   std::int16_t jump_impulse = -5;
@@ -16,6 +20,8 @@ struct PlayerMotionConfig {
   std::int16_t fall_start_velocity = 1;
 };
 
+PlayerMotionConfig get_effective_motion_config(
+    const RuntimeState &state, const PlayerMotionConfig &motion);
 void apply_input_tick(RuntimeState &state, const PlayerMotionConfig &motion);
 void apply_grounded_physics_tick(RuntimeState &state,
                                  const PlayerMotionConfig &motion,

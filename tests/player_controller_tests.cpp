@@ -233,6 +233,43 @@ void test_grounded_physics_does_not_snap_when_rising() {
          "rising motion should keep physics active");
 }
 
+void test_mode_effects_modify_motion_config_for_speed_and_jump() {
+  comic2::RuntimeState state;
+  state.player.active_mode_effect = 0x01U;
+  state.player.mode_effect_ticks = 5U;
+
+  const comic2::PlayerMotionConfig base_motion{};
+  const comic2::PlayerMotionConfig effective_motion =
+      comic2::get_effective_motion_config(state, base_motion);
+
+  expect(effective_motion.walk_step == 16,
+         "speed-boost mode should double walk speed");
+  expect(effective_motion.air_drift_step == 2,
+         "speed-boost mode should double air drift speed");
+
+  state.player.active_mode_effect = 0x03U;
+  const comic2::PlayerMotionConfig jump_boost_motion =
+      comic2::get_effective_motion_config(state, base_motion);
+
+  expect(jump_boost_motion.jump_impulse == -7,
+         "jump-boost mode should increase jump impulse magnitude");
+}
+
+void test_inactive_mode_effects_leave_motion_config_unchanged() {
+  comic2::RuntimeState state;
+  state.player.active_mode_effect = 0x01U;
+  state.player.mode_effect_ticks = 0U;
+
+  const comic2::PlayerMotionConfig base_motion{};
+  const comic2::PlayerMotionConfig effective_motion =
+      comic2::get_effective_motion_config(state, base_motion);
+
+  expect(effective_motion.walk_step == base_motion.walk_step,
+         "expired mode effects should not alter movement config");
+  expect(effective_motion.jump_impulse == base_motion.jump_impulse,
+         "expired mode effects should not alter jump config");
+}
+
 } // namespace
 
 void run_player_controller_tests() {
@@ -245,4 +282,6 @@ void run_player_controller_tests() {
   test_ledge_walk_off_transitions_into_fall();
   test_grounded_physics_respects_tile_height_without_ground_y();
   test_grounded_physics_does_not_snap_when_rising();
+  test_mode_effects_modify_motion_config_for_speed_and_jump();
+  test_inactive_mode_effects_leave_motion_config_unchanged();
 }

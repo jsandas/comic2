@@ -1169,7 +1169,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [ ] **Mode Inventory**: Mode-collection tracking is not implemented.
 - [ ] **Mode Cycling Input**: Mode cycling and HUD indicator updates remain pending.
 - [x] **Mode Activation**: State-4 mode activation behavior is now implemented with activation input, effect state, countdown handling, and regression tests.
-- [ ] **Mode-Specific Effects**: Mode-specific gameplay effects remain pending.
+- [x] **Mode-Specific Effects**: Basic mode-specific gameplay effects are now implemented for speed, invulnerability, and jump boost behavior.
 - [ ] **Mode Duration & Cooldown**: Timing/cooldown logic remains pending.
 - [ ] **Mode System Tests**: Mode-system tests are still pending.
 

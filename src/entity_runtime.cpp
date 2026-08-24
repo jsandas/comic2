@@ -229,8 +229,15 @@ void update_entity_behaviors(RuntimeState &state) {
 }
 
 void apply_entity_combat(RuntimeState &state) {
+  const bool mode_invulnerability_active =
+      state.player.active_mode_effect == 0x02U &&
+      state.player.mode_effect_ticks > 0U;
+
   if (state.player.invuln_ticks > 0) {
     --state.player.invuln_ticks;
+  }
+  if (mode_invulnerability_active) {
+    state.player.invuln_ticks = std::max(state.player.invuln_ticks, kInvulnerabilityTicks);
   }
   if (state.player.damage_recoil_ticks > 0) {
     --state.player.damage_recoil_ticks;
@@ -265,6 +272,10 @@ void apply_entity_combat(RuntimeState &state) {
     }
 
     if (damage_applied || state.player.invuln_ticks != 0) {
+      continue;
+    }
+
+    if (mode_invulnerability_active) {
       continue;
     }
 

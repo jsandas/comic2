@@ -8,6 +8,12 @@ namespace comic2 {
 
 namespace detail {
 
+bool has_active_mode_effect(const RuntimeState &state,
+                            std::uint8_t requested_mode) {
+  return state.player.active_mode_effect == requested_mode &&
+         state.player.mode_effect_ticks > 0U;
+}
+
 void update_facing_direction_from_input(RuntimeState &state) {
   const bool move_left = state.input.left_pressed;
   const bool move_right = state.input.right_pressed;
@@ -54,19 +60,40 @@ bool trigger_fall_if_no_support(RuntimeState &state,
 
 } // namespace detail
 
+PlayerMotionConfig get_effective_motion_config(const RuntimeState &state,
+                                               const PlayerMotionConfig &motion) {
+  PlayerMotionConfig effective_motion = motion;
+
+  if (detail::has_active_mode_effect(state, kModeSpeedBoost)) {
+    effective_motion.walk_step =
+        static_cast<std::int16_t>(effective_motion.walk_step * 2);
+    effective_motion.air_drift_step =
+        static_cast<std::int16_t>(effective_motion.air_drift_step * 2);
+  }
+
+  if (detail::has_active_mode_effect(state, kModeJumpBoost)) {
+    effective_motion.jump_impulse =
+        static_cast<std::int16_t>(effective_motion.jump_impulse - 2);
+  }
+
+  return effective_motion;
+}
+
 void apply_input_tick(RuntimeState &state, const PlayerMotionConfig &motion) {
   if (state.transition_state.player_frozen) {
     state.player.x_vel = 0;
     return;
   }
 
+  const PlayerMotionConfig effective_motion =
+      get_effective_motion_config(state, motion);
   const bool was_airborne = state.player.is_airborne;
-  detail::apply_horizontal_movement(state, motion);
+  detail::apply_horizontal_movement(state, effective_motion);
 
   if (state.input.jump_pressed && state.player.jump_counter > 0) {
     state.player.is_airborne = true;
     state.player.is_physics_active = true;
-    state.player.y_vel = motion.jump_impulse;
+    state.player.y_vel = effective_motion.jump_impulse;
     --state.player.jump_counter;
     if (!was_airborne) {
       queue_audio_event(state, AudioEvent::Jump);
@@ -82,13 +109,15 @@ void apply_grounded_physics_tick(RuntimeState &state,
     return;
   }
 
+  const PlayerMotionConfig effective_motion =
+      get_effective_motion_config(state, motion);
   const bool was_airborne = state.player.is_airborne;
-  detail::apply_horizontal_movement(state, motion);
+  detail::apply_horizontal_movement(state, effective_motion);
 
   if (state.input.jump_pressed && state.player.jump_counter > 0) {
     state.player.is_airborne = true;
     state.player.is_physics_active = true;
-    state.player.y_vel = motion.jump_impulse;
+    state.player.y_vel = effective_motion.jump_impulse;
     --state.player.jump_counter;
     if (!was_airborne) {
       queue_audio_event(state, AudioEvent::Jump);
@@ -102,7 +131,7 @@ void apply_grounded_physics_tick(RuntimeState &state,
     return;
   }
 
-  if (detail::trigger_fall_if_no_support(state, collision, motion)) {
+  if (detail::trigger_fall_if_no_support(state, collision, effective_motion)) {
     return;
   }
 
@@ -117,9 +146,12 @@ void apply_airborne_physics_tick(RuntimeState &state,
     return;
   }
 
+  const PlayerMotionConfig effective_motion =
+      get_effective_motion_config(state, motion);
+
   if (state.input.jump_pressed && state.player.y_vel < 0 &&
       state.player.jump_counter > 0) {
-    state.player.y_vel = motion.jump_impulse;
+    state.player.y_vel = effective_motion.jump_impulse;
     --state.player.jump_counter;
   }
 
@@ -129,18 +161,20 @@ void apply_airborne_physics_tick(RuntimeState &state,
   detail::update_facing_direction_from_input(state);
 
   if (move_left && !move_right) {
-    state.player.x -= motion.air_drift_step;
-    state.player.x_vel = static_cast<std::int16_t>(-motion.air_drift_step);
+    state.player.x -= effective_motion.air_drift_step;
+    state.player.x_vel =
+        static_cast<std::int16_t>(-effective_motion.air_drift_step);
   } else if (move_right && !move_left) {
-    state.player.x += motion.air_drift_step;
-    state.player.x_vel = motion.air_drift_step;
+    state.player.x += effective_motion.air_drift_step;
+    state.player.x_vel = effective_motion.air_drift_step;
   } else {
     state.player.x_vel = 0;
   }
 
   state.player.y += state.player.y_vel;
   state.player.y_vel = static_cast<std::int16_t>(std::min<std::int32_t>(
-      state.player.y_vel + motion.gravity_per_tick, motion.max_fall_speed));
+      state.player.y_vel + effective_motion.gravity_per_tick,
+      effective_motion.max_fall_speed));
 
   if (resolve_ground_contact(state, collision)) {
     return;

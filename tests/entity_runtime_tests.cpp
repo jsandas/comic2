@@ -136,6 +136,33 @@ void test_pickups_update_state_and_remove_collectibles() {
          "collected powerup should deactivate runtime slot");
 }
 
+void test_invulnerability_mode_prevents_damage() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.x = 50;
+  state.player.y = 50;
+  state.player.hp = 8;
+  state.player.invuln_ticks = 0;
+  state.player.active_mode_effect = 0x02U;
+  state.player.mode_effect_ticks = 5U;
+
+  state.runtime_slots.resize(1);
+  state.runtime_slots[0].mapped_object_ptr = 1;
+  state.runtime_slots[0].behavior_state = 0x0000;
+  state.runtime_slots[0].x = 48;
+  state.runtime_slots[0].y = 48;
+  state.runtime_slots[0].hitbox_w = 12;
+  state.runtime_slots[0].hitbox_h = 12;
+
+  comic2::apply_entity_combat(state);
+
+  expect(state.player.hp == 8,
+         "invulnerability mode should prevent damage from enemy contact");
+  expect(state.player.invuln_ticks == 12,
+         "invulnerability mode should grant a fresh invulnerability timer");
+  expect(state.player.damage_recoil_ticks == 0,
+         "invulnerability mode should avoid recoil from damage");
+}
+
 } // namespace
 
 void run_entity_runtime_tests() {
@@ -143,4 +170,5 @@ void run_entity_runtime_tests() {
   test_entity_damage_and_invulnerability_flow();
   test_damage_sets_hurt_animation_state();
   test_pickups_update_state_and_remove_collectibles();
+  test_invulnerability_mode_prevents_damage();
 }
