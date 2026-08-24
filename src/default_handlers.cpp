@@ -319,6 +319,17 @@ void handle_player_special_state(RuntimeState &state) {
   }
 }
 
+void update_player_mode_cycle(RuntimeState &state) {
+  if (!state.input.down_pressed) {
+    return;
+  }
+
+  constexpr std::uint8_t kModeBitMask = 0x03U;
+  const std::uint8_t next_mask =
+      static_cast<std::uint8_t>((state.ui.active_mode_mask + 1U) & kModeBitMask);
+  state.ui.active_mode_mask = next_mask;
+}
+
 void handle_input_fallback(RuntimeState &state) {
   if (state.transition_state.active) {
     state.transition_state.player_frozen = true;
@@ -330,6 +341,7 @@ void handle_input_fallback(RuntimeState &state) {
   update_entity_behaviors(state);
   apply_entity_combat(state);
   apply_input_tick(state, kDefaultMotion);
+  update_player_mode_cycle(state);
   update_room_transition_from_player_bounds(state);
   update_player_hazard_state(state, kDefaultCollision);
 

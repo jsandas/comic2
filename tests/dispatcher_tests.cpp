@@ -392,6 +392,20 @@ void test_confirming_continue_respawns_player() {
          "confirming continue should clear the attack overlay state");
 }
 
+void test_down_input_cycles_active_mode_mask() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.active_mode_mask = 0;
+  state.input.down_pressed = true;
+
+  comic2::update_player_mode_cycle(state);
+  expect(state.ui.active_mode_mask == 1U,
+         "down input should advance the active mode mask to the first slot");
+
+  comic2::update_player_mode_cycle(state);
+  expect(state.ui.active_mode_mask == 2U,
+         "repeated down input should advance the active mode mask again");
+}
+
 void test_tile_hazard_stage_instantly_kills_player() {
   comic2::GameDispatcher dispatcher;
   comic2::install_default_stage_hooks(dispatcher);
@@ -836,6 +850,7 @@ void run_dispatcher_tests() {
   test_attack_handler_uses_attack_overlay_state();
   test_death_flow_prompts_when_lives_are_exhausted();
   test_confirming_continue_respawns_player();
+  test_down_input_cycles_active_mode_mask();
   test_tile_hazard_stage_instantly_kills_player();
   test_stage_flags_are_consumed_by_default_handlers();
   test_input_fallback_arms_grounded_physics_for_next_tick();
