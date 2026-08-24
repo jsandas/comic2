@@ -116,6 +116,25 @@ void apply_default_grounded_physics(RuntimeState &state) {
   update_player_hazard_state(state, kDefaultCollision);
 }
 
+void reset_player_respawn_state(RuntimeState &state) {
+  state.player.hp = 12;
+  state.player.invuln_ticks = 8;
+  state.player.death_timer_ticks = 0;
+  state.player.animation_state =
+      static_cast<std::uint8_t>(PlayerAnimationState::Idle);
+  state.player.animation_frame = 0;
+  state.player.animation_ticks = 0;
+  state.player.is_animation_active = false;
+  state.player.is_attack_active = false;
+  state.player.attack_overlay_ticks = 0;
+  state.player.is_physics_active = true;
+  state.transition_state.player_frozen = false;
+  state.ui.modal_active = false;
+  state.ui.modal_prompt.clear();
+  state.ui.modal_game_over = false;
+  state.flags.player_special_state_active = false;
+}
+
 } // namespace
 
 void handle_level_transition(RuntimeState &state) {
@@ -268,16 +287,7 @@ void handle_player_special_state(RuntimeState &state) {
       return;
     }
 
-    state.player.hp = 12;
-    state.player.invuln_ticks = 8;
-    state.player.animation_state =
-        static_cast<std::uint8_t>(PlayerAnimationState::Idle);
-    state.player.animation_frame = 0;
-    state.transition_state.player_frozen = false;
-    state.ui.modal_active = false;
-    state.ui.modal_prompt.clear();
-    state.ui.modal_game_over = false;
-    state.flags.player_special_state_active = false;
+    reset_player_respawn_state(state);
     return;
   }
 

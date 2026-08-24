@@ -360,8 +360,8 @@ void test_death_flow_prompts_when_lives_are_exhausted() {
   comic2::handle_player_special_state(state);
   expect(state.ui.modal_active,
          "death flow should open a modal prompt once the countdown completes");
-  expect(state.ui.modal_game_over,
-         "death flow should enter the game-over modal when the final life is exhausted");
+  expect(state.ui.modal_game_over, "death flow should enter the game-over "
+                                   "modal when the final life is exhausted");
 }
 
 void test_confirming_continue_respawns_player() {
@@ -384,6 +384,12 @@ void test_confirming_continue_respawns_player() {
   expect(state.player.animation_state ==
              static_cast<std::uint8_t>(comic2::PlayerAnimationState::Idle),
          "confirming continue should restore the idle animation state");
+  expect(!state.player.is_animation_active,
+         "confirming continue should clear the death animation flag");
+  expect(state.player.death_timer_ticks == 0,
+         "confirming continue should clear the death countdown");
+  expect(!state.player.is_attack_active,
+         "confirming continue should clear the attack overlay state");
 }
 
 void test_tile_hazard_stage_instantly_kills_player() {
