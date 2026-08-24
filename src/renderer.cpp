@@ -170,6 +170,41 @@ Ega4PlaneImage make_entity_placeholder_sprite(const RuntimeEntitySlot32 &slot) {
   return sprite;
 }
 
+std::uint8_t resolve_projectile_color(const ProjectileState &projectile) {
+  const std::uint16_t seed = static_cast<std::uint16_t>(
+      projectile.anim_frame * 5U + (projectile.active ? 0x01U : 0x00U) +
+      (projectile.x_vel != 0 ? 0x02U : 0x00U));
+  return static_cast<std::uint8_t>(((seed & 0x0FU) | 0x04U) & 0x0FU);
+}
+
+Ega4PlaneImage make_projectile_placeholder_sprite(
+    const ProjectileState &projectile) {
+  Ega4PlaneImage sprite{};
+  constexpr std::uint16_t kSpriteWidthBytes = 2;
+  constexpr std::uint16_t kSpriteHeightRows = 8;
+  sprite.width_bytes = kSpriteWidthBytes;
+  sprite.height_rows = kSpriteHeightRows;
+  sprite.row_span_bytes =
+      static_cast<std::uint16_t>(kSpriteWidthBytes * kSpriteHeightRows);
+
+  const std::uint8_t color = resolve_projectile_color(projectile);
+  for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
+    auto &plane_bytes = sprite.planes[plane];
+    plane_bytes.assign(static_cast<std::size_t>(sprite.width_bytes) *
+                           sprite.height_rows,
+                       0x00);
+    if ((color >> plane) & 0x1U) {
+      for (std::size_t row = 0; row < sprite.height_rows; ++row) {
+        const std::size_t row_off = row * sprite.width_bytes;
+        plane_bytes[row_off] = 0xFF;
+        plane_bytes[row_off + 1] = 0xFF;
+      }
+    }
+  }
+
+  return sprite;
+}
+
 } // namespace
 
 void gfx_rle_blit_opaque_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
@@ -269,6 +304,34 @@ void draw_runtime_entity_sprites(EgaPlanarSurface &frame,
     const std::int32_t clamped_x = std::max<std::int32_t>(0, std::min(px0, max_x));
     const std::int32_t clamped_y = std::max<std::int32_t>(0, std::min(py0, max_y));
     const auto sprite = make_entity_placeholder_sprite(slot);
+    gfx_rle_blit_masked_or_4plane(frame, static_cast<std::size_t>(clamped_x),
+                                  static_cast<std::size_t>(clamped_y), sprite);
+  }
+}
+
+void draw_runtime_projectile_sprites(EgaPlanarSurface &frame,
+                                     const RuntimeState &state) {
+  const std::int32_t max_x =
+      std::max<std::int32_t>(0, static_cast<std::int32_t>(frame.width_pixels()) -
+                                     16);
+  const std::int32_t max_y =
+      std::max<std::int32_t>(0, static_cast<std::int32_t>(frame.height_rows()) -
+                                     16);
+
+  for (const auto &projectile : state.projectiles) {
+    if (!projectile.active) {
+      continue;
+    }
+
+    const std::int32_t px0 = projectile.x;
+    const std::int32_t py0 = projectile.y - state.camera_y;
+    if (px0 < -8 || py0 < -8) {
+      continue;
+    }
+
+    const std::int32_t clamped_x = std::max<std::int32_t>(0, std::min(px0, max_x));
+    const std::int32_t clamped_y = std::max<std::int32_t>(0, std::min(py0, max_y));
+    const auto sprite = make_projectile_placeholder_sprite(projectile);
     gfx_rle_blit_masked_or_4plane(frame, static_cast<std::size_t>(clamped_x),
                                   static_cast<std::size_t>(clamped_y), sprite);
   }

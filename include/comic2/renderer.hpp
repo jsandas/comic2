@@ -122,6 +122,8 @@ void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
 
 void draw_runtime_entity_sprites(EgaPlanarSurface &frame,
                                  const RuntimeState &state);
+void draw_runtime_projectile_sprites(EgaPlanarSurface &frame,
+                                     const RuntimeState &state);
 
 void room_transition_palette_wave(EgaPlanarSurface &surface,
                                   const RoomTransitionState &transition);

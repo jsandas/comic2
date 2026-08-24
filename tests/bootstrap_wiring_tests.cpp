@@ -374,6 +374,47 @@ void test_render_bootstrap_frame_renders_active_runtime_entities() {
         "sprite position");
 }
 
+void test_render_bootstrap_frame_renders_active_projectiles() {
+  auto state_without_projectiles = comic2::make_default_runtime_state();
+  state_without_projectiles.player.x = 64;
+  state_without_projectiles.player.y = 64;
+  state_without_projectiles.room_grid.tile_w = 0;
+  state_without_projectiles.room_grid.tile_h = 0;
+
+  auto state_with_active_projectile = state_without_projectiles;
+  state_with_active_projectile.projectiles.push_back(
+      comic2::ProjectileState{.x = 8, .y = 8, .active = true});
+
+  auto state_with_inactive_projectile = state_without_projectiles;
+  state_with_inactive_projectile.projectiles.push_back(
+      comic2::ProjectileState{.x = 8, .y = 8, .active = false});
+
+  comic2::MemoryFramePresenter without_projectiles;
+  comic2::render_bootstrap_frame(without_projectiles, state_without_projectiles);
+
+  comic2::MemoryFramePresenter with_active_projectile;
+  comic2::render_bootstrap_frame(with_active_projectile,
+                                 state_with_active_projectile);
+
+  comic2::MemoryFramePresenter with_inactive_projectile;
+  comic2::render_bootstrap_frame(with_inactive_projectile,
+                                 state_with_inactive_projectile);
+
+  const auto &frame_without = without_projectiles.last_frame();
+  const auto &frame_with_active = with_active_projectile.last_frame();
+  const auto &frame_with_inactive = with_inactive_projectile.last_frame();
+
+  const auto color_without = read_color_index(frame_without, 8, 8);
+  const auto color_with_active = read_color_index(frame_with_active, 8, 8);
+  const auto color_with_inactive = read_color_index(frame_with_inactive, 8, 8);
+
+  check(color_with_active != color_without,
+        "active projectiles should change the rendered frame at their sprite "
+        "position");
+  check(color_with_inactive == color_without,
+        "inactive projectiles should not alter the rendered frame");
+}
+
 void test_render_bootstrap_frame_hides_player_on_invuln_blink_frames() {
   auto state = comic2::make_default_runtime_state();
   state.player.x = 0;
@@ -594,6 +635,7 @@ void run_bootstrap_wiring_tests() {
   test_render_loop_updates_state_while_presenting_frames();
   test_render_bootstrap_frame_uses_room_tile_data();
   test_render_bootstrap_frame_renders_active_runtime_entities();
+  test_render_bootstrap_frame_renders_active_projectiles();
   test_render_bootstrap_frame_hides_player_on_invuln_blink_frames();
   test_render_bootstrap_frame_asset_backed_hash_regression();
   test_render_bootstrap_frame_falls_back_when_asset_decode_fails();

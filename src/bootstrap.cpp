@@ -532,6 +532,7 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
   }
 
   draw_runtime_entity_sprites(frame, state);
+  draw_runtime_projectile_sprites(frame, state);
 
   if (used_asset_background && should_render_player_sprite(state)) {
     if (!draw_player_sprite_from_asset(frame, state, *asset)) {
