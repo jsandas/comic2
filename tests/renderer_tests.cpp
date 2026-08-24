@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <stdexcept>
 
+#include "comic2/bootstrap.hpp"
 #include "comic2/game_state.hpp"
 #include "comic2/renderer.hpp"
 #include "comic2/renderer_validation.hpp"
@@ -64,6 +65,21 @@ void test_transition_effects_are_deterministic() {
          "reveal sequence A should alter the frame deterministically");
 }
 
+void test_player_sprite_frame_selection_uses_animation_state() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.animation_state =
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::WalkCycle);
+  state.player.animation_frame = 3;
+
+  const auto frame = comic2::select_player_sprite_frame(state);
+  expect(frame == 3, "walk cycle frame should resolve to the current frame");
+
+  state.player.animation_state =
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::JumpRise);
+  expect(comic2::select_player_sprite_frame(state) == 4,
+         "jump-rise state should resolve to the jump frame");
+}
+
 void test_camera_y_clamps_to_room_bounds() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.room_grid.tile_w = 20;
@@ -85,6 +101,7 @@ void run_renderer_tests() {
   test_surface_plane_rw();
   test_presenter_copies_frame();
   test_transition_effects_are_deterministic();
+  test_player_sprite_frame_selection_uses_animation_state();
   test_camera_y_clamps_to_room_bounds();
 
   // EgaPageFlipper tests

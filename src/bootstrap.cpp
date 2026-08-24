@@ -19,6 +19,28 @@
 
 namespace comic2 {
 
+std::size_t select_player_sprite_frame(const RuntimeState &state) {
+  const auto animation_state =
+      static_cast<PlayerAnimationState>(state.player.animation_state);
+
+  switch (animation_state) {
+  case PlayerAnimationState::WalkCycle:
+    return static_cast<std::size_t>(state.player.animation_frame);
+  case PlayerAnimationState::JumpRise:
+  case PlayerAnimationState::JumpFall:
+    return 4;
+  case PlayerAnimationState::Attack:
+    return 5;
+  case PlayerAnimationState::Hurt:
+    return 6;
+  case PlayerAnimationState::Death:
+    return 7;
+  case PlayerAnimationState::Idle:
+  default:
+    return static_cast<std::size_t>(state.player.hp % 4U);
+  }
+}
+
 namespace {
 
 constexpr int kDefaultBootstrapTicks = 2;
@@ -326,7 +348,7 @@ bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame,
 bool draw_player_sprite_from_asset(EgaPlanarSurface &frame,
                                    const RuntimeState &state,
                                    const Ega4PlaneImage &atlas) {
-  const std::size_t sprite_index = static_cast<std::size_t>(state.player.hp);
+  const std::size_t sprite_index = select_player_sprite_frame(state);
   Ega4PlaneImage sprite;
   if (!extract_tile_from_asset(atlas, sprite_index, sprite)) {
     return false;

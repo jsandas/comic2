@@ -6,6 +6,7 @@
 
 #include "comic2/default_handlers.hpp"
 #include "comic2/dispatcher.hpp"
+#include "comic2/game_state.hpp"
 
 namespace {
 
@@ -296,6 +297,44 @@ void test_default_stage_hook_coverage() {
     comic2::RuntimeState state;
     expect_stage(state, comic2::DispatchStage::InputHandling);
   }
+}
+
+void test_player_animation_handler_advances_walk_cycle() {
+  comic2::RuntimeState state;
+  state.player.is_animation_active = true;
+  state.player.animation_state =
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::WalkCycle);
+  state.player.animation_frame = 1;
+  state.player.animation_ticks = 0;
+  state.player.is_airborne = false;
+  state.input.right_pressed = true;
+
+  comic2::handle_player_animation(state);
+
+  expect(state.player.animation_state ==
+             static_cast<std::uint8_t>(comic2::PlayerAnimationState::WalkCycle),
+         "walk cycle should remain the active animation state");
+  expect(state.player.animation_frame == 2,
+         "walk cycle should advance the frame counter");
+  expect(state.player.animation_ticks == 1,
+         "walk cycle should advance tick progress");
+}
+
+void test_attack_handler_uses_attack_overlay_state() {
+  comic2::RuntimeState state;
+  state.player.is_attack_active = true;
+  state.player.animation_state =
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::Idle);
+  state.player.animation_frame = 0;
+  state.player.attack_overlay_ticks = 2;
+
+  comic2::handle_attack_animation(state);
+
+  expect(state.player.animation_state ==
+             static_cast<std::uint8_t>(comic2::PlayerAnimationState::Attack),
+         "attack animation should switch to attack state");
+  expect(state.player.attack_overlay_ticks == 1,
+         "attack overlay timer should count down");
 }
 
 void test_tile_hazard_stage_instantly_kills_player() {
@@ -738,6 +777,8 @@ void run_dispatcher_tests() {
   test_deterministic_tick_replay();
   test_dispatcher_trace_log();
   test_default_stage_hook_coverage();
+  test_player_animation_handler_advances_walk_cycle();
+  test_attack_handler_uses_attack_overlay_state();
   test_tile_hazard_stage_instantly_kills_player();
   test_stage_flags_are_consumed_by_default_handlers();
   test_input_fallback_arms_grounded_physics_for_next_tick();

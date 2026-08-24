@@ -201,10 +201,44 @@ void handle_grounded_physics(RuntimeState &state) {
 
 void handle_player_animation(RuntimeState &state) {
   state.player.is_animation_active = false;
+
+  const auto animation_state =
+      static_cast<PlayerAnimationState>(state.player.animation_state);
+  if (animation_state == PlayerAnimationState::WalkCycle) {
+    state.player.animation_ticks =
+        static_cast<std::uint8_t>(state.player.animation_ticks + 1U);
+    state.player.animation_frame =
+        static_cast<std::uint8_t>((state.player.animation_frame + 1U) % 4U);
+  } else if (state.player.is_airborne) {
+    state.player.animation_state =
+        static_cast<std::uint8_t>(PlayerAnimationState::JumpFall);
+  } else if (state.player.x_vel != 0 || state.player.y_vel != 0 ||
+             state.input.left_pressed || state.input.right_pressed) {
+    state.player.animation_state =
+        static_cast<std::uint8_t>(PlayerAnimationState::WalkCycle);
+    state.player.animation_frame =
+        static_cast<std::uint8_t>((state.player.animation_frame + 1U) % 4U);
+  } else {
+    state.player.animation_state =
+        static_cast<std::uint8_t>(PlayerAnimationState::Idle);
+    state.player.animation_frame = 0;
+  }
 }
 
 void handle_attack_animation(RuntimeState &state) {
   state.player.is_attack_active = false;
+
+  if (state.player.attack_overlay_ticks > 0) {
+    state.player.attack_overlay_ticks =
+        static_cast<std::uint8_t>(state.player.attack_overlay_ticks - 1U);
+  }
+
+  state.player.animation_state =
+      static_cast<std::uint8_t>(PlayerAnimationState::Attack);
+  if (state.player.attack_overlay_ticks == 0) {
+    state.player.animation_state =
+        static_cast<std::uint8_t>(PlayerAnimationState::Idle);
+  }
 }
 
 void handle_distance_interaction(RuntimeState &state) {

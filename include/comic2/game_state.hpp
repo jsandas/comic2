@@ -32,6 +32,16 @@ struct InputState {
   bool operator==(const InputState &) const = default;
 };
 
+enum class PlayerAnimationState : std::uint8_t {
+  Idle = 0,
+  WalkCycle = 1,
+  JumpRise = 2,
+  JumpFall = 3,
+  Attack = 4,
+  Hurt = 5,
+  Death = 6,
+};
+
 struct PlayerState {
   std::int16_t x = 0;
   std::int16_t y = 0;
@@ -43,6 +53,12 @@ struct PlayerState {
   bool is_animation_active = false;
   bool is_attack_active = false;
   bool facing_right = true;
+
+  std::uint8_t animation_state =
+      static_cast<std::uint8_t>(PlayerAnimationState::Idle);
+  std::uint8_t animation_frame = 0;
+  std::uint8_t animation_ticks = 0;
+  std::uint8_t attack_overlay_ticks = 0;
 
   std::uint8_t jump_counter = 0;
   std::uint8_t hp = 12;
