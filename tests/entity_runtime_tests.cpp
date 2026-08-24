@@ -79,7 +79,7 @@ void test_pickups_update_state_and_remove_collectibles() {
   state.player.x = 50;
   state.player.y = 50;
   state.player.gems = 2;
-  state.player.firepower = 1;
+  state.player.firepower = 7;
   state.player.score = 10;
 
   state.runtime_slots.resize(2);
@@ -100,8 +100,8 @@ void test_pickups_update_state_and_remove_collectibles() {
   comic2::apply_entity_combat(state);
 
   expect(state.player.gems == 3, "gem pickup should increase gem count");
-  expect(state.player.firepower == 2,
-         "powerup pickup should increase firepower");
+  expect(state.player.firepower == 8,
+         "powerup pickup should increase firepower up to the cap");
   expect(state.player.score == 160,
          "pickups should increase the player's score for each collectible");
   expect(state.runtime_slots[0].mapped_object_ptr == 0,
