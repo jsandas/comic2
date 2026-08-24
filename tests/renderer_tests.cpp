@@ -91,6 +91,21 @@ void test_player_sprite_frame_selection_uses_facing_direction() {
   expect(frame == 10, "left-facing walk cycle should use the mirrored frame offset");
 }
 
+void test_invulnerability_blink_visibility_uses_tick_parity() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.invuln_ticks = 0;
+  expect(comic2::should_render_player_sprite(state),
+         "player sprite should remain visible when invulnerability is inactive");
+
+  state.player.invuln_ticks = 3;
+  expect(!comic2::should_render_player_sprite(state),
+         "player sprite should hide on odd invulnerability ticks");
+
+  state.player.invuln_ticks = 4;
+  expect(comic2::should_render_player_sprite(state),
+         "player sprite should render on even invulnerability ticks");
+}
+
 void test_camera_y_clamps_to_room_bounds() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.room_grid.tile_w = 20;
@@ -114,6 +129,7 @@ void run_renderer_tests() {
   test_transition_effects_are_deterministic();
   test_player_sprite_frame_selection_uses_animation_state();
   test_player_sprite_frame_selection_uses_facing_direction();
+  test_invulnerability_blink_visibility_uses_tick_parity();
   test_camera_y_clamps_to_room_bounds();
 
   // EgaPageFlipper tests

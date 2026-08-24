@@ -1145,7 +1145,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [ ] **Lives Decrement**: Lives decrement and HUD update logic remain pending.
 - [ ] **Respawn Logic**: Respawn/reset flow is still pending.
 - [ ] **Game Over Screen**: Continue/title-screen game-over handling is not yet implemented.
-- [ ] **Invulnerability Frames**: Invulnerability timer handling remains pending.
+- [x] **Invulnerability Frames**: Invulnerability timer handling is now reflected in the bootstrap render path with deterministic blinking while the player is invulnerable.
 - [ ] **Death Flow Tests**: End-to-end death/respawn/game-over tests are still pending.
 
 ### 10.4 Level Progression & World Model

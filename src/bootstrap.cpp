@@ -43,6 +43,14 @@ std::size_t select_player_sprite_frame(const RuntimeState &state) {
   }
 }
 
+bool should_render_player_sprite(const RuntimeState &state) {
+  if (state.player.invuln_ticks == 0) {
+    return true;
+  }
+
+  return (state.player.invuln_ticks % 2U) == 0U;
+}
+
 namespace {
 
 constexpr int kDefaultBootstrapTicks = 2;
@@ -514,7 +522,7 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
 
   if (const auto asset = try_decode_bootstrap_asset(state); asset.has_value()) {
     used_asset_background = draw_room_tilemap_from_asset(frame, state, *asset);
-    if (used_asset_background) {
+    if (used_asset_background && should_render_player_sprite(state)) {
       if (!draw_player_sprite_from_asset(frame, state, *asset)) {
         draw_player_marker(frame, state);
       }
@@ -527,7 +535,7 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
     draw_fallback_background(frame, state);
   }
 
-  if (!used_asset_background) {
+  if (!used_asset_background && should_render_player_sprite(state)) {
     draw_player_marker(frame, state);
   }
 

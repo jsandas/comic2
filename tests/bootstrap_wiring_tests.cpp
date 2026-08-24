@@ -343,6 +343,25 @@ void test_render_bootstrap_frame_uses_room_tile_data() {
         "tile border should remain accented at the far edge");
 }
 
+void test_render_bootstrap_frame_hides_player_on_invuln_blink_frames() {
+  auto state = comic2::make_default_runtime_state();
+  state.player.x = 0;
+  state.player.y = 0;
+  state.player.invuln_ticks = 0;
+
+  comic2::MemoryFramePresenter visible_presenter;
+  comic2::render_bootstrap_frame(visible_presenter, state);
+  const auto visible_color = read_color_index(visible_presenter.last_frame(), 0, 0);
+
+  state.player.invuln_ticks = 3;
+  comic2::MemoryFramePresenter hidden_presenter;
+  comic2::render_bootstrap_frame(hidden_presenter, state);
+  const auto hidden_color = read_color_index(hidden_presenter.last_frame(), 0, 0);
+
+  check(visible_color != hidden_color,
+        "render should skip the player marker on hidden invulnerability frames");
+}
+
 void test_render_bootstrap_frame_asset_backed_hash_regression() {
   auto state = comic2::make_default_runtime_state();
   state.player.x = 16;
@@ -543,6 +562,7 @@ void run_bootstrap_wiring_tests() {
   test_render_loop_renders_multiple_frames();
   test_render_loop_updates_state_while_presenting_frames();
   test_render_bootstrap_frame_uses_room_tile_data();
+  test_render_bootstrap_frame_hides_player_on_invuln_blink_frames();
   test_render_bootstrap_frame_asset_backed_hash_regression();
   test_render_bootstrap_frame_falls_back_when_asset_decode_fails();
   test_bootstrap_loader_reads_reference_room_data();
