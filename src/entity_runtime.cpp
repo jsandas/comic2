@@ -259,7 +259,8 @@ void apply_entity_combat(RuntimeState &state) {
     const auto behavior = slot.behavior_state & 0x000F;
     if (behavior == kBehaviorGem) {
       ++state.player.gems;
-      state.player.score = static_cast<std::uint16_t>(state.player.score + 100U);
+      state.player.score =
+          static_cast<std::uint16_t>(state.player.score + 100U);
       deactivate_runtime_slot(slot);
       continue;
     }

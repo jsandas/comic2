@@ -423,7 +423,8 @@ void test_progression_state_updates_inventory_bits() {
   expect((state.ui.inventory_mask & 0x01U) != 0U,
          "progression state should mark collected gems in the inventory mask");
   expect((state.ui.inventory_mask & 0x02U) != 0U,
-         "progression state should mark increased firepower in the inventory mask");
+         "progression state should mark increased firepower in the inventory "
+         "mask");
   expect((state.ui.active_mode_mask & 0x01U) != 0U,
          "progression state should mark the player as having an active mode");
 }
