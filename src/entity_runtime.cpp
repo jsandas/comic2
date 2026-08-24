@@ -259,12 +259,14 @@ void apply_entity_combat(RuntimeState &state) {
     const auto behavior = slot.behavior_state & 0x000F;
     if (behavior == kBehaviorGem) {
       ++state.player.gems;
+      state.player.score = static_cast<std::uint16_t>(state.player.score + 100U);
       deactivate_runtime_slot(slot);
       continue;
     }
     if (behavior == kBehaviorPowerup) {
       state.player.firepower = static_cast<std::uint8_t>(
           std::min<std::uint8_t>(state.player.firepower + 1, 8));
+      state.player.score = static_cast<std::uint16_t>(state.player.score + 50U);
       deactivate_runtime_slot(slot);
       continue;
     }
