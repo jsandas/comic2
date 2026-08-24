@@ -23,21 +23,23 @@ std::size_t select_player_sprite_frame(const RuntimeState &state) {
   const auto animation_state =
       static_cast<PlayerAnimationState>(state.player.animation_state);
 
+  const auto facing_offset = state.player.facing_right ? 0U : 8U;
+
   switch (animation_state) {
   case PlayerAnimationState::WalkCycle:
-    return static_cast<std::size_t>(state.player.animation_frame);
+    return static_cast<std::size_t>(state.player.animation_frame) + facing_offset;
   case PlayerAnimationState::JumpRise:
   case PlayerAnimationState::JumpFall:
-    return 4;
+    return 4U + facing_offset;
   case PlayerAnimationState::Attack:
-    return 5;
+    return 5U + facing_offset;
   case PlayerAnimationState::Hurt:
-    return 6;
+    return 6U + facing_offset;
   case PlayerAnimationState::Death:
-    return 7;
+    return 7U + facing_offset;
   case PlayerAnimationState::Idle:
   default:
-    return static_cast<std::size_t>(state.player.hp % 4U);
+    return static_cast<std::size_t>(state.player.hp % 4U) + facing_offset;
   }
 }
 

@@ -59,6 +59,24 @@ void test_apply_input_tick_consumes_jump_counter() {
   expect(state.player.is_airborne, "jump input should enter airborne state");
 }
 
+void test_apply_input_tick_updates_facing_direction_from_horizontal_input() {
+  comic2::RuntimeState left_state;
+  left_state.input.left_pressed = true;
+
+  comic2::apply_input_tick(left_state, comic2::PlayerMotionConfig{});
+
+  expect(!left_state.player.facing_right,
+         "left input should set player facing left");
+
+  comic2::RuntimeState right_state;
+  right_state.input.right_pressed = true;
+
+  comic2::apply_input_tick(right_state, comic2::PlayerMotionConfig{});
+
+  expect(right_state.player.facing_right,
+         "right input should set player facing right");
+}
+
 void test_apply_physics_tick_lands_on_ground() {
   comic2::RuntimeState state;
   state.room_grid = make_flat_floor_grid();
@@ -220,6 +238,7 @@ void test_grounded_physics_does_not_snap_when_rising() {
 void run_player_controller_tests() {
   test_apply_input_tick_moves_right();
   test_apply_input_tick_consumes_jump_counter();
+  test_apply_input_tick_updates_facing_direction_from_horizontal_input();
   test_apply_physics_tick_lands_on_ground();
   test_jump_while_moving_left_and_right();
   test_short_hop_vs_full_jump_counter_usage();

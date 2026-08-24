@@ -1135,7 +1135,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 ### 10.2 Player Animation State Machine
 - [x] **Animation State Definitions**: The runtime now tracks `Idle`, `WalkCycle`, `JumpRise`, `JumpFall`, `Attack`, `Hurt`, and `Death` states.
 - [x] **Frame Advance Logic**: Walk-cycle frame stepping and basic state transitions are implemented in the default animation handler.
-- [ ] **Directional Facing**: Left/right-facing sprite selection and mirrored blitting remain pending.
+- [x] **Directional Facing**: Left/right-facing sprite selection is now tracked from input and used in sprite-frame selection, with deterministic regression tests covering the behavior.
 - [x] **Attack Animation Overlay**: Attack overlay timing now decrements and returns the player to a fallback animation state.
 - [ ] **Timed Overlay Sprites**: Mode-activation overlay sprites remain pending.
 - [x] **Animation Tests**: Deterministic animation progression and frame-selection tests are now present.

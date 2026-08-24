@@ -80,6 +80,17 @@ void test_player_sprite_frame_selection_uses_animation_state() {
          "jump-rise state should resolve to the jump frame");
 }
 
+void test_player_sprite_frame_selection_uses_facing_direction() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.animation_state =
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::WalkCycle);
+  state.player.animation_frame = 2;
+  state.player.facing_right = false;
+
+  const auto frame = comic2::select_player_sprite_frame(state);
+  expect(frame == 10, "left-facing walk cycle should use the mirrored frame offset");
+}
+
 void test_camera_y_clamps_to_room_bounds() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.room_grid.tile_w = 20;
@@ -102,6 +113,7 @@ void run_renderer_tests() {
   test_presenter_copies_frame();
   test_transition_effects_are_deterministic();
   test_player_sprite_frame_selection_uses_animation_state();
+  test_player_sprite_frame_selection_uses_facing_direction();
   test_camera_y_clamps_to_room_bounds();
 
   // EgaPageFlipper tests

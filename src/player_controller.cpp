@@ -8,10 +8,23 @@ namespace comic2 {
 
 namespace detail {
 
+void update_facing_direction_from_input(RuntimeState &state) {
+  const bool move_left = state.input.left_pressed;
+  const bool move_right = state.input.right_pressed;
+
+  if (move_left && !move_right) {
+    state.player.facing_right = false;
+  } else if (move_right && !move_left) {
+    state.player.facing_right = true;
+  }
+}
+
 void apply_horizontal_movement(RuntimeState &state,
                                const PlayerMotionConfig &motion) {
   const bool move_left = state.input.left_pressed;
   const bool move_right = state.input.right_pressed;
+
+  update_facing_direction_from_input(state);
 
   if (move_left && !move_right) {
     state.player.x_vel = static_cast<std::int16_t>(-motion.walk_step);
@@ -112,6 +125,8 @@ void apply_airborne_physics_tick(RuntimeState &state,
 
   const bool move_left = state.input.left_pressed;
   const bool move_right = state.input.right_pressed;
+
+  detail::update_facing_direction_from_input(state);
 
   if (move_left && !move_right) {
     state.player.x -= motion.air_drift_step;
