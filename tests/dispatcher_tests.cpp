@@ -388,6 +388,10 @@ void test_confirming_continue_respawns_player() {
          "confirming continue should clear the death animation flag");
   expect(state.player.death_timer_ticks == 0,
          "confirming continue should clear the death countdown");
+  expect(state.player.invuln_ticks == 0,
+         "confirming continue should clear invulnerability state");
+  expect(state.player.damage_recoil_ticks == 0,
+         "confirming continue should clear recoil state");
   expect(!state.player.is_attack_active,
          "confirming continue should clear the attack overlay state");
 }

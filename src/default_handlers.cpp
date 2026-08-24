@@ -118,7 +118,8 @@ void apply_default_grounded_physics(RuntimeState &state) {
 
 void reset_player_respawn_state(RuntimeState &state) {
   state.player.hp = 12;
-  state.player.invuln_ticks = 8;
+  state.player.invuln_ticks = 0;
+  state.player.damage_recoil_ticks = 0;
   state.player.death_timer_ticks = 0;
   state.player.animation_state =
       static_cast<std::uint8_t>(PlayerAnimationState::Idle);
@@ -325,8 +326,8 @@ void update_player_mode_cycle(RuntimeState &state) {
   }
 
   constexpr std::uint8_t kModeBitMask = 0x03U;
-  const std::uint8_t next_mask =
-      static_cast<std::uint8_t>((state.ui.active_mode_mask + 1U) & kModeBitMask);
+  const std::uint8_t next_mask = static_cast<std::uint8_t>(
+      (state.ui.active_mode_mask + 1U) & kModeBitMask);
   state.ui.active_mode_mask = next_mask;
 }
 
