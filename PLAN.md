@@ -1137,7 +1137,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [x] **Frame Advance Logic**: Walk-cycle frame stepping and basic state transitions are implemented in the default animation handler.
 - [x] **Directional Facing**: Left/right-facing sprite selection is now tracked from input and used in sprite-frame selection, with deterministic regression tests covering the behavior.
 - [x] **Attack Animation Overlay**: Attack overlay timing now decrements and returns the player to a fallback animation state.
-- [ ] **Timed Overlay Sprites**: Mode-activation overlay sprites remain pending.
+- [x] **Timed Overlay Sprites**: Mode-activation overlay sprites now activate from the pending overlay flag, count down deterministically, and render over the player during their lifetime.
 - [x] **Animation Tests**: Deterministic animation progression and frame-selection tests are now present.
 
 ### 10.3 Death, Lives & Game-Over Flow

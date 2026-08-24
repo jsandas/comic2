@@ -500,6 +500,23 @@ void test_render_bootstrap_frame_hides_player_on_invuln_blink_frames() {
       "render should skip the player marker on hidden invulnerability frames");
 }
 
+void test_render_bootstrap_frame_renders_timed_overlay() {
+  auto state = comic2::make_default_runtime_state();
+  state.player.x = 12;
+  state.player.y = 12;
+  state.player.overlay_active = true;
+  state.player.overlay_ticks = 6;
+  state.player.overlay_sprite_frame = 2;
+
+  comic2::MemoryFramePresenter presenter;
+  comic2::render_bootstrap_frame(presenter, state);
+
+  const auto overlay_color =
+      read_color_index(presenter.last_frame(), 12 + 4, 12 + 4);
+  check(overlay_color != 0x00,
+        "timed overlay should render a visible sprite over the player");
+}
+
 void test_render_bootstrap_frame_asset_backed_hash_regression() {
   auto state = comic2::make_default_runtime_state();
   state.player.x = 16;
@@ -704,6 +721,7 @@ void run_bootstrap_wiring_tests() {
   test_render_bootstrap_frame_distinguishes_pickups_from_enemies();
   test_render_bootstrap_frame_renders_active_projectiles();
   test_render_bootstrap_frame_hides_player_on_invuln_blink_frames();
+  test_render_bootstrap_frame_renders_timed_overlay();
   test_render_bootstrap_frame_asset_backed_hash_regression();
   test_render_bootstrap_frame_falls_back_when_asset_decode_fails();
   test_bootstrap_loader_reads_reference_room_data();

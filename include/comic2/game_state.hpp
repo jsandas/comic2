@@ -60,6 +60,9 @@ struct PlayerState {
   std::uint8_t animation_ticks = 0;
   std::uint8_t attack_overlay_ticks = 0;
   std::uint8_t death_timer_ticks = 0;
+  bool overlay_active = false;
+  std::uint8_t overlay_ticks = 0;
+  std::uint8_t overlay_sprite_frame = 0;
 
   std::uint8_t jump_counter = 0;
   std::uint8_t hp = 12;

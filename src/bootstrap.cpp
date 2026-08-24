@@ -52,6 +52,10 @@ bool should_render_player_sprite(const RuntimeState &state) {
   return (state.player.invuln_ticks % 2U) == 0U;
 }
 
+bool should_render_timed_overlay(const RuntimeState &state) {
+  return state.player.overlay_active && state.player.overlay_ticks > 0;
+}
+
 namespace {
 
 constexpr int kDefaultBootstrapTicks = 2;
@@ -372,7 +376,27 @@ bool draw_player_sprite_from_asset(EgaPlanarSurface &frame,
   gfx_rle_blit_masked_or_4plane(frame, px, py, sprite);
   return true;
 }
+bool draw_timed_overlay_sprite_from_asset(EgaPlanarSurface &frame,
+                                          const RuntimeState &state,
+                                          const Ega4PlaneImage &atlas) {
+  if (!should_render_timed_overlay(state)) {
+    return false;
+  }
 
+  Ega4PlaneImage sprite;
+  const std::size_t sprite_index =
+      static_cast<std::size_t>(state.player.overlay_sprite_frame);
+  if (!extract_tile_from_asset(atlas, sprite_index, sprite)) {
+    return false;
+  }
+
+  const std::size_t px = static_cast<std::size_t>(std::max<std::int16_t>(
+      0, std::min<std::int16_t>(state.player.x, frame.width_pixels() - 16)));
+  const std::size_t py = static_cast<std::size_t>(std::max<std::int16_t>(
+      0, std::min<std::int16_t>(state.player.y, frame.height_rows() - 16)));
+  gfx_rle_blit_masked_or_4plane(frame, px, py, sprite);
+  return true;
+}
 std::optional<Ega4PlaneImage> try_decode_bootstrap_asset(RuntimeState &state) {
   if (state.frpak_catalog.files.empty()) {
     return std::nullopt;
@@ -542,6 +566,16 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
   }
 
   if (!used_asset_background && should_render_player_sprite(state)) {
+    draw_player_marker(frame, state);
+  }
+
+  if (used_asset_background && should_render_timed_overlay(state)) {
+    if (!draw_timed_overlay_sprite_from_asset(frame, state, *asset)) {
+      draw_player_marker(frame, state);
+    }
+  }
+
+  if (!used_asset_background && should_render_timed_overlay(state)) {
     draw_player_marker(frame, state);
   }
 

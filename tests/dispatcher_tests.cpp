@@ -337,6 +337,39 @@ void test_attack_handler_uses_attack_overlay_state() {
          "attack overlay timer should count down");
 }
 
+void test_timed_overlay_handler_starts_and_counts_down() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.flags.timed_overlay_pending = true;
+  state.player.overlay_sprite_frame = 3;
+
+  comic2::handle_timed_overlay(state);
+
+  expect(!state.flags.timed_overlay_pending,
+         "timed overlay flag should be consumed when overlay starts");
+  expect(state.player.overlay_active,
+         "timed overlay should activate when pending is set");
+  expect(state.player.overlay_ticks == 30,
+         "timed overlay should start with a fixed duration");
+  expect(state.player.overlay_sprite_frame == 3,
+         "timed overlay should preserve the configured sprite frame");
+
+  for (int i = 0; i < 29; ++i) {
+    comic2::handle_timed_overlay(state);
+  }
+
+  expect(state.player.overlay_active,
+         "timed overlay should remain active until the countdown expires");
+  expect(state.player.overlay_ticks == 1,
+         "timed overlay should count down each handler tick");
+
+  comic2::handle_timed_overlay(state);
+
+  expect(!state.player.overlay_active,
+         "timed overlay should clear once its countdown reaches zero");
+  expect(state.player.overlay_ticks == 0,
+         "timed overlay should finish with a cleared countdown value");
+}
+
 void test_death_flow_prompts_when_lives_are_exhausted() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.player.hp = 0;
@@ -929,6 +962,7 @@ void run_dispatcher_tests() {
   test_default_stage_hook_coverage();
   test_player_animation_handler_advances_walk_cycle();
   test_attack_handler_uses_attack_overlay_state();
+  test_timed_overlay_handler_starts_and_counts_down();
   test_death_flow_prompts_when_lives_are_exhausted();
   test_death_countdown_decrements_lives_and_respawns_at_spawn();
   test_confirming_continue_respawns_player();

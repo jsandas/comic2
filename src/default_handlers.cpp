@@ -133,6 +133,9 @@ void reset_player_respawn_state(RuntimeState &state) {
   state.player.is_animation_active = false;
   state.player.is_attack_active = false;
   state.player.attack_overlay_ticks = 0;
+  state.player.overlay_active = false;
+  state.player.overlay_ticks = 0;
+  state.player.overlay_sprite_frame = 0;
   state.player.is_physics_active = true;
   state.transition_state.player_frozen = false;
   state.ui.modal_active = false;
@@ -215,6 +218,23 @@ void handle_airborne_physics(RuntimeState &state) {
 
 void handle_timed_overlay(RuntimeState &state) {
   state.flags.timed_overlay_pending = false;
+
+  if (!state.player.overlay_active) {
+    if (state.player.overlay_ticks == 0) {
+      state.player.overlay_ticks = 30;
+    }
+    state.player.overlay_active = true;
+    return;
+  }
+
+  if (state.player.overlay_ticks > 0) {
+    state.player.overlay_ticks =
+        static_cast<std::uint8_t>(state.player.overlay_ticks - 1U);
+  }
+
+  if (state.player.overlay_ticks == 0) {
+    state.player.overlay_active = false;
+  }
 }
 
 void handle_grounded_physics(RuntimeState &state) {
