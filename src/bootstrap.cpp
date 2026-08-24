@@ -27,7 +27,8 @@ std::size_t select_player_sprite_frame(const RuntimeState &state) {
 
   switch (animation_state) {
   case PlayerAnimationState::WalkCycle:
-    return static_cast<std::size_t>(state.player.animation_frame) + facing_offset;
+    return static_cast<std::size_t>(state.player.animation_frame) +
+           facing_offset;
   case PlayerAnimationState::JumpRise:
   case PlayerAnimationState::JumpFall:
     return 4U + facing_offset;

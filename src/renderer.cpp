@@ -159,7 +159,8 @@ void set_sprite_pixel(Ega4PlaneImage &sprite, std::size_t x_pixels,
 
   const std::size_t x_byte = x_pixels / 8U;
   const std::uint8_t bit = static_cast<std::uint8_t>(7U - (x_pixels % 8U));
-  const std::size_t row_off = y_rows * static_cast<std::size_t>(sprite.width_bytes);
+  const std::size_t row_off =
+      y_rows * static_cast<std::size_t>(sprite.width_bytes);
 
   for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
     if ((color >> plane) & 0x1U) {
@@ -175,8 +176,8 @@ Ega4PlaneImage make_entity_placeholder_sprite(const RuntimeEntitySlot32 &slot) {
   constexpr std::uint16_t kSpriteHeightRows = 16;
   sprite.width_bytes = kSpriteWidthBytes;
   sprite.height_rows = kSpriteHeightRows;
-  sprite.row_span_bytes = static_cast<std::uint16_t>(kSpriteWidthBytes *
-                                                     kSpriteHeightRows);
+  sprite.row_span_bytes =
+      static_cast<std::uint16_t>(kSpriteWidthBytes * kSpriteHeightRows);
 
   const std::uint8_t color = resolve_entity_color(slot);
   for (auto &plane_bytes : sprite.planes) {
@@ -228,8 +229,8 @@ std::uint8_t resolve_projectile_color(const ProjectileState &projectile) {
   return static_cast<std::uint8_t>(((seed & 0x0FU) | 0x04U) & 0x0FU);
 }
 
-Ega4PlaneImage make_projectile_placeholder_sprite(
-    const ProjectileState &projectile) {
+Ega4PlaneImage
+make_projectile_placeholder_sprite(const ProjectileState &projectile) {
   Ega4PlaneImage sprite{};
   constexpr std::uint16_t kSpriteWidthBytes = 2;
   constexpr std::uint16_t kSpriteHeightRows = 8;
@@ -334,12 +335,10 @@ void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
 
 void draw_runtime_entity_sprites(EgaPlanarSurface &frame,
                                  const RuntimeState &state) {
-  const std::int32_t max_x =
-      std::max<std::int32_t>(0, static_cast<std::int32_t>(frame.width_pixels()) -
-                                     16);
-  const std::int32_t max_y =
-      std::max<std::int32_t>(0, static_cast<std::int32_t>(frame.height_rows()) -
-                                     16);
+  const std::int32_t max_x = std::max<std::int32_t>(
+      0, static_cast<std::int32_t>(frame.width_pixels()) - 16);
+  const std::int32_t max_y = std::max<std::int32_t>(
+      0, static_cast<std::int32_t>(frame.height_rows()) - 16);
 
   for (const auto &slot : state.runtime_slots) {
     if (!is_runtime_slot_active(slot)) {
@@ -352,8 +351,10 @@ void draw_runtime_entity_sprites(EgaPlanarSurface &frame,
       continue;
     }
 
-    const std::int32_t clamped_x = std::max<std::int32_t>(0, std::min(px0, max_x));
-    const std::int32_t clamped_y = std::max<std::int32_t>(0, std::min(py0, max_y));
+    const std::int32_t clamped_x =
+        std::max<std::int32_t>(0, std::min(px0, max_x));
+    const std::int32_t clamped_y =
+        std::max<std::int32_t>(0, std::min(py0, max_y));
     const auto sprite = make_entity_placeholder_sprite(slot);
     gfx_rle_blit_masked_or_4plane(frame, static_cast<std::size_t>(clamped_x),
                                   static_cast<std::size_t>(clamped_y), sprite);
@@ -362,12 +363,10 @@ void draw_runtime_entity_sprites(EgaPlanarSurface &frame,
 
 void draw_runtime_projectile_sprites(EgaPlanarSurface &frame,
                                      const RuntimeState &state) {
-  const std::int32_t max_x =
-      std::max<std::int32_t>(0, static_cast<std::int32_t>(frame.width_pixels()) -
-                                     16);
-  const std::int32_t max_y =
-      std::max<std::int32_t>(0, static_cast<std::int32_t>(frame.height_rows()) -
-                                     16);
+  const std::int32_t max_x = std::max<std::int32_t>(
+      0, static_cast<std::int32_t>(frame.width_pixels()) - 16);
+  const std::int32_t max_y = std::max<std::int32_t>(
+      0, static_cast<std::int32_t>(frame.height_rows()) - 16);
 
   for (const auto &projectile : state.projectiles) {
     if (!projectile.active) {
@@ -380,8 +379,10 @@ void draw_runtime_projectile_sprites(EgaPlanarSurface &frame,
       continue;
     }
 
-    const std::int32_t clamped_x = std::max<std::int32_t>(0, std::min(px0, max_x));
-    const std::int32_t clamped_y = std::max<std::int32_t>(0, std::min(py0, max_y));
+    const std::int32_t clamped_x =
+        std::max<std::int32_t>(0, std::min(px0, max_x));
+    const std::int32_t clamped_y =
+        std::max<std::int32_t>(0, std::min(py0, max_y));
     const auto sprite = make_projectile_placeholder_sprite(projectile);
     gfx_rle_blit_masked_or_4plane(frame, static_cast<std::size_t>(clamped_x),
                                   static_cast<std::size_t>(clamped_y), sprite);

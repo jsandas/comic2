@@ -88,14 +88,16 @@ void test_player_sprite_frame_selection_uses_facing_direction() {
   state.player.facing_right = false;
 
   const auto frame = comic2::select_player_sprite_frame(state);
-  expect(frame == 10, "left-facing walk cycle should use the mirrored frame offset");
+  expect(frame == 10,
+         "left-facing walk cycle should use the mirrored frame offset");
 }
 
 void test_invulnerability_blink_visibility_uses_tick_parity() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.player.invuln_ticks = 0;
-  expect(comic2::should_render_player_sprite(state),
-         "player sprite should remain visible when invulnerability is inactive");
+  expect(
+      comic2::should_render_player_sprite(state),
+      "player sprite should remain visible when invulnerability is inactive");
 
   state.player.invuln_ticks = 3;
   expect(!comic2::should_render_player_sprite(state),

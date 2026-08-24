@@ -14,14 +14,6 @@ constexpr std::int16_t kPlayerHitboxWidth = 16;
 constexpr std::int16_t kPlayerHitboxHeight = 32;
 constexpr std::uint8_t kInvulnerabilityTicks = 12;
 constexpr std::int16_t kDamageKnockback = 6;
-constexpr std::uint16_t kBehaviorChase = 0x0001;
-constexpr std::uint16_t kBehaviorBounce = 0x0002;
-constexpr std::uint16_t kBehaviorJump = 0x0003;
-constexpr std::uint16_t kBehaviorGravity = 0x0006;
-constexpr std::uint16_t kBehaviorShoot = 0x0007;
-constexpr std::uint16_t kBehaviorGem = 0x0004;
-constexpr std::uint16_t kBehaviorPowerup = 0x0005;
-
 [[maybe_unused]] constexpr std::uint16_t kBehaviorChaseValue = kBehaviorChase;
 [[maybe_unused]] constexpr std::uint16_t kBehaviorBounceValue = kBehaviorBounce;
 [[maybe_unused]] constexpr std::uint16_t kBehaviorJumpValue = kBehaviorJump;

@@ -386,15 +386,18 @@ void test_death_countdown_decrements_lives_and_respawns_at_spawn() {
   expect(state.ui.modal_active,
          "death countdown should open the continue prompt while lives remain");
   expect(state.ui.modal_prompt == "Continue?",
-         "death countdown should present the continue prompt when respawn is available");
+         "death countdown should present the continue prompt when respawn is "
+         "available");
 
   state.ui.modal_confirmed = true;
   comic2::handle_player_special_state(state);
 
-  expect(state.player.x == 160,
-         "confirming continue should respawn the player at the default spawn x");
-  expect(state.player.y == 160,
-         "confirming continue should respawn the player at the default spawn y");
+  expect(
+      state.player.x == 160,
+      "confirming continue should respawn the player at the default spawn x");
+  expect(
+      state.player.y == 160,
+      "confirming continue should respawn the player at the default spawn y");
   expect(state.player.x_vel == 0,
          "confirming continue should clear horizontal velocity on respawn");
   expect(state.player.y_vel == 0,

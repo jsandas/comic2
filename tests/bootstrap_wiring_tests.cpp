@@ -420,10 +420,13 @@ void test_render_bootstrap_frame_distinguishes_pickups_from_enemies() {
   comic2::MemoryFramePresenter powerup_presenter;
   comic2::render_bootstrap_frame(powerup_presenter, powerup_state);
 
-  const auto background_color = read_color_index(background_presenter.last_frame(), 8, 4);
-  const auto enemy_sample = read_color_index(enemy_presenter.last_frame(), 8, 4);
+  const auto background_color =
+      read_color_index(background_presenter.last_frame(), 8, 4);
+  const auto enemy_sample =
+      read_color_index(enemy_presenter.last_frame(), 8, 4);
   const auto gem_sample = read_color_index(gem_presenter.last_frame(), 8, 4);
-  const auto powerup_sample = read_color_index(powerup_presenter.last_frame(), 7, 4);
+  const auto powerup_sample =
+      read_color_index(powerup_presenter.last_frame(), 7, 4);
 
   check(enemy_sample != background_color,
         "enemy placeholder sprites should change a sample pixel in the sprite");
@@ -449,7 +452,8 @@ void test_render_bootstrap_frame_renders_active_projectiles() {
       comic2::ProjectileState{.x = 8, .y = 8, .active = false});
 
   comic2::MemoryFramePresenter without_projectiles;
-  comic2::render_bootstrap_frame(without_projectiles, state_without_projectiles);
+  comic2::render_bootstrap_frame(without_projectiles,
+                                 state_without_projectiles);
 
   comic2::MemoryFramePresenter with_active_projectile;
   comic2::render_bootstrap_frame(with_active_projectile,
@@ -482,15 +486,18 @@ void test_render_bootstrap_frame_hides_player_on_invuln_blink_frames() {
 
   comic2::MemoryFramePresenter visible_presenter;
   comic2::render_bootstrap_frame(visible_presenter, state);
-  const auto visible_color = read_color_index(visible_presenter.last_frame(), 0, 0);
+  const auto visible_color =
+      read_color_index(visible_presenter.last_frame(), 0, 0);
 
   state.player.invuln_ticks = 3;
   comic2::MemoryFramePresenter hidden_presenter;
   comic2::render_bootstrap_frame(hidden_presenter, state);
-  const auto hidden_color = read_color_index(hidden_presenter.last_frame(), 0, 0);
+  const auto hidden_color =
+      read_color_index(hidden_presenter.last_frame(), 0, 0);
 
-  check(visible_color != hidden_color,
-        "render should skip the player marker on hidden invulnerability frames");
+  check(
+      visible_color != hidden_color,
+      "render should skip the player marker on hidden invulnerability frames");
 }
 
 void test_render_bootstrap_frame_asset_backed_hash_regression() {
