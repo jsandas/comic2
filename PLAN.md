@@ -1168,7 +1168,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 ### 10.6 Player Mode System
 - [ ] **Mode Inventory**: Mode-collection tracking is not implemented.
 - [ ] **Mode Cycling Input**: Mode cycling and HUD indicator updates remain pending.
-- [ ] **Mode Activation**: State-4 mode activation behavior remains pending.
+- [x] **Mode Activation**: State-4 mode activation behavior is now implemented with activation input, effect state, countdown handling, and regression tests.
 - [ ] **Mode-Specific Effects**: Mode-specific gameplay effects remain pending.
 - [ ] **Mode Duration & Cooldown**: Timing/cooldown logic remains pending.
 - [ ] **Mode System Tests**: Mode-system tests are still pending.

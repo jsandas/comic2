@@ -16,6 +16,8 @@ void handle_distance_interaction(RuntimeState &state);
 void handle_tile_hazard(RuntimeState &state);
 void handle_player_special_state(RuntimeState &state);
 void update_player_mode_cycle(RuntimeState &state);
+void update_player_mode_activation(RuntimeState &state);
+void update_player_mode_effect(RuntimeState &state);
 void update_progression_state(RuntimeState &state);
 void handle_input_fallback(RuntimeState &state);
 

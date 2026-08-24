@@ -542,6 +542,34 @@ void test_down_input_cycles_active_mode_mask() {
          "repeated down input should advance the active mode mask again");
 }
 
+void test_mode_activation_starts_effect_and_consumes_selected_mode() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.active_mode_mask = 0x02U;
+  state.input.mode_activate_pressed = true;
+
+  comic2::update_player_mode_activation(state);
+
+  expect(state.ui.active_mode_mask == 0U,
+         "mode activation should consume the selected mode bit");
+  expect(state.player.active_mode_effect == 0x02U,
+         "mode activation should start the matching active-mode effect");
+  expect(state.player.mode_effect_ticks == 30U,
+         "mode activation should initialize the effect countdown");
+}
+
+void test_mode_effect_countdown_expires_after_ticks() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.active_mode_effect = 0x02U;
+  state.player.mode_effect_ticks = 1U;
+
+  comic2::update_player_mode_effect(state);
+
+  expect(state.player.active_mode_effect == 0U,
+         "mode effect should clear when its countdown expires");
+  expect(state.player.mode_effect_ticks == 0U,
+         "mode effect countdown should reach zero when expired");
+}
+
 void test_progression_state_updates_inventory_bits() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.player.gems = 3;
@@ -1026,6 +1054,8 @@ void run_dispatcher_tests() {
   test_game_over_confirm_restarts_runtime_state();
   test_game_over_input_restarts_without_modal_confirm();
   test_down_input_cycles_active_mode_mask();
+  test_mode_activation_starts_effect_and_consumes_selected_mode();
+  test_mode_effect_countdown_expires_after_ticks();
   test_progression_state_updates_inventory_bits();
   test_progression_state_keeps_inventory_bits_stable();
   test_tile_hazard_stage_instantly_kills_player();

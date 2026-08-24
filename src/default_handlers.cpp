@@ -136,6 +136,8 @@ void reset_player_respawn_state(RuntimeState &state) {
   state.player.overlay_active = false;
   state.player.overlay_ticks = 0;
   state.player.overlay_sprite_frame = 0;
+  state.player.active_mode_effect = 0;
+  state.player.mode_effect_ticks = 0;
   state.player.is_physics_active = true;
   state.transition_state.player_frozen = false;
   state.ui.modal_active = false;
@@ -406,6 +408,40 @@ void update_player_mode_cycle(RuntimeState &state) {
   state.ui.active_mode_mask = next_mask;
 }
 
+void update_player_mode_activation(RuntimeState &state) {
+  if (!state.input.mode_activate_pressed) {
+    return;
+  }
+
+  constexpr std::uint8_t kModeBitMask = 0x03U;
+  const std::uint8_t selected_mode =
+      static_cast<std::uint8_t>(state.ui.active_mode_mask & kModeBitMask);
+  if (selected_mode == 0U) {
+    return;
+  }
+
+  state.ui.active_mode_mask =
+      static_cast<std::uint8_t>(state.ui.active_mode_mask & ~selected_mode);
+  state.player.active_mode_effect = selected_mode;
+  state.player.mode_effect_ticks = 30U;
+  state.flags.timed_overlay_pending = true;
+}
+
+void update_player_mode_effect(RuntimeState &state) {
+  if (state.player.active_mode_effect == 0U) {
+    return;
+  }
+
+  if (state.player.mode_effect_ticks > 0U) {
+    state.player.mode_effect_ticks =
+        static_cast<std::uint8_t>(state.player.mode_effect_ticks - 1U);
+  }
+
+  if (state.player.mode_effect_ticks == 0U) {
+    state.player.active_mode_effect = 0U;
+  }
+}
+
 void update_progression_state(RuntimeState &state) {
   if (state.player.gems > 0) {
     state.ui.inventory_mask =
@@ -433,6 +469,8 @@ void handle_input_fallback(RuntimeState &state) {
   apply_entity_combat(state);
   apply_input_tick(state, kDefaultMotion);
   update_player_mode_cycle(state);
+  update_player_mode_activation(state);
+  update_player_mode_effect(state);
   update_progression_state(state);
   update_room_transition_from_player_bounds(state);
   update_player_hazard_state(state, kDefaultCollision);

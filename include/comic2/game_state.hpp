@@ -27,6 +27,7 @@ struct InputState {
   bool left_pressed = false;
   bool right_pressed = false;
   bool down_pressed = false;
+  bool mode_activate_pressed = false;
   bool pause_pressed = false;
 
   bool operator==(const InputState &) const = default;
@@ -63,6 +64,8 @@ struct PlayerState {
   bool overlay_active = false;
   std::uint8_t overlay_ticks = 0;
   std::uint8_t overlay_sprite_frame = 0;
+  std::uint8_t active_mode_effect = 0;
+  std::uint8_t mode_effect_ticks = 0;
 
   std::uint8_t jump_counter = 0;
   std::uint8_t hp = 12;
