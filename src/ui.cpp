@@ -109,6 +109,23 @@ std::uint8_t bcd_decrement(std::uint8_t value) {
   return static_cast<std::uint8_t>(value - 0x10U);
 }
 
+void ui_render_modal_prompt(EgaPlanarSurface &surface,
+                            const RuntimeState &state) {
+  if (!state.ui.modal_active || state.ui.modal_prompt.empty()) {
+    return;
+  }
+
+  draw_rect(surface, 48, 72, 224, 56, 0x04);
+  draw_rect(surface, 56, 80, 208, 40, 0x0F);
+  draw_rect(surface, 64, 92, 192, 8, 0x0E);
+
+  if (state.ui.modal_game_over) {
+    draw_rect(surface, 64, 104, 192, 8, 0x0C);
+  } else {
+    draw_rect(surface, 64, 104, 192, 8, 0x0E);
+  }
+}
+
 void hud_render_overlay(EgaPlanarSurface &surface, const RuntimeState &state) {
   if (!should_draw_hud_overlay(state)) {
     return;

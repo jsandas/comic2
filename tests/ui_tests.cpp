@@ -51,6 +51,21 @@ void test_hud_renders_counters_and_icons() {
   expect(saw_pixels, "HUD overlay should draw visible pixels");
 }
 
+void test_modal_prompt_overlay_is_rendered() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.modal_active = true;
+  state.ui.modal_prompt = "Continue?";
+  state.ui.modal_game_over = false;
+
+  comic2::EgaPlanarSurface frame(320, 200);
+  frame.clear(0x00);
+  comic2::ui_render_modal_prompt(frame, state);
+
+  expect(
+      frame.get_plane_byte(0, 8, 80) != 0x00,
+      "modal prompt overlay should draw visible pixels inside the prompt box");
+}
+
 void test_menu_state_machine_and_option_navigation() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.ui.menu_state = comic2::MenuState::Pause;
@@ -72,5 +87,6 @@ void test_menu_state_machine_and_option_navigation() {
 void run_ui_tests() {
   test_bcd_counter_helpers();
   test_hud_renders_counters_and_icons();
+  test_modal_prompt_overlay_is_rendered();
   test_menu_state_machine_and_option_navigation();
 }

@@ -544,6 +544,10 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
     ui_render_option_list(frame, state);
   }
 
+  if (state.ui.modal_active) {
+    ui_render_modal_prompt(frame, state);
+  }
+
   hud_render_overlay(frame, state);
   presenter.present(frame);
 }

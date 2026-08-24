@@ -36,6 +36,9 @@ DispatchStage GameDispatcher::choose_stage(const RuntimeState &state) {
   if (player.is_physics_active) {
     return DispatchStage::GroundedPhysics;
   }
+  if (flags.player_special_state_active) {
+    return DispatchStage::PlayerSpecialState;
+  }
   if (player.is_animation_active) {
     return DispatchStage::PlayerAnimation;
   }
@@ -47,9 +50,6 @@ DispatchStage GameDispatcher::choose_stage(const RuntimeState &state) {
   }
   if (flags.tile_hazard_triggered) {
     return DispatchStage::TileHazard;
-  }
-  if (flags.player_special_state_active) {
-    return DispatchStage::PlayerSpecialState;
   }
   return DispatchStage::InputHandling;
 }

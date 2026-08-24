@@ -337,6 +337,55 @@ void test_attack_handler_uses_attack_overlay_state() {
          "attack overlay timer should count down");
 }
 
+void test_death_flow_prompts_when_lives_are_exhausted() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.hp = 0;
+  state.player.lives = 1;
+  state.flags.player_special_state_active = true;
+
+  comic2::handle_tile_hazard(state);
+  expect(state.flags.player_special_state_active,
+         "fatal damage should enter the death special-state flow");
+  expect(state.player.animation_state ==
+             static_cast<std::uint8_t>(comic2::PlayerAnimationState::Death),
+         "fatal damage should switch the player into death animation");
+
+  comic2::handle_player_special_state(state);
+  expect(state.player.death_timer_ticks == 2,
+         "death flow should decrement the countdown each tick");
+  expect(!state.ui.modal_active,
+         "death flow should wait for the countdown before opening a modal");
+
+  comic2::handle_player_special_state(state);
+  comic2::handle_player_special_state(state);
+  expect(state.ui.modal_active,
+         "death flow should open a modal prompt once the countdown completes");
+  expect(state.ui.modal_game_over,
+         "death flow should enter the game-over modal when the final life is exhausted");
+}
+
+void test_confirming_continue_respawns_player() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.hp = 0;
+  state.player.lives = 2;
+  state.ui.modal_active = true;
+  state.ui.modal_prompt = "Continue?";
+  state.ui.modal_game_over = false;
+  state.player.animation_state =
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::Death);
+
+  state.ui.modal_confirmed = true;
+  comic2::handle_player_special_state(state);
+
+  expect(!state.ui.modal_active,
+         "confirming continue should dismiss the modal and resume play");
+  expect(state.player.hp == 12,
+         "confirming continue should restore player health");
+  expect(state.player.animation_state ==
+             static_cast<std::uint8_t>(comic2::PlayerAnimationState::Idle),
+         "confirming continue should restore the idle animation state");
+}
+
 void test_tile_hazard_stage_instantly_kills_player() {
   comic2::GameDispatcher dispatcher;
   comic2::install_default_stage_hooks(dispatcher);
@@ -779,6 +828,8 @@ void run_dispatcher_tests() {
   test_default_stage_hook_coverage();
   test_player_animation_handler_advances_walk_cycle();
   test_attack_handler_uses_attack_overlay_state();
+  test_death_flow_prompts_when_lives_are_exhausted();
+  test_confirming_continue_respawns_player();
   test_tile_hazard_stage_instantly_kills_player();
   test_stage_flags_are_consumed_by_default_handlers();
   test_input_fallback_arms_grounded_physics_for_next_tick();

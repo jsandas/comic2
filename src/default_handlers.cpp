@@ -247,12 +247,67 @@ void handle_distance_interaction(RuntimeState &state) {
 
 void handle_tile_hazard(RuntimeState &state) {
   state.player.hp = 0;
+  state.player.death_timer_ticks = 3;
+  state.player.animation_state =
+      static_cast<std::uint8_t>(PlayerAnimationState::Death);
+  state.player.is_animation_active = true;
+  state.transition_state.player_frozen = true;
   queue_audio_event(state, AudioEvent::Death);
   state.flags.player_special_state_active = true;
   state.flags.tile_hazard_triggered = false;
 }
 
-void handle_player_special_state(const RuntimeState &state) { (void)state; }
+void handle_player_special_state(RuntimeState &state) {
+  state.flags.player_special_state_active = true;
+
+  if (state.ui.modal_active && state.ui.modal_confirmed) {
+    state.ui.modal_confirmed = false;
+    if (state.ui.modal_game_over) {
+      state.ui.modal_active = true;
+      state.ui.modal_prompt = "Game Over";
+      return;
+    }
+
+    state.player.hp = 12;
+    state.player.invuln_ticks = 8;
+    state.player.animation_state =
+        static_cast<std::uint8_t>(PlayerAnimationState::Idle);
+    state.player.animation_frame = 0;
+    state.transition_state.player_frozen = false;
+    state.ui.modal_active = false;
+    state.ui.modal_prompt.clear();
+    state.ui.modal_game_over = false;
+    state.flags.player_special_state_active = false;
+    return;
+  }
+
+  if (state.player.death_timer_ticks > 0) {
+    state.player.death_timer_ticks =
+        static_cast<std::uint8_t>(state.player.death_timer_ticks - 1U);
+    if (state.player.death_timer_ticks == 0) {
+      if (state.player.lives > 0) {
+        state.player.lives = static_cast<std::uint8_t>(state.player.lives - 1U);
+      }
+      if (state.player.lives == 0) {
+        state.ui.modal_active = true;
+        state.ui.modal_prompt = "Game Over";
+        state.ui.modal_game_over = true;
+        return;
+      }
+
+      state.ui.modal_active = true;
+      state.ui.modal_prompt = "Continue?";
+      state.ui.modal_game_over = false;
+    }
+    return;
+  }
+
+  if (state.player.lives == 0) {
+    state.ui.modal_active = true;
+    state.ui.modal_prompt = "Game Over";
+    state.ui.modal_game_over = true;
+  }
+}
 
 void handle_input_fallback(RuntimeState &state) {
   if (state.transition_state.active) {
@@ -299,7 +354,7 @@ void install_default_stage_hooks(GameDispatcher &dispatcher) {
   dispatcher.set_tile_hazard_hook(
       [](RuntimeState &state) { handle_tile_hazard(state); });
   dispatcher.set_player_special_state_hook(
-      [](const RuntimeState &state) { handle_player_special_state(state); });
+      [](RuntimeState &state) { handle_player_special_state(state); });
   dispatcher.set_input_handling_hook(
       [](RuntimeState &state) { handle_input_fallback(state); });
 }

@@ -59,6 +59,7 @@ struct PlayerState {
   std::uint8_t animation_frame = 0;
   std::uint8_t animation_ticks = 0;
   std::uint8_t attack_overlay_ticks = 0;
+  std::uint8_t death_timer_ticks = 0;
 
   std::uint8_t jump_counter = 0;
   std::uint8_t hp = 12;
@@ -116,6 +117,8 @@ struct UiState {
   bool modal_active = false;
   std::uint8_t awaited_key = 0;
   std::string modal_prompt;
+  bool modal_confirmed = false;
+  bool modal_game_over = false;
 };
 
 struct RuntimeState {
