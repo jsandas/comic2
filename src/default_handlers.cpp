@@ -133,11 +133,17 @@ void queue_room_event_message(RuntimeState &state) {
     return;
   }
 
+  if (state.ui.room_event_consumed) {
+    state.flags.room_event_triggered = false;
+    return;
+  }
+
   state.flags.room_event_triggered = false;
   if (!state.ui.pending_event_message.empty()) {
     return;
   }
 
+  state.ui.room_event_consumed = true;
   state.ui.pending_event_message = "Room Event Triggered";
 }
 

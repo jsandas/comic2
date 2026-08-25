@@ -611,6 +611,27 @@ void test_room_event_message_becomes_modal_prompt() {
          "room-event message should be consumed once shown");
 }
 
+void test_room_event_message_is_only_queued_once_per_trigger() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.flags.room_event_triggered = true;
+
+  comic2::handle_input_fallback(state);
+
+  expect(state.ui.pending_event_message == "Room Event Triggered",
+         "first room-event trigger should queue a message");
+  expect(state.ui.room_event_consumed,
+         "first room-event trigger should mark the one-shot state consumed");
+
+  state.flags.room_event_triggered = true;
+  state.ui.pending_event_message.clear();
+  comic2::handle_input_fallback(state);
+
+  expect(state.ui.pending_event_message.empty(),
+         "repeated room-event triggers should not re-queue the message");
+  expect(!state.ui.modal_active,
+         "repeated room-event triggers should not reopen the modal prompt");
+}
+
 void test_level_completion_activates_when_gem_threshold_is_met() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.player.gems = 2;
@@ -1206,6 +1227,7 @@ void run_dispatcher_tests() {
   test_input_fallback_expires_mode_effects_on_tick();
   test_room_event_message_is_queued_for_display();
   test_room_event_message_becomes_modal_prompt();
+  test_room_event_message_is_only_queued_once_per_trigger();
   test_level_completion_activates_when_gem_threshold_is_met();
   test_level_completion_does_not_trigger_before_threshold();
   test_progression_state_updates_inventory_bits();

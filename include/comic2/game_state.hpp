@@ -138,6 +138,7 @@ struct UiState {
   std::uint8_t awaited_key = 0;
   std::string modal_prompt;
   std::string pending_event_message;
+  bool room_event_consumed = false;
   bool modal_confirmed = false;
   bool modal_game_over = false;
   bool game_over = false;

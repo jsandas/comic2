@@ -1162,7 +1162,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [ ] **Room Event Anchor Motion & Sprites**: Anchor-object motion and sprite logic remain pending.
 - [ ] **Interaction Script Execution**: Interaction-script execution and message queueing remain pending.
 - [x] **Message Display**: Modal message rendering is now supported via a lightweight room-event message queue that surfaces trigger-based messages through the existing modal prompt path.
-- [ ] **Event One-Shot Tracking**: One-shot trigger suppression remains pending.
+- [x] **Event One-Shot Tracking**: One-shot trigger suppression is now implemented and covered by regression tests.
 - [ ] **Event Script Tests**: Event-script regression tests are still pending.
 
 ### 10.6 Player Mode System
