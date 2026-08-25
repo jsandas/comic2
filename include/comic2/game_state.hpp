@@ -113,6 +113,15 @@ struct RoomTransitionState {
   bool operator==(const RoomTransitionState &) const = default;
 };
 
+struct ProgressionState {
+  std::uint8_t flags = 0;
+  bool gems_collected = false;
+  bool firepower_unlocked = false;
+  bool lives_available = false;
+
+  bool operator==(const ProgressionState &) const = default;
+};
+
 struct UiState {
   MenuState menu_state = MenuState::None;
   std::size_t selected_option_index = 0;
@@ -149,6 +158,7 @@ struct RuntimeState {
   PlayerState player;
   InputState input;
   DispatcherFlags flags;
+  ProgressionState progression;
   UiState ui;
   bool level_complete = false;
   std::uint8_t level_completion_gems_required = 0;

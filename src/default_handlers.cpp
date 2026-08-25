@@ -137,6 +137,37 @@ void apply_default_grounded_physics(RuntimeState &state) {
   update_player_hazard_state(state, kDefaultCollision);
 }
 
+void reset_runtime_for_new_game(RuntimeState &state) {
+  state.player = PlayerState{};
+  state.player.x = 64;
+  state.player.y = 96;
+  state.player.is_physics_active = true;
+  state.player.facing_right = true;
+  state.player.hp = 12;
+  state.player.firepower = 1;
+  state.player.gems = 0;
+  state.player.lives = 3;
+  state.player.invuln_ticks = 0;
+  state.current_room = 0;
+  state.current_level = 0;
+  state.level_complete = false;
+  state.level_completion_gems_required = 0;
+  state.pending_room_transition.reset();
+  state.flags = DispatcherFlags{};
+  state.ui = UiState{};
+  state.progression = ProgressionState{};
+  state.transition_state = RoomTransitionState{};
+  state.projectiles.clear();
+  state.runtime_slots.clear();
+  state.active_entities.clear();
+  state.mapped_objects.clear();
+  state.activation_state = EntityActivationState{};
+  state.activation_toggle = 1;
+  state.camera_y = 0;
+}
+
+} // namespace
+
 void reset_player_respawn_state(RuntimeState &state) {
   state.player.hp = 12;
   state.player.x = 160;
@@ -170,36 +201,6 @@ void reset_player_respawn_state(RuntimeState &state) {
   state.level_completion_gems_required = 0;
   state.flags.player_special_state_active = false;
 }
-
-void reset_runtime_for_new_game(RuntimeState &state) {
-  state.player = PlayerState{};
-  state.player.x = 64;
-  state.player.y = 96;
-  state.player.is_physics_active = true;
-  state.player.facing_right = true;
-  state.player.hp = 12;
-  state.player.firepower = 1;
-  state.player.gems = 0;
-  state.player.lives = 3;
-  state.player.invuln_ticks = 0;
-  state.current_room = 0;
-  state.current_level = 0;
-  state.level_complete = false;
-  state.level_completion_gems_required = 0;
-  state.pending_room_transition.reset();
-  state.flags = DispatcherFlags{};
-  state.ui = UiState{};
-  state.transition_state = RoomTransitionState{};
-  state.projectiles.clear();
-  state.runtime_slots.clear();
-  state.active_entities.clear();
-  state.mapped_objects.clear();
-  state.activation_state = EntityActivationState{};
-  state.activation_toggle = 1;
-  state.camera_y = 0;
-}
-
-} // namespace
 
 void handle_level_transition(RuntimeState &state) {
   const auto pending = state.pending_room_transition;
@@ -492,15 +493,40 @@ void update_player_mode_effect(RuntimeState &state) {
 }
 
 void update_progression_state(RuntimeState &state) {
+  constexpr std::uint8_t kGemsFlag = 0x01U;
+  constexpr std::uint8_t kFirepowerFlag = 0x02U;
+  constexpr std::uint8_t kLivesFlag = 0x04U;
+
   if (state.player.gems > 0) {
+    state.progression.gems_collected = true;
+  }
+  if (state.player.firepower > 1) {
+    state.progression.firepower_unlocked = true;
+  }
+  if (state.player.lives > 0) {
+    state.progression.lives_available = true;
+  }
+
+  state.progression.flags = 0U;
+  if (state.progression.gems_collected) {
+    state.progression.flags |= kGemsFlag;
+  }
+  if (state.progression.firepower_unlocked) {
+    state.progression.flags |= kFirepowerFlag;
+  }
+  if (state.progression.lives_available) {
+    state.progression.flags |= kLivesFlag;
+  }
+
+  if (state.progression.gems_collected) {
     state.ui.inventory_mask =
         static_cast<std::uint8_t>(state.ui.inventory_mask | 0x01U);
   }
-  if (state.player.firepower > 1) {
+  if (state.progression.firepower_unlocked) {
     state.ui.inventory_mask =
         static_cast<std::uint8_t>(state.ui.inventory_mask | 0x02U);
   }
-  if (state.player.lives > 0) {
+  if (state.progression.lives_available) {
     state.ui.active_mode_mask =
         static_cast<std::uint8_t>(state.ui.active_mode_mask | 0x01U);
   }

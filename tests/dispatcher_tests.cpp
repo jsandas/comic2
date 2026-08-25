@@ -637,6 +637,26 @@ void test_progression_state_keeps_inventory_bits_stable() {
          "progression state should preserve already-known active mode bits");
 }
 
+void test_respawn_reset_preserves_persistent_progression_state() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.gems = 3;
+  state.player.firepower = 2;
+  state.player.lives = 2;
+  comic2::update_progression_state(state);
+
+  const auto persisted = state.progression;
+  comic2::reset_player_respawn_state(state);
+
+  expect(state.progression.flags == persisted.flags,
+         "respawn reset should preserve the persistent progression flags");
+  expect(state.progression.gems_collected,
+         "respawn reset should keep gem progression marked as collected");
+  expect(state.progression.firepower_unlocked,
+         "respawn reset should keep firepower progression marked as unlocked");
+  expect(state.progression.lives_available,
+         "respawn reset should keep life progression marked as available");
+}
+
 void test_tile_hazard_stage_instantly_kills_player() {
   comic2::GameDispatcher dispatcher;
   comic2::install_default_stage_hooks(dispatcher);
@@ -1131,6 +1151,7 @@ void run_dispatcher_tests() {
   test_level_completion_does_not_trigger_before_threshold();
   test_progression_state_updates_inventory_bits();
   test_progression_state_keeps_inventory_bits_stable();
+  test_respawn_reset_preserves_persistent_progression_state();
   test_tile_hazard_stage_instantly_kills_player();
   test_stage_flags_are_consumed_by_default_handlers();
   test_input_fallback_arms_grounded_physics_for_next_tick();

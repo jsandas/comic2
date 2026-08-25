@@ -1153,7 +1153,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [x] **Level-to-Level Transition**: Level transition, room reset, and resource swap logic remain pending.
 - [ ] **Level Resource Isolation**: FRPAK/resource-cache invalidation on level change is pending.
 - [ ] **Game Win / Finale**: Finale sequence wiring is pending.
-- [ ] **Progression State Tracking**: Persistence of collected progression items is pending.
+- [x] **Progression State Tracking**: Persistence of collected progression items is now implemented in the runtime state and preserved across respawn/reset paths.
 - [ ] **Level Progression Tests**: Progression tests are still pending.
 
 ### 10.5 Room Event Scripts & Trigger Zones
