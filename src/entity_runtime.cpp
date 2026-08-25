@@ -237,7 +237,8 @@ void apply_entity_combat(RuntimeState &state) {
     --state.player.invuln_ticks;
   }
   if (mode_invulnerability_active) {
-    state.player.invuln_ticks = std::max(state.player.invuln_ticks, kInvulnerabilityTicks);
+    state.player.invuln_ticks =
+        std::max(state.player.invuln_ticks, kInvulnerabilityTicks);
   }
   if (state.player.damage_recoil_ticks > 0) {
     --state.player.damage_recoil_ticks;

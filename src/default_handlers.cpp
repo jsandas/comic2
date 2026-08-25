@@ -361,11 +361,10 @@ void handle_player_special_state(RuntimeState &state) {
   }
 
   if (state.ui.game_over) {
-    const bool restart_requested = state.ui.modal_confirmed ||
-                                   state.input.jump_pressed ||
-                                   state.input.pause_pressed ||
-                                   state.input.right_pressed ||
-                                   state.input.left_pressed;
+    const bool restart_requested =
+        state.ui.modal_confirmed || state.input.jump_pressed ||
+        state.input.pause_pressed || state.input.right_pressed ||
+        state.input.left_pressed;
     if (restart_requested) {
       reset_runtime_for_new_game(state);
       state.flags.player_special_state_active = false;

@@ -139,8 +139,7 @@ bool KeyboardInputHandler::poll_events(InputState &input) {
   input.left_pressed = read_env_bool("COMIC2_INPUT_LEFT");
   input.right_pressed = read_env_bool("COMIC2_INPUT_RIGHT");
   input.down_pressed = read_env_bool("COMIC2_INPUT_DOWN");
-  input.mode_activate_pressed =
-      read_env_bool("COMIC2_INPUT_MODE_ACTIVATE");
+  input.mode_activate_pressed = read_env_bool("COMIC2_INPUT_MODE_ACTIVATE");
 
   if (read_env_bool("COMIC2_INPUT_QUIT")) {
     impl_->quit_requested = true;

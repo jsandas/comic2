@@ -60,8 +60,9 @@ bool trigger_fall_if_no_support(RuntimeState &state,
 
 } // namespace detail
 
-PlayerMotionConfig get_effective_motion_config(const RuntimeState &state,
-                                               const PlayerMotionConfig &motion) {
+PlayerMotionConfig
+get_effective_motion_config(const RuntimeState &state,
+                            const PlayerMotionConfig &motion) {
   PlayerMotionConfig effective_motion = motion;
 
   if (detail::has_active_mode_effect(state, kModeSpeedBoost)) {

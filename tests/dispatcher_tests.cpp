@@ -500,10 +500,12 @@ void test_game_over_confirm_restarts_runtime_state() {
          "game-over confirmation should reset the score for a fresh run");
   expect(state.player.gems == 0,
          "game-over confirmation should reset collected gems for a fresh run");
-  expect(state.player.x == 64,
-         "game-over confirmation should reset the player to the default spawn x");
-  expect(state.player.y == 96,
-         "game-over confirmation should reset the player to the default spawn y");
+  expect(
+      state.player.x == 64,
+      "game-over confirmation should reset the player to the default spawn x");
+  expect(
+      state.player.y == 96,
+      "game-over confirmation should reset the player to the default spawn y");
   expect(!state.flags.player_special_state_active,
          "game-over confirmation should exit the special state flow");
 }
@@ -577,8 +579,8 @@ void test_level_completion_activates_when_gem_threshold_is_met() {
 
   comic2::handle_input_fallback(state);
 
-  expect(state.level_complete,
-         "gem collection should mark the level as complete once the threshold is met");
+  expect(state.level_complete, "gem collection should mark the level as "
+                               "complete once the threshold is met");
   expect(state.ui.modal_active,
          "level completion should open the completion modal");
   expect(state.ui.modal_prompt == "Level Complete!",
@@ -592,10 +594,12 @@ void test_level_completion_does_not_trigger_before_threshold() {
 
   comic2::handle_input_fallback(state);
 
-  expect(!state.level_complete,
-         "level completion should stay pending before the gem threshold is met");
-  expect(!state.ui.modal_active,
-         "level completion should not open a modal before the threshold is met");
+  expect(
+      !state.level_complete,
+      "level completion should stay pending before the gem threshold is met");
+  expect(
+      !state.ui.modal_active,
+      "level completion should not open a modal before the threshold is met");
 }
 
 void test_progression_state_updates_inventory_bits() {

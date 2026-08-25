@@ -20,8 +20,9 @@ struct PlayerMotionConfig {
   std::int16_t fall_start_velocity = 1;
 };
 
-PlayerMotionConfig get_effective_motion_config(
-    const RuntimeState &state, const PlayerMotionConfig &motion);
+PlayerMotionConfig
+get_effective_motion_config(const RuntimeState &state,
+                            const PlayerMotionConfig &motion);
 void apply_input_tick(RuntimeState &state, const PlayerMotionConfig &motion);
 void apply_grounded_physics_tick(RuntimeState &state,
                                  const PlayerMotionConfig &motion,
