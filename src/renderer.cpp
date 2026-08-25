@@ -209,8 +209,8 @@ Ega4PlaneImage make_entity_placeholder_sprite(const RuntimeEntitySlot32 &slot) {
   }
 
   for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
-    auto &plane_bytes = sprite.planes[plane];
     if ((color >> plane) & 0x1U) {
+      auto &plane_bytes = sprite.planes[plane];
       for (std::size_t row = 0; row < sprite.height_rows; ++row) {
         const std::size_t row_off = row * sprite.width_bytes;
         plane_bytes[row_off] = 0xFF;
