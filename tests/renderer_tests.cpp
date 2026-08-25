@@ -2,6 +2,7 @@
 #include <stdexcept>
 
 #include "comic2/bootstrap.hpp"
+#include "comic2/entity_runtime.hpp"
 #include "comic2/game_state.hpp"
 #include "comic2/renderer.hpp"
 #include "comic2/renderer_validation.hpp"
@@ -156,6 +157,69 @@ void test_camera_y_clamps_to_room_bounds() {
          "camera Y should clamp to the room-height viewport limit");
 }
 
+void test_render_bootstrap_frame_skips_entities_outside_viewport() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.runtime_slots.clear();
+
+  comic2::RuntimeEntitySlot32 slot{};
+  slot.mapped_object_ptr = 1;
+  slot.behavior_state = comic2::kBehaviorGem;
+  slot.x = 220;
+  slot.y = 100;
+  state.runtime_slots.push_back(slot);
+
+  comic2::MemoryFramePresenter presenter;
+  comic2::render_bootstrap_frame(presenter, state);
+
+  const auto &frame = presenter.last_frame();
+  const auto background_color = read_surface_color(frame, 220, 100);
+  expect(background_color != 0x03,
+         "entity outside viewport should not change the frame");
+}
+
+void test_render_bootstrap_frame_renders_entities_on_viewport_edge() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.runtime_slots.clear();
+
+  comic2::RuntimeEntitySlot32 slot{};
+  slot.mapped_object_ptr = 1;
+  slot.behavior_state = comic2::kBehaviorGem;
+  slot.x = 184;
+  slot.y = 136;
+  state.runtime_slots.push_back(slot);
+
+  comic2::MemoryFramePresenter presenter;
+  comic2::render_bootstrap_frame(presenter, state);
+
+  const auto &frame = presenter.last_frame();
+  const auto pixel = read_surface_color(frame, 184, 136);
+  expect(pixel == 0x03,
+         "entity touching the viewport edge should still render");
+}
+
+void test_render_bootstrap_frame_draws_player_after_entities() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.runtime_slots.clear();
+
+  comic2::RuntimeEntitySlot32 slot{};
+  slot.mapped_object_ptr = 1;
+  slot.behavior_state = comic2::kBehaviorGem;
+  slot.x = 64;
+  slot.y = 96;
+  state.runtime_slots.push_back(slot);
+
+  state.player.x = 64;
+  state.player.y = 96;
+
+  comic2::MemoryFramePresenter presenter;
+  comic2::render_bootstrap_frame(presenter, state);
+
+  const auto &frame = presenter.last_frame();
+  const auto pixel = read_surface_color(frame, 64, 96);
+  expect(pixel == 0x0C,
+         "player marker should overwrite entity pixels when drawn last");
+}
+
 } // namespace
 
 void run_renderer_tests() {
@@ -167,8 +231,9 @@ void run_renderer_tests() {
   test_player_sprite_frame_selection_uses_animation_state();
   test_player_sprite_frame_selection_uses_facing_direction();
   test_invulnerability_blink_visibility_uses_tick_parity();
-  test_camera_y_clamps_to_room_bounds();
-
+  test_camera_y_clamps_to_room_bounds();  test_render_bootstrap_frame_skips_entities_outside_viewport();
+  test_render_bootstrap_frame_renders_entities_on_viewport_edge();
+  test_render_bootstrap_frame_draws_player_after_entities();
   // EgaPageFlipper tests
   {
     comic2::EgaPageFlipper flipper;

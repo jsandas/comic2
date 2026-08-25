@@ -369,11 +369,17 @@ bool draw_player_sprite_from_asset(EgaPlanarSurface &frame,
     return false;
   }
 
-  const std::size_t px = static_cast<std::size_t>(std::max<std::int16_t>(
-      0, std::min<std::int16_t>(state.player.x, frame.width_pixels() - 16)));
-  const std::size_t py = static_cast<std::size_t>(std::max<std::int16_t>(
-      0, std::min<std::int16_t>(state.player.y, frame.height_rows() - 16)));
-  gfx_rle_blit_masked_or_4plane(frame, px, py, sprite);
+  const std::int32_t px = state.player.x;
+  const std::int32_t py = state.player.y - state.camera_y;
+  if (!is_sprite_in_viewport(px, py, 16, 16)) {
+    return true;
+  }
+
+  const std::size_t clamped_px = static_cast<std::size_t>(std::max<std::int16_t>(
+      0, std::min<std::int16_t>(px, frame.width_pixels() - 16)));
+  const std::size_t clamped_py = static_cast<std::size_t>(std::max<std::int16_t>(
+      0, std::min<std::int16_t>(py, frame.height_rows() - 16)));
+  gfx_rle_blit_masked_or_4plane(frame, clamped_px, clamped_py, sprite);
   return true;
 }
 bool draw_timed_overlay_sprite_from_asset(EgaPlanarSurface &frame,
@@ -390,11 +396,17 @@ bool draw_timed_overlay_sprite_from_asset(EgaPlanarSurface &frame,
     return false;
   }
 
-  const std::size_t px = static_cast<std::size_t>(std::max<std::int16_t>(
-      0, std::min<std::int16_t>(state.player.x, frame.width_pixels() - 16)));
-  const std::size_t py = static_cast<std::size_t>(std::max<std::int16_t>(
-      0, std::min<std::int16_t>(state.player.y, frame.height_rows() - 16)));
-  gfx_rle_blit_masked_or_4plane(frame, px, py, sprite);
+  const std::int32_t px = state.player.x;
+  const std::int32_t py = state.player.y - state.camera_y;
+  if (!is_sprite_in_viewport(px, py, 16, 16)) {
+    return true;
+  }
+
+  const std::size_t clamped_px = static_cast<std::size_t>(std::max<std::int16_t>(
+      0, std::min<std::int16_t>(px, frame.width_pixels() - 16)));
+  const std::size_t clamped_py = static_cast<std::size_t>(std::max<std::int16_t>(
+      0, std::min<std::int16_t>(py, frame.height_rows() - 16)));
+  gfx_rle_blit_masked_or_4plane(frame, clamped_px, clamped_py, sprite);
   return true;
 }
 std::optional<Ega4PlaneImage> try_decode_bootstrap_asset(RuntimeState &state) {
@@ -419,6 +431,10 @@ void draw_player_marker(EgaPlanarSurface &frame, const RuntimeState &state) {
   const std::int32_t px0 = state.player.x;
   const std::int32_t py0 = state.player.y - state.camera_y;
   const std::uint8_t body_color = state.player.is_airborne ? 0x0E : 0x0C;
+
+  if (!is_sprite_in_viewport(px0, py0, 8, 16)) {
+    return;
+  }
 
   for (std::int32_t py = 0; py < 16; ++py) {
     for (std::int32_t px = 0; px < 8; ++px) {
@@ -556,9 +572,13 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
     draw_fallback_background(frame, state);
   }
 
+  // Phase 10.1: draw background first.
   draw_runtime_entity_sprites(frame, state);
+
+  // Phase 10.1: draw projectiles above entities.
   draw_runtime_projectile_sprites(frame, state);
 
+  // Phase 10.1: draw the player above projectiles.
   if (used_asset_background && should_render_player_sprite(state)) {
     if (!draw_player_sprite_from_asset(frame, state, *asset)) {
       draw_player_marker(frame, state);
@@ -569,6 +589,7 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
     draw_player_marker(frame, state);
   }
 
+  // Phase 10.1: draw any timed overlay last before the HUD.
   if (used_asset_background && should_render_timed_overlay(state)) {
     if (!draw_timed_overlay_sprite_from_asset(frame, state, *asset)) {
       draw_player_marker(frame, state);

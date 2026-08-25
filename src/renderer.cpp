@@ -319,6 +319,18 @@ void gfx_rle_blit_opaque_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
   }
 }
 
+bool is_sprite_in_viewport(std::int32_t x, std::int32_t y, std::int32_t width,
+                           std::int32_t height,
+                           std::int32_t viewport_x, std::int32_t viewport_y,
+                           std::int32_t viewport_width,
+                           std::int32_t viewport_height) {
+  const std::int32_t viewport_right = viewport_x + viewport_width;
+  const std::int32_t viewport_bottom = viewport_y + viewport_height;
+
+  return (x + width > viewport_x) && (x < viewport_right) &&
+         (y + height > viewport_y) && (y < viewport_bottom);
+}
+
 void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
                                    std::size_t y_rows,
                                    const Ega4PlaneImage &image_data) {
@@ -372,6 +384,9 @@ void draw_runtime_entity_sprites(EgaPlanarSurface &frame,
     if (px0 < -16 || py0 < -16) {
       continue;
     }
+    if (!is_sprite_in_viewport(px0, py0, 16, 16)) {
+      continue;
+    }
 
     const std::int32_t clamped_x =
         std::max<std::int32_t>(0, std::min(px0, max_x));
@@ -398,6 +413,9 @@ void draw_runtime_projectile_sprites(EgaPlanarSurface &frame,
     const std::int32_t px0 = projectile.x;
     const std::int32_t py0 = projectile.y - state.camera_y;
     if (px0 < -8 || py0 < -8) {
+      continue;
+    }
+    if (!is_sprite_in_viewport(px0, py0, 8, 8)) {
       continue;
     }
 
