@@ -503,14 +503,12 @@ void update_player_mode_activation(RuntimeState &state) {
     return;
   }
 
-  state.ui.active_mode_mask =
-      static_cast<std::uint8_t>(state.ui.active_mode_mask & ~selected_mode);
+  state.ui.active_mode_mask = selected_mode;
   state.player.active_mode_effect = selected_mode;
   state.player.mode_effect_ticks = 30U;
   state.flags.timed_overlay_pending = true;
-  state.progression.mode_inventory_mask =
-      static_cast<std::uint8_t>(state.progression.mode_inventory_mask |
-                                 selected_mode);
+  state.progression.mode_inventory_mask = static_cast<std::uint8_t>(
+      state.progression.mode_inventory_mask | selected_mode);
   state.ui.inventory_mask =
       static_cast<std::uint8_t>(state.ui.inventory_mask | 0x04U);
 }
