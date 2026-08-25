@@ -572,6 +572,19 @@ void test_mode_effect_countdown_expires_after_ticks() {
          "mode effect countdown should reach zero when expired");
 }
 
+void test_input_fallback_expires_mode_effects_on_tick() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.active_mode_effect = 0x02U;
+  state.player.mode_effect_ticks = 1U;
+
+  comic2::handle_input_fallback(state);
+
+  expect(state.player.active_mode_effect == 0U,
+         "input fallback should clear an expired mode effect");
+  expect(state.player.mode_effect_ticks == 0U,
+         "input fallback should leave the mode countdown at zero once expired");
+}
+
 void test_room_event_message_is_queued_for_display() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.flags.room_event_triggered = true;
@@ -1173,6 +1186,7 @@ void run_dispatcher_tests() {
   test_down_input_cycles_active_mode_mask();
   test_mode_activation_starts_effect_and_consumes_selected_mode();
   test_mode_effect_countdown_expires_after_ticks();
+  test_input_fallback_expires_mode_effects_on_tick();
   test_room_event_message_is_queued_for_display();
   test_room_event_message_becomes_modal_prompt();
   test_level_completion_activates_when_gem_threshold_is_met();

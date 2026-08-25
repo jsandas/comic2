@@ -1170,7 +1170,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [ ] **Mode Cycling Input**: Mode cycling and HUD indicator updates remain pending.
 - [x] **Mode Activation**: State-4 mode activation behavior is now implemented with activation input, effect state, countdown handling, and regression tests.
 - [x] **Mode-Specific Effects**: Basic mode-specific gameplay effects are now implemented for speed, invulnerability, and jump boost behavior.
-- [ ] **Mode Duration & Cooldown**: Timing/cooldown logic remains pending.
+- [x] **Mode Duration & Cooldown**: Simple mode-effect countdown cleanup is now implemented and covered by dispatcher regression tests.
 - [ ] **Mode System Tests**: Mode-system tests are still pending.
 
 ### 10.7 Dynamic Palette Management

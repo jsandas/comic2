@@ -504,8 +504,10 @@ void update_player_mode_activation(RuntimeState &state) {
   state.flags.timed_overlay_pending = true;
 }
 
-void update_player_mode_effect(RuntimeState &state) {
+namespace {
+void expire_mode_effect_if_due(RuntimeState &state) {
   if (state.player.active_mode_effect == 0U) {
+    state.player.mode_effect_ticks = 0U;
     return;
   }
 
@@ -517,6 +519,11 @@ void update_player_mode_effect(RuntimeState &state) {
   if (state.player.mode_effect_ticks == 0U) {
     state.player.active_mode_effect = 0U;
   }
+}
+} // namespace
+
+void update_player_mode_effect(RuntimeState &state) {
+  expire_mode_effect_if_due(state);
 }
 
 void update_progression_state(RuntimeState &state) {
