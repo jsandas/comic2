@@ -580,6 +580,7 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
   }
 
   if (state.transition_state.active) {
+    apply_transition_palette_tint(frame, state.transition_state);
     if (state.transition_state.effect_type == 0) {
       room_transition_palette_wave(frame, state.transition_state);
     } else {

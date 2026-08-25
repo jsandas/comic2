@@ -110,6 +110,8 @@ struct RoomTransitionState {
   std::int16_t target_player_x = 0;
   std::int16_t player_entry_offset = 0;
   std::int16_t player_exit_offset = 0;
+  std::uint8_t palette_tint = 0;
+  std::uint8_t palette_shift = 0;
 
   bool operator==(const RoomTransitionState &) const = default;
 };

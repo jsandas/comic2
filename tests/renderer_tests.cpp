@@ -14,6 +14,22 @@ void expect(bool condition, const char *message) {
   }
 }
 
+std::uint8_t read_surface_color(const comic2::EgaPlanarSurface &surface,
+                                std::int32_t x, std::int32_t y) {
+  const auto x_byte = static_cast<std::size_t>(x / 8);
+  const auto bit = static_cast<std::uint8_t>(7 - (x % 8));
+  const auto y_row = static_cast<std::size_t>(y);
+  std::uint8_t color = 0;
+  for (std::size_t plane = 0; plane < comic2::EgaPlanarSurface::kPlaneCount;
+       ++plane) {
+    const auto value = surface.get_plane_byte(plane, x_byte, y_row);
+    if ((value & static_cast<std::uint8_t>(1U << bit)) != 0U) {
+      color |= static_cast<std::uint8_t>(1U << plane);
+    }
+  }
+  return color;
+}
+
 void test_surface_geometry() {
   comic2::EgaPlanarSurface surface(320, 200);
   expect(surface.row_stride_bytes() == 40,
@@ -40,6 +56,23 @@ void test_presenter_copies_frame() {
   expect(presenter.has_frame(), "presenter should report frame availability");
   expect(presenter.last_frame().get_plane_byte(1, 0, 0) == 0x7E,
          "presenter did not retain frame copy");
+}
+
+void test_transition_palette_tint_applies_to_surface_pixels() {
+  comic2::EgaPlanarSurface surface(320, 200);
+  surface.clear(0x00);
+  surface.set_plane_byte(1, 0, 0, 0x80);
+
+  comic2::RoomTransitionState transition{};
+  transition.active = true;
+  transition.frame_index = 2;
+  transition.palette_tint = 3;
+  transition.palette_shift = 1;
+
+  comic2::apply_transition_palette_tint(surface, transition);
+
+  expect(read_surface_color(surface, 0, 0) == 0x08,
+         "transition palette tint should shift the pixel color deterministically");
 }
 
 void test_transition_effects_are_deterministic() {
@@ -128,6 +161,7 @@ void run_renderer_tests() {
   test_surface_geometry();
   test_surface_plane_rw();
   test_presenter_copies_frame();
+  test_transition_palette_tint_applies_to_surface_pixels();
   test_transition_effects_are_deterministic();
   test_player_sprite_frame_selection_uses_animation_state();
   test_player_sprite_frame_selection_uses_facing_direction();

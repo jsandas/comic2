@@ -1178,7 +1178,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [ ] **Runtime Palette State**: Runtime palette state and presenter integration remain pending.
 - [ ] **Level Palette Switching**: Level transition palette application remains pending.
 - [ ] **Retrace Palette Animation**: Retrace-driven palette animation remains pending.
-- [ ] **Transition Palette Effects**: Room-transition palette effects remain pending.
+- [x] **Transition Palette Effects**: Room-transition palette effects are now implemented with a deterministic tint applied during transitions.
 - [ ] **Palette Tests**: Palette regression tests remain pending.
 
 ### 10.8 Timing & Speed Parity
