@@ -87,6 +87,7 @@ struct DispatcherFlags {
   bool distance_interaction_active = false;
   bool player_special_state_active = false;
   bool tile_hazard_triggered = false;
+  bool room_event_triggered = false;
 
   bool operator==(const DispatcherFlags &) const = default;
 };
@@ -135,6 +136,7 @@ struct UiState {
   bool modal_active = false;
   std::uint8_t awaited_key = 0;
   std::string modal_prompt;
+  std::string pending_event_message;
   bool modal_confirmed = false;
   bool modal_game_over = false;
   bool game_over = false;

@@ -572,6 +572,32 @@ void test_mode_effect_countdown_expires_after_ticks() {
          "mode effect countdown should reach zero when expired");
 }
 
+void test_room_event_message_is_queued_for_display() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.flags.room_event_triggered = true;
+
+  comic2::handle_input_fallback(state);
+
+  expect(state.ui.pending_event_message == "Room Event Triggered",
+         "room-event trigger should queue a displayable message");
+  expect(!state.ui.modal_active,
+         "queued room-event message should wait for the modal display step");
+}
+
+void test_room_event_message_becomes_modal_prompt() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.pending_event_message = "Room Event Triggered";
+
+  comic2::handle_input_fallback(state);
+
+  expect(state.ui.modal_active,
+         "pending room-event message should open the modal prompt path");
+  expect(state.ui.modal_prompt == "Room Event Triggered",
+         "pending room-event message should become the modal prompt");
+  expect(state.ui.pending_event_message.empty(),
+         "room-event message should be consumed once shown");
+}
+
 void test_level_completion_activates_when_gem_threshold_is_met() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.player.gems = 2;
@@ -1147,6 +1173,8 @@ void run_dispatcher_tests() {
   test_down_input_cycles_active_mode_mask();
   test_mode_activation_starts_effect_and_consumes_selected_mode();
   test_mode_effect_countdown_expires_after_ticks();
+  test_room_event_message_is_queued_for_display();
+  test_room_event_message_becomes_modal_prompt();
   test_level_completion_activates_when_gem_threshold_is_met();
   test_level_completion_does_not_trigger_before_threshold();
   test_progression_state_updates_inventory_bits();

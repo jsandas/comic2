@@ -128,6 +128,32 @@ void apply_default_airborne_physics(RuntimeState &state) {
   update_player_hazard_state(state, kDefaultCollision);
 }
 
+void queue_room_event_message(RuntimeState &state) {
+  if (!state.flags.room_event_triggered) {
+    return;
+  }
+
+  state.flags.room_event_triggered = false;
+  if (!state.ui.pending_event_message.empty()) {
+    return;
+  }
+
+  state.ui.pending_event_message = "Room Event Triggered";
+}
+
+void show_pending_room_event_message(RuntimeState &state) {
+  if (state.ui.pending_event_message.empty() || state.ui.modal_active) {
+    return;
+  }
+
+  state.ui.modal_active = true;
+  state.ui.modal_prompt = state.ui.pending_event_message;
+  state.ui.pending_event_message.clear();
+  state.ui.modal_game_over = false;
+  state.ui.level_complete_modal = false;
+  state.transition_state.player_frozen = true;
+}
+
 void apply_default_grounded_physics(RuntimeState &state) {
   apply_grounded_physics_tick(state, kDefaultMotion, kDefaultCollision);
   if (!has_floor_support_data(state)) {
@@ -197,6 +223,7 @@ void reset_player_respawn_state(RuntimeState &state) {
   state.ui.modal_game_over = false;
   state.ui.game_over = false;
   state.ui.level_complete_modal = false;
+  state.ui.pending_event_message.clear();
   state.level_complete = false;
   state.level_completion_gems_required = 0;
   state.flags.player_special_state_active = false;
@@ -533,6 +560,18 @@ void update_progression_state(RuntimeState &state) {
 }
 
 void handle_input_fallback(RuntimeState &state) {
+  if (state.flags.room_event_triggered) {
+    queue_room_event_message(state);
+    return;
+  }
+
+  show_pending_room_event_message(state);
+  if (state.ui.modal_active && !state.ui.modal_prompt.empty() &&
+      state.ui.pending_event_message.empty() &&
+      state.ui.modal_prompt == "Room Event Triggered") {
+    return;
+  }
+
   if (state.level_complete) {
     if (!state.ui.level_complete_modal) {
       state.ui.modal_active = true;
