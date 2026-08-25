@@ -71,8 +71,9 @@ void test_transition_palette_tint_applies_to_surface_pixels() {
 
   comic2::apply_transition_palette_tint(surface, transition);
 
-  expect(read_surface_color(surface, 0, 0) == 0x08,
-         "transition palette tint should shift the pixel color deterministically");
+  expect(
+      read_surface_color(surface, 0, 0) == 0x08,
+      "transition palette tint should shift the pixel color deterministically");
 }
 
 void test_transition_effects_are_deterministic() {

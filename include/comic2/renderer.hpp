@@ -126,7 +126,7 @@ void draw_runtime_projectile_sprites(EgaPlanarSurface &frame,
                                      const RuntimeState &state);
 
 void apply_transition_palette_tint(EgaPlanarSurface &surface,
-                                    const RoomTransitionState &transition);
+                                   const RoomTransitionState &transition);
 void room_transition_palette_wave(EgaPlanarSurface &surface,
                                   const RoomTransitionState &transition);
 void room_transition_reveal_sequence_a(EgaPlanarSurface &surface,

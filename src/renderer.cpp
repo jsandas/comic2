@@ -27,8 +27,8 @@ std::size_t checked_offset(const EgaPlanarSurface &surface, std::size_t x_byte,
   return y_row * surface.row_stride_bytes() + x_byte;
 }
 
-std::uint8_t read_surface_color(const EgaPlanarSurface &surface,
-                                 std::int32_t x, std::int32_t y) {
+std::uint8_t read_surface_color(const EgaPlanarSurface &surface, std::int32_t x,
+                                std::int32_t y) {
   if (x < 0 || y < 0 || x >= surface.width_pixels() ||
       y >= surface.height_rows()) {
     return 0;
@@ -412,7 +412,7 @@ void draw_runtime_projectile_sprites(EgaPlanarSurface &frame,
 }
 
 void apply_transition_palette_tint(EgaPlanarSurface &surface,
-                                    const RoomTransitionState &transition) {
+                                   const RoomTransitionState &transition) {
   if (!transition.active) {
     return;
   }
@@ -425,7 +425,8 @@ void apply_transition_palette_tint(EgaPlanarSurface &surface,
   for (std::int32_t y = 0; y < surface.height_rows(); ++y) {
     for (std::int32_t x = 0; x < surface.width_pixels(); ++x) {
       const auto color = read_surface_color(surface, x, y);
-      const auto base = static_cast<std::uint8_t>((color + tint + frame_bias) & 0x0F);
+      const auto base =
+          static_cast<std::uint8_t>((color + tint + frame_bias) & 0x0F);
       set_surface_pixel(surface, x, y, base);
     }
   }
