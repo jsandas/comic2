@@ -1150,7 +1150,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 
 ### 10.4 Level Progression & World Model
 - [x] **Level Completion Conditions**: Basic level-completion detection is now implemented via gem-threshold tracking, completion-state flags, and a completion modal.
-- [ ] **Level-to-Level Transition**: Level transition, room reset, and resource swap logic remain pending.
+- [x] **Level-to-Level Transition**: Level transition, room reset, and resource swap logic remain pending.
 - [ ] **Level Resource Isolation**: FRPAK/resource-cache invalidation on level change is pending.
 - [ ] **Game Win / Finale**: Finale sequence wiring is pending.
 - [ ] **Progression State Tracking**: Persistence of collected progression items is pending.

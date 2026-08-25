@@ -758,6 +758,45 @@ void test_input_fallback_arms_grounded_physics_for_next_tick() {
          "second tick should execute grounded physics after arming");
 }
 
+void test_transition_completion_finalizes_room_and_player_position() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  comic2::RuntimeState state;
+  state.current_level = 1;
+  state.current_room = 0;
+  state.player.x = 12;
+  state.player.y = 50;
+  state.player.x_vel = 3;
+  state.player.y_vel = -2;
+  state.player.is_airborne = true;
+  state.player.is_physics_active = true;
+  state.transition_state.active = true;
+  state.transition_state.completed = false;
+  state.transition_state.target_room = 2;
+  state.transition_state.target_player_x = 16;
+  state.transition_state.tick_count = 31;
+  state.transition_state.frame_index = 31;
+
+  const auto result = dispatcher.run_tick(state);
+  expect(result.stage == comic2::DispatchStage::InputHandling,
+         "completed transition should still run through the input stage");
+  expect(state.transition_state.completed,
+         "transition should complete when its timer expires");
+  expect(state.current_room == 2,
+         "transition completion should update the current room");
+  expect(state.player.x == 16,
+         "transition completion should place the player at the target x");
+  expect(state.player.x_vel == 0,
+         "transition completion should clear horizontal velocity");
+  expect(state.player.y_vel == 0,
+         "transition completion should clear vertical velocity");
+  expect(!state.player.is_airborne,
+         "transition completion should clear airborne state");
+  expect(!state.transition_state.player_frozen,
+         "completed transition should release player control");
+}
+
 void test_level_transition_loads_room_tilemap() {
   comic2::RuntimeState state;
   state.current_level = 1;
@@ -1095,6 +1134,7 @@ void run_dispatcher_tests() {
   test_tile_hazard_stage_instantly_kills_player();
   test_stage_flags_are_consumed_by_default_handlers();
   test_input_fallback_arms_grounded_physics_for_next_tick();
+  test_transition_completion_finalizes_room_and_player_position();
   test_level_transition_loads_room_tilemap();
   test_level_transition_right_edge_reloads_target_room_from_assets();
   test_level_transition_left_edge_room0_clamps_without_transition();

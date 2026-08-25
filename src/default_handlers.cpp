@@ -1,5 +1,6 @@
 #include "comic2/default_handlers.hpp"
 
+#include <algorithm>
 #include <limits>
 #include <utility>
 
@@ -71,6 +72,26 @@ void update_room_transition_from_player_bounds(RuntimeState &state) {
         .target_player_x = 0};
     state.flags.level_transition_pending = true;
   }
+}
+
+void complete_pending_room_transition(RuntimeState &state) {
+  auto &transition = state.transition_state;
+  if (transition.completed) {
+    return;
+  }
+
+  transition.completed = true;
+  transition.active = false;
+  transition.player_frozen = false;
+
+  state.current_room = transition.target_room;
+  state.player.x = transition.target_player_x;
+  state.player.y = std::clamp(
+      state.player.y, static_cast<std::int16_t>(0),
+      static_cast<std::int16_t>(kViewportHeightPixels - kPlayerHeightPixels));
+  state.player.x_vel = 0;
+  state.player.y_vel = 0;
+  state.player.is_airborne = false;
 }
 
 void advance_transition_state(RuntimeState &state) {
@@ -193,6 +214,9 @@ void handle_level_transition(RuntimeState &state) {
   candidate_state.player.x = pending->target_player_x;
   candidate_state.transition_state.active = true;
   candidate_state.transition_state.player_frozen = true;
+  candidate_state.transition_state.completed = false;
+  candidate_state.transition_state.target_room = pending->target_room;
+  candidate_state.transition_state.target_player_x = pending->target_player_x;
   candidate_state.transition_state.effect_type = static_cast<std::uint16_t>(
       (candidate_state.current_room + candidate_state.current_level) % 2U);
   candidate_state.transition_state.frame_index = 0;
@@ -498,7 +522,11 @@ void handle_input_fallback(RuntimeState &state) {
   if (state.transition_state.active) {
     state.transition_state.player_frozen = true;
     advance_transition_state(state);
-    room_transition_player_exit_sequence(state);
+    if (!state.transition_state.active) {
+      complete_pending_room_transition(state);
+    } else {
+      room_transition_player_exit_sequence(state);
+    }
     return;
   }
 

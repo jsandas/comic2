@@ -101,9 +101,12 @@ struct PendingRoomTransition {
 struct RoomTransitionState {
   bool active = false;
   bool player_frozen = false;
+  bool completed = false;
   std::uint16_t effect_type = 0;
   std::uint16_t frame_index = 0;
   std::uint16_t tick_count = 0;
+  std::uint16_t target_room = 0;
+  std::int16_t target_player_x = 0;
   std::int16_t player_entry_offset = 0;
   std::int16_t player_exit_offset = 0;
 
