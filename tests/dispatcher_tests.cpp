@@ -641,6 +641,23 @@ void test_level_completion_does_not_trigger_before_threshold() {
       "level completion should not open a modal before the threshold is met");
 }
 
+void test_player_mode_activation_tracks_mode_inventory() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.active_mode_mask = 0x01U;
+  state.ui.inventory_mask = 0U;
+  state.input.mode_activate_pressed = true;
+
+  comic2::update_player_mode_activation(state);
+
+  expect(state.progression.mode_inventory_mask == 0x01U,
+         "activating a mode should record it in the progression inventory");
+  expect((state.ui.inventory_mask & 0x04U) != 0U,
+         "activating a mode should expose the collection in the HUD inventory "
+         "mask");
+  expect(state.ui.active_mode_mask == 0x01U,
+         "activating a mode should keep the active mode selection visible");
+}
+
 void test_progression_state_updates_inventory_bits() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.player.gems = 3;

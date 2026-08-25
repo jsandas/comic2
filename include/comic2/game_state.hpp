@@ -119,6 +119,7 @@ struct ProgressionState {
   bool gems_collected = false;
   bool firepower_unlocked = false;
   bool lives_available = false;
+  std::uint8_t mode_inventory_mask = 0;
 
   bool operator==(const ProgressionState &) const = default;
 };

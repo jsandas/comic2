@@ -76,7 +76,9 @@ bool should_draw_hud_overlay(const RuntimeState &state) {
   return state.ui.menu_state != MenuState::None || state.ui.modal_active ||
          state.player.score != 0 || state.player.gems != 0 ||
          state.player.lives != 3 || state.ui.active_mode_mask != 0 ||
-         state.ui.inventory_mask != 0 || state.ui.cinematic_frame != 0;
+         state.ui.inventory_mask != 0 ||
+         state.progression.mode_inventory_mask != 0 ||
+         state.ui.cinematic_frame != 0;
 }
 
 } // namespace
@@ -147,6 +149,10 @@ void hud_render_overlay(EgaPlanarSurface &surface, const RuntimeState &state) {
     draw_rect(surface, 152, 188, 8, 8, 0x0E);
   }
   if ((state.ui.inventory_mask & 0x02U) != 0U) {
+    draw_rect(surface, 160, 188, 8, 8, 0x0C);
+  }
+  if (((state.ui.inventory_mask & 0x04U) != 0U) ||
+      state.progression.mode_inventory_mask != 0U) {
     draw_rect(surface, 160, 188, 8, 8, 0x0C);
   }
 }

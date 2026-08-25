@@ -94,6 +94,33 @@ void test_hud_renders_mode_and_inventory_labels() {
          "HUD should draw a visible inventory label strip");
 }
 
+void test_hud_renders_mode_inventory_bits() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.progression.mode_inventory_mask = 0x01;
+  state.ui.active_mode_mask = 0x00;
+  state.ui.inventory_mask = 0x00;
+
+  comic2::EgaPlanarSurface frame(320, 200);
+  frame.clear(0x00);
+  comic2::hud_render_overlay(frame, state);
+
+  bool saw_mode_inventory_pixel = false;
+  for (std::size_t y = 184; y < 192; ++y) {
+    for (std::size_t x = 160; x < 176; ++x) {
+      if (frame.get_plane_byte(0, x / 8, y) != 0x00) {
+        saw_mode_inventory_pixel = true;
+        break;
+      }
+    }
+    if (saw_mode_inventory_pixel) {
+      break;
+    }
+  }
+
+  expect(saw_mode_inventory_pixel,
+         "HUD should render a visible icon when a mode is collected");
+}
+
 void test_menu_state_machine_and_option_navigation() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.ui.menu_state = comic2::MenuState::Pause;
@@ -116,6 +143,7 @@ void run_ui_tests() {
   test_bcd_counter_helpers();
   test_hud_renders_counters_and_icons();
   test_hud_renders_mode_and_inventory_labels();
+  test_hud_renders_mode_inventory_bits();
   test_modal_prompt_overlay_is_rendered();
   test_menu_state_machine_and_option_navigation();
 }

@@ -1166,7 +1166,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [ ] **Event Script Tests**: Event-script regression tests are still pending.
 
 ### 10.6 Player Mode System
-- [ ] **Mode Inventory**: Mode-collection tracking is not implemented.
+- [x] **Mode Inventory**: Mode-collection tracking is implemented through a bounded progression inventory mask, retained in the runtime model, surfaced in the HUD, and covered by regression tests.
 - [ ] **Mode Cycling Input**: Mode cycling and HUD indicator updates remain pending.
 - [x] **Mode Activation**: State-4 mode activation behavior is now implemented with activation input, effect state, countdown handling, and regression tests.
 - [x] **Mode-Specific Effects**: Basic mode-specific gameplay effects are now implemented for speed, invulnerability, and jump boost behavior.
