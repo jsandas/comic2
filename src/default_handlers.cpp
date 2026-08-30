@@ -485,10 +485,45 @@ void update_player_mode_cycle(RuntimeState &state) {
     return;
   }
 
-  constexpr std::uint8_t kModeBitMask = 0x03U;
-  const std::uint8_t next_mask = static_cast<std::uint8_t>(
-      (state.ui.active_mode_mask + 1U) & kModeBitMask);
-  state.ui.active_mode_mask = next_mask;
+  const std::uint8_t inventory_mask = state.progression.mode_inventory_mask;
+  if (inventory_mask == 0U) {
+    state.ui.active_mode_mask = 0U;
+    return;
+  }
+
+  constexpr std::uint8_t kModeBits[4] = {0x01U, 0x02U, 0x04U, 0x08U};
+  const std::uint8_t current_mask = static_cast<std::uint8_t>(
+      state.ui.active_mode_mask & 0x0FU);
+
+  std::size_t current_index = 4U;
+  for (std::size_t index = 0U; index < 4U; ++index) {
+    if (current_mask == kModeBits[index]) {
+      current_index = index;
+      break;
+    }
+  }
+
+  if (current_index == 4U) {
+    for (std::size_t index = 0U; index < 4U; ++index) {
+      if ((inventory_mask & kModeBits[index]) != 0U) {
+        state.ui.active_mode_mask = kModeBits[index];
+        return;
+      }
+    }
+    state.ui.active_mode_mask = 0U;
+    return;
+  }
+
+  for (std::size_t step = 0U; step < 4U; ++step) {
+    const std::size_t next_index = (current_index + step + 1U) % 4U;
+    const std::uint8_t candidate_mask = kModeBits[next_index];
+    if ((inventory_mask & candidate_mask) != 0U) {
+      state.ui.active_mode_mask = candidate_mask;
+      return;
+    }
+  }
+
+  state.ui.active_mode_mask = 0U;
 }
 
 void update_player_mode_activation(RuntimeState &state) {

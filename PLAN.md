@@ -1167,7 +1167,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 
 ### 10.6 Player Mode System
 - [x] **Mode Inventory**: Mode-collection tracking is implemented through a bounded progression inventory mask, retained in the runtime model, surfaced in the HUD, and covered by regression tests.
-- [ ] **Mode Cycling Input**: Mode cycling and HUD indicator updates remain pending.
+- [x] **Mode Cycling Input**: Mode cycling now follows the collected-mode inventory, wraps around correctly, and updates the HUD selection immediately.
 - [x] **Mode Activation**: State-4 mode activation behavior is now implemented with activation input, effect state, countdown handling, and regression tests.
 - [x] **Mode-Specific Effects**: Basic mode-specific gameplay effects are now implemented for speed, invulnerability, and jump boost behavior.
 - [x] **Mode Duration & Cooldown**: Simple mode-effect countdown cleanup is now implemented and covered by dispatcher regression tests.

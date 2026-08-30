@@ -145,6 +145,15 @@ void hud_render_overlay(EgaPlanarSurface &surface, const RuntimeState &state) {
   if ((state.ui.active_mode_mask & 0x01U) != 0U) {
     draw_rect(surface, 144, 188, 8, 8, 0x0F);
   }
+  if ((state.ui.active_mode_mask & 0x02U) != 0U) {
+    draw_rect(surface, 144, 188, 8, 8, 0x0E);
+  }
+  if ((state.ui.active_mode_mask & 0x04U) != 0U) {
+    draw_rect(surface, 144, 188, 8, 8, 0x0D);
+  }
+  if ((state.ui.active_mode_mask & 0x08U) != 0U) {
+    draw_rect(surface, 144, 188, 8, 8, 0x0C);
+  }
   if ((state.ui.inventory_mask & 0x01U) != 0U) {
     draw_rect(surface, 152, 188, 8, 8, 0x0E);
   }

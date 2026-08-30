@@ -533,6 +533,7 @@ void test_game_over_input_restarts_without_modal_confirm() {
 void test_down_input_cycles_active_mode_mask() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.ui.active_mode_mask = 0;
+  state.progression.mode_inventory_mask = 0x07U;
   state.input.down_pressed = true;
 
   comic2::update_player_mode_cycle(state);
@@ -542,6 +543,44 @@ void test_down_input_cycles_active_mode_mask() {
   comic2::update_player_mode_cycle(state);
   expect(state.ui.active_mode_mask == 2U,
          "repeated down input should advance the active mode mask again");
+}
+
+void test_down_input_cycles_only_through_collected_modes() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.active_mode_mask = 0x01U;
+  state.progression.mode_inventory_mask = 0x05U;
+  state.input.down_pressed = true;
+
+  comic2::update_player_mode_cycle(state);
+  expect(state.ui.active_mode_mask == 0x04U,
+         "down input should skip uncollected modes and pick the next valid "
+         "selection");
+
+  comic2::update_player_mode_cycle(state);
+  expect(state.ui.active_mode_mask == 0x01U,
+         "down input should wrap from the last valid mode back to the first");
+}
+
+void test_down_input_is_a_noop_when_no_modes_are_collected() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.active_mode_mask = 0x00U;
+  state.progression.mode_inventory_mask = 0x00U;
+  state.input.down_pressed = true;
+
+  comic2::update_player_mode_cycle(state);
+  expect(state.ui.active_mode_mask == 0x00U,
+         "down input should not change the selection when no modes are owned");
+}
+
+void test_down_input_updates_selection_immediately_on_down_press() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.active_mode_mask = 0x00U;
+  state.progression.mode_inventory_mask = 0x07U;
+  state.input.down_pressed = true;
+
+  comic2::update_player_mode_cycle(state);
+  expect(state.ui.active_mode_mask == 0x01U,
+         "down input should update the selection immediately on a single press");
 }
 
 void test_mode_activation_starts_effect_and_consumes_selected_mode() {
@@ -1222,6 +1261,9 @@ void run_dispatcher_tests() {
   test_game_over_confirm_restarts_runtime_state();
   test_game_over_input_restarts_without_modal_confirm();
   test_down_input_cycles_active_mode_mask();
+  test_down_input_cycles_only_through_collected_modes();
+  test_down_input_is_a_noop_when_no_modes_are_collected();
+  test_down_input_updates_selection_immediately_on_down_press();
   test_player_mode_activation_tracks_mode_inventory();
   test_mode_activation_starts_effect_and_consumes_selected_mode();
   test_mode_effect_countdown_expires_after_ticks();
