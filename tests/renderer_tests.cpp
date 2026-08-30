@@ -21,21 +21,20 @@ void set_test_sprite_pixel(comic2::Ega4PlaneImage &sprite, std::size_t x_pixels,
   const auto row_off = y_rows * static_cast<std::size_t>(sprite.width_bytes);
 
   for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
-    auto &plane_bytes = sprite.planes[plane];
     if ((color >> plane) & 0x1U) {
-      plane_bytes[row_off + x_byte] |= static_cast<std::uint8_t>(1U << bit);
+      sprite.planes[plane][row_off + x_byte] |=
+          static_cast<std::uint8_t>(1U << bit);
     }
   }
 }
 
 comic2::Ega4PlaneImage make_test_sprite(std::uint8_t color,
-                                       std::size_t width_bytes,
-                                       std::size_t height_rows) {
+                                        std::size_t width_bytes,
+                                        std::size_t height_rows) {
   comic2::Ega4PlaneImage sprite{};
   sprite.width_bytes = static_cast<std::uint16_t>(width_bytes);
   sprite.height_rows = static_cast<std::uint16_t>(height_rows);
-  sprite.row_span_bytes =
-      static_cast<std::uint16_t>(width_bytes * height_rows);
+  sprite.row_span_bytes = static_cast<std::uint16_t>(width_bytes * height_rows);
 
   for (auto &plane_bytes : sprite.planes) {
     plane_bytes.assign(width_bytes * height_rows, 0x00);

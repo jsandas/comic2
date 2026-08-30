@@ -73,8 +73,8 @@ void set_surface_pixel(EgaPlanarSurface &surface, std::int32_t x,
   }
 }
 
-void or_surface_pixel(EgaPlanarSurface &surface, std::int32_t x,
-                      std::int32_t y, std::uint8_t color_index) {
+void or_surface_pixel(EgaPlanarSurface &surface, std::int32_t x, std::int32_t y,
+                      std::uint8_t color_index) {
   if (x < 0 || y < 0 || x >= surface.width_pixels() ||
       y >= surface.height_rows()) {
     return;
@@ -97,8 +97,7 @@ void or_surface_pixel(EgaPlanarSurface &surface, std::int32_t x,
 }
 
 std::uint8_t read_sprite_pixel_color(const Ega4PlaneImage &sprite,
-                                     std::size_t x_pixels,
-                                     std::size_t y_rows) {
+                                     std::size_t x_pixels, std::size_t y_rows) {
   if (x_pixels >= static_cast<std::size_t>(sprite.width_bytes) * 8U ||
       y_rows >= static_cast<std::size_t>(sprite.height_rows)) {
     return 0;
@@ -366,9 +365,8 @@ void gfx_rle_blit_opaque_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
 }
 
 bool is_sprite_in_viewport(std::int32_t x, std::int32_t y, std::int32_t width,
-                           std::int32_t height,
-                           std::int32_t viewport_x, std::int32_t viewport_y,
-                           std::int32_t viewport_width,
+                           std::int32_t height, std::int32_t viewport_x,
+                           std::int32_t viewport_y, std::int32_t viewport_width,
                            std::int32_t viewport_height) {
   const std::int32_t viewport_right = viewport_x + viewport_width;
   const std::int32_t viewport_bottom = viewport_y + viewport_height;
@@ -424,8 +422,8 @@ void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
 
       const auto dest_x = static_cast<std::int32_t>(x_pixels) +
                           static_cast<std::int32_t>(src_x);
-      const auto dest_y = static_cast<std::int32_t>(y_rows) +
-                          static_cast<std::int32_t>(row);
+      const auto dest_y =
+          static_cast<std::int32_t>(y_rows) + static_cast<std::int32_t>(row);
       or_surface_pixel(dest, dest_x, dest_y, color_index);
     }
   }

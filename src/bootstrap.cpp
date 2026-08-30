@@ -375,10 +375,12 @@ bool draw_player_sprite_from_asset(EgaPlanarSurface &frame,
     return true;
   }
 
-  const std::size_t clamped_px = static_cast<std::size_t>(std::max<std::int16_t>(
-      0, std::min<std::int16_t>(px, frame.width_pixels() - 16)));
-  const std::size_t clamped_py = static_cast<std::size_t>(std::max<std::int16_t>(
-      0, std::min<std::int16_t>(py, frame.height_rows() - 16)));
+  const std::size_t clamped_px =
+      static_cast<std::size_t>(std::max<std::int16_t>(
+          0, std::min<std::int16_t>(px, frame.width_pixels() - 16)));
+  const std::size_t clamped_py =
+      static_cast<std::size_t>(std::max<std::int16_t>(
+          0, std::min<std::int16_t>(py, frame.height_rows() - 16)));
   gfx_rle_blit_masked_or_4plane(frame, clamped_px, clamped_py, sprite);
   return true;
 }
@@ -402,10 +404,12 @@ bool draw_timed_overlay_sprite_from_asset(EgaPlanarSurface &frame,
     return true;
   }
 
-  const std::size_t clamped_px = static_cast<std::size_t>(std::max<std::int16_t>(
-      0, std::min<std::int16_t>(px, frame.width_pixels() - 16)));
-  const std::size_t clamped_py = static_cast<std::size_t>(std::max<std::int16_t>(
-      0, std::min<std::int16_t>(py, frame.height_rows() - 16)));
+  const std::size_t clamped_px =
+      static_cast<std::size_t>(std::max<std::int16_t>(
+          0, std::min<std::int16_t>(px, frame.width_pixels() - 16)));
+  const std::size_t clamped_py =
+      static_cast<std::size_t>(std::max<std::int16_t>(
+          0, std::min<std::int16_t>(py, frame.height_rows() - 16)));
   gfx_rle_blit_masked_or_4plane(frame, clamped_px, clamped_py, sprite);
   return true;
 }

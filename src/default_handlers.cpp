@@ -465,10 +465,9 @@ bool handle_level_completion_transition(RuntimeState &state) {
 
   bool loaded = false;
   if (!candidate_state.assets_root.empty()) {
-    loaded = load_room_tilemap_from_asset_root(candidate_state,
-                                               candidate_state.assets_root,
-                                               candidate_state.current_level,
-                                               candidate_state.current_room);
+    loaded = load_room_tilemap_from_asset_root(
+        candidate_state, candidate_state.assets_root,
+        candidate_state.current_level, candidate_state.current_room);
   }
   if (!loaded && !candidate_state.room_resource_bytes.empty()) {
     loaded = load_room_tilemap_from_resource_buffer(
@@ -593,8 +592,8 @@ void update_player_mode_cycle(RuntimeState &state) {
   }
 
   constexpr std::uint8_t kModeBits[4] = {0x01U, 0x02U, 0x04U, 0x08U};
-  const std::uint8_t current_mask = static_cast<std::uint8_t>(
-      state.ui.active_mode_mask & 0x0FU);
+  const std::uint8_t current_mask =
+      static_cast<std::uint8_t>(state.ui.active_mode_mask & 0x0FU);
 
   std::size_t current_index = 4U;
   for (std::size_t index = 0U; index < 4U; ++index) {

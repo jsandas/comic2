@@ -579,8 +579,9 @@ void test_down_input_updates_selection_immediately_on_down_press() {
   state.input.down_pressed = true;
 
   comic2::update_player_mode_cycle(state);
-  expect(state.ui.active_mode_mask == 0x01U,
-         "down input should update the selection immediately on a single press");
+  expect(
+      state.ui.active_mode_mask == 0x01U,
+      "down input should update the selection immediately on a single press");
 }
 
 void test_mode_activation_starts_effect_and_consumes_selected_mode() {
@@ -800,14 +801,16 @@ void test_level_completion_confirm_keeps_current_level_when_next_level_is_unavai
 
   comic2::handle_player_special_state(state);
 
-  expect(state.current_level == 1,
-         "missing level resources should leave the player on the current level");
+  expect(
+      state.current_level == 1,
+      "missing level resources should leave the player on the current level");
   expect(state.current_room == 3,
          "missing level resources should preserve the current room");
   expect(state.player.x == 88,
          "missing level resources should preserve the current player position");
-  expect(state.player.y == 66,
-         "missing level resources should preserve the current player y position");
+  expect(
+      state.player.y == 66,
+      "missing level resources should preserve the current player y position");
   expect(state.player.gems == 1,
          "missing level resources should preserve collected gems");
   expect(state.player.firepower == 1,
@@ -1390,6 +1393,8 @@ void run_dispatcher_tests() {
   test_room_event_message_is_only_queued_once_per_trigger();
   test_level_completion_activates_when_gem_threshold_is_met();
   test_level_completion_does_not_trigger_before_threshold();
+  test_level_completion_confirm_advances_to_next_level_and_resets_transient_state();
+  test_level_completion_confirm_keeps_current_level_when_next_level_is_unavailable();
   test_progression_state_updates_inventory_bits();
   test_progression_state_keeps_inventory_bits_stable();
   test_respawn_reset_preserves_persistent_progression_state();

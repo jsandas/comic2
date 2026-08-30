@@ -121,8 +121,7 @@ void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
                                    const Ega4PlaneImage &image_data);
 
 bool is_sprite_in_viewport(std::int32_t x, std::int32_t y, std::int32_t width,
-                           std::int32_t height,
-                           std::int32_t viewport_x = 0,
+                           std::int32_t height, std::int32_t viewport_x = 0,
                            std::int32_t viewport_y = 0,
                            std::int32_t viewport_width = 200,
                            std::int32_t viewport_height = 152);
