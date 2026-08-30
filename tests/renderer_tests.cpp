@@ -9,6 +9,43 @@
 
 namespace {
 
+void set_test_sprite_pixel(comic2::Ega4PlaneImage &sprite, std::size_t x_pixels,
+                           std::size_t y_rows, std::uint8_t color) {
+  if (x_pixels >= static_cast<std::size_t>(sprite.width_bytes) * 8U ||
+      y_rows >= static_cast<std::size_t>(sprite.height_rows)) {
+    return;
+  }
+
+  const auto x_byte = x_pixels / 8U;
+  const auto bit = static_cast<std::uint8_t>(7U - (x_pixels % 8U));
+  const auto row_off = y_rows * static_cast<std::size_t>(sprite.width_bytes);
+
+  for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
+    auto &plane_bytes = sprite.planes[plane];
+    if ((color >> plane) & 0x1U) {
+      plane_bytes[row_off + x_byte] |= static_cast<std::uint8_t>(1U << bit);
+    }
+  }
+}
+
+comic2::Ega4PlaneImage make_test_sprite(std::uint8_t color,
+                                       std::size_t width_bytes,
+                                       std::size_t height_rows) {
+  comic2::Ega4PlaneImage sprite{};
+  sprite.width_bytes = static_cast<std::uint16_t>(width_bytes);
+  sprite.height_rows = static_cast<std::uint16_t>(height_rows);
+  sprite.row_span_bytes =
+      static_cast<std::uint16_t>(width_bytes * height_rows);
+
+  for (auto &plane_bytes : sprite.planes) {
+    plane_bytes.assign(width_bytes * height_rows, 0x00);
+  }
+
+  set_test_sprite_pixel(sprite, 0, 0, color);
+  set_test_sprite_pixel(sprite, 8, 0, color);
+  return sprite;
+}
+
 void expect(bool condition, const char *message) {
   if (!condition) {
     throw std::runtime_error(message);
@@ -157,6 +194,44 @@ void test_camera_y_clamps_to_room_bounds() {
          "camera Y should clamp to the room-height viewport limit");
 }
 
+void test_masked_blit_keeps_byte_aligned_positions() {
+  comic2::EgaPlanarSurface surface(320, 200);
+  const auto sprite = make_test_sprite(0x01, 2, 1);
+
+  comic2::gfx_rle_blit_masked_or_4plane(surface, 8, 0, sprite);
+
+  expect(read_surface_color(surface, 8, 0) == 0x01,
+         "byte-aligned sprite should render at the requested pixel boundary");
+  expect(read_surface_color(surface, 16, 0) == 0x01,
+         "byte-aligned sprite should span the expected trailing pixel");
+}
+
+void test_masked_blit_handles_shifted_positions() {
+  comic2::EgaPlanarSurface surface(320, 200);
+  const auto sprite = make_test_sprite(0x01, 2, 1);
+
+  comic2::gfx_rle_blit_masked_or_4plane(surface, 4, 0, sprite);
+
+  expect(read_surface_color(surface, 4, 0) == 0x01,
+         "shifted sprite should render to the requested pixel offset");
+  expect(read_surface_color(surface, 12, 0) == 0x01,
+         "shifted sprite should preserve the trailing pixel in the next byte");
+  expect(read_surface_color(surface, 3, 0) == 0x00,
+         "shifted sprite should not spill into the preceding pixel");
+}
+
+void test_masked_blit_clips_shifted_sprite_at_viewport_edge() {
+  comic2::EgaPlanarSurface surface(320, 200);
+  const auto sprite = make_test_sprite(0x01, 2, 1);
+
+  comic2::gfx_rle_blit_masked_or_4plane(surface, 316, 0, sprite);
+
+  expect(read_surface_color(surface, 316, 0) == 0x01,
+         "shifted sprite should clip safely when it reaches the viewport edge");
+  expect(read_surface_color(surface, 317, 0) == 0x00,
+         "shifted sprite should not write past the viewport edge");
+}
+
 void test_render_bootstrap_frame_skips_entities_outside_viewport() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.runtime_slots.clear();
@@ -231,7 +306,11 @@ void run_renderer_tests() {
   test_player_sprite_frame_selection_uses_animation_state();
   test_player_sprite_frame_selection_uses_facing_direction();
   test_invulnerability_blink_visibility_uses_tick_parity();
-  test_camera_y_clamps_to_room_bounds();  test_render_bootstrap_frame_skips_entities_outside_viewport();
+  test_camera_y_clamps_to_room_bounds();
+  test_masked_blit_keeps_byte_aligned_positions();
+  test_masked_blit_handles_shifted_positions();
+  test_masked_blit_clips_shifted_sprite_at_viewport_edge();
+  test_render_bootstrap_frame_skips_entities_outside_viewport();
   test_render_bootstrap_frame_renders_entities_on_viewport_edge();
   test_render_bootstrap_frame_draws_player_after_entities();
   // EgaPageFlipper tests

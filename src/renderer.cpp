@@ -73,6 +73,52 @@ void set_surface_pixel(EgaPlanarSurface &surface, std::int32_t x,
   }
 }
 
+void or_surface_pixel(EgaPlanarSurface &surface, std::int32_t x,
+                      std::int32_t y, std::uint8_t color_index) {
+  if (x < 0 || y < 0 || x >= surface.width_pixels() ||
+      y >= surface.height_rows()) {
+    return;
+  }
+
+  const auto x_byte = static_cast<std::size_t>(x / 8);
+  const auto bit = static_cast<std::uint8_t>(7 - (x % 8));
+  const auto mask = static_cast<std::uint8_t>(1U << bit);
+  const auto y_row = static_cast<std::size_t>(y);
+
+  for (std::size_t plane = 0; plane < EgaPlanarSurface::kPlaneCount; ++plane) {
+    if (((color_index >> plane) & 0x1U) == 0U) {
+      continue;
+    }
+
+    auto value = surface.get_plane_byte(plane, x_byte, y_row);
+    value = static_cast<std::uint8_t>(value | mask);
+    surface.set_plane_byte(plane, x_byte, y_row, value);
+  }
+}
+
+std::uint8_t read_sprite_pixel_color(const Ega4PlaneImage &sprite,
+                                     std::size_t x_pixels,
+                                     std::size_t y_rows) {
+  if (x_pixels >= static_cast<std::size_t>(sprite.width_bytes) * 8U ||
+      y_rows >= static_cast<std::size_t>(sprite.height_rows)) {
+    return 0;
+  }
+
+  const auto x_byte = x_pixels / 8U;
+  const auto bit = static_cast<std::uint8_t>(7U - (x_pixels % 8U));
+  const auto row_off = y_rows * static_cast<std::size_t>(sprite.width_bytes);
+  std::uint8_t color_index = 0;
+
+  for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
+    const auto value = sprite.planes[plane][row_off + x_byte];
+    if ((value & static_cast<std::uint8_t>(1U << bit)) != 0U) {
+      color_index |= static_cast<std::uint8_t>(1U << plane);
+    }
+  }
+
+  return color_index;
+}
+
 void fill_surface_rect(EgaPlanarSurface &surface, std::int32_t x0,
                        std::int32_t y0, std::int32_t width, std::int32_t height,
                        std::uint8_t color_index) {
@@ -345,24 +391,42 @@ void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
         "image width_bytes and height_rows must be non-zero for blitting");
   }
 
-  // Calculate destination row stride in bytes
-  const auto dest_row_stride = dest.row_stride_bytes();
-  const auto dest_byte_offset = x_pixels / 8;
+  if ((x_pixels % 8U) == 0U) {
+    const auto dest_row_stride = dest.row_stride_bytes();
+    const auto dest_byte_offset = x_pixels / 8;
 
-  // For each plane, OR row-by-row using explicit image dimensions
-  for (std::size_t plane_index = 0; plane_index < 4; ++plane_index) {
-    const auto &source_plane = image_data.planes[plane_index];
-    auto dest_plane_span = dest.plane(plane_index);
-    auto dest_plane = dest_plane_span.data();
+    for (std::size_t plane_index = 0; plane_index < 4; ++plane_index) {
+      const auto &source_plane = image_data.planes[plane_index];
+      auto dest_plane_span = dest.plane(plane_index);
+      auto dest_plane = dest_plane_span.data();
 
-    for (std::size_t row = 0; row < image_data.height_rows; ++row) {
-      const auto source_offset = row * image_data.width_bytes;
-      const auto dest_offset =
-          (y_rows + row) * dest_row_stride + dest_byte_offset;
+      for (std::size_t row = 0; row < image_data.height_rows; ++row) {
+        const auto source_offset = row * image_data.width_bytes;
+        const auto dest_offset =
+            (y_rows + row) * dest_row_stride + dest_byte_offset;
 
-      for (std::size_t i = 0; i < image_data.width_bytes; ++i) {
-        dest_plane[dest_offset + i] |= source_plane[source_offset + i];
+        for (std::size_t i = 0; i < image_data.width_bytes; ++i) {
+          dest_plane[dest_offset + i] |= source_plane[source_offset + i];
+        }
       }
+    }
+    return;
+  }
+
+  const auto sprite_width_pixels =
+      static_cast<std::size_t>(image_data.width_bytes) * 8U;
+  for (std::size_t row = 0; row < image_data.height_rows; ++row) {
+    for (std::size_t src_x = 0; src_x < sprite_width_pixels; ++src_x) {
+      const auto color_index = read_sprite_pixel_color(image_data, src_x, row);
+      if (color_index == 0U) {
+        continue;
+      }
+
+      const auto dest_x = static_cast<std::int32_t>(x_pixels) +
+                          static_cast<std::int32_t>(src_x);
+      const auto dest_y = static_cast<std::int32_t>(y_rows) +
+                          static_cast<std::int32_t>(row);
+      or_surface_pixel(dest, dest_x, dest_y, color_index);
     }
   }
 }
