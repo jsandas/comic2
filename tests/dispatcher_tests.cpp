@@ -701,6 +701,123 @@ void test_level_completion_does_not_trigger_before_threshold() {
       "level completion should not open a modal before the threshold is met");
 }
 
+void test_level_completion_confirm_advances_to_next_level_and_resets_transient_state() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.current_level = 0;
+  state.current_room = 2;
+  state.player.gems = 3;
+  state.player.firepower = 2;
+  state.player.lives = 2;
+  state.player.x = 44;
+  state.player.y = 58;
+  state.player.x_vel = 4;
+  state.player.y_vel = -3;
+  state.player.is_airborne = true;
+  state.player.is_physics_active = true;
+  state.progression.mode_inventory_mask = 0x03U;
+  state.ui.active_mode_mask = 0x02U;
+  state.ui.inventory_mask = 0x05U;
+  state.level_complete = true;
+  state.ui.modal_active = true;
+  state.ui.modal_prompt = "Level Complete!";
+  state.ui.level_complete_modal = true;
+  state.ui.modal_confirmed = true;
+  state.flags.player_special_state_active = true;
+  state.projectiles.push_back(comic2::ProjectileState{.active = true});
+  state.active_entities.push_back(comic2::ActiveEntity8{});
+  state.mapped_objects.push_back(comic2::MappedObject12{});
+  state.activation_state = comic2::EntityActivationState{};
+  state.activation_toggle = 7;
+
+  std::vector<std::uint8_t> decoded_room_bytes(0x2C4, 0x00);
+  decoded_room_bytes[0x2A0] = 0x00;
+  decoded_room_bytes[0x2A1] = 0x00;
+  decoded_room_bytes[0x2A2] = 0x04;
+  decoded_room_bytes[0x2A3] = 0x00;
+  decoded_room_bytes[0x2A4] = 0x03;
+  decoded_room_bytes[0x2A5] = 0x00;
+  const auto encoded_room_bytes = encode_literal_signed_rle(decoded_room_bytes);
+  state.room_resource_bytes.resize(0x20 + encoded_room_bytes.size(), 0x00);
+  state.room_resource_bytes[2] = 0x01;
+  state.room_resource_bytes[3] = 0x00;
+  state.room_resource_bytes[0x04] = 0x04;
+  state.room_resource_bytes[0x05] = 0x00;
+  state.room_resource_bytes[0x06] = 0x03;
+  state.room_resource_bytes[0x07] = 0x00;
+  state.room_resource_bytes[0x08] = 0x20;
+  state.room_resource_bytes[0x09] = 0x00;
+  std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
+            state.room_resource_bytes.begin() + 0x20);
+
+  comic2::handle_player_special_state(state);
+
+  expect(state.current_level == 1,
+         "confirming level completion should advance to the next level");
+  expect(state.current_room == 0,
+         "confirming level completion should reset to the start room");
+  expect(state.player.x == 64,
+         "confirming level completion should reset the player to the spawn x");
+  expect(state.player.y == 96,
+         "confirming level completion should reset the player to the spawn y");
+  expect(state.player.x_vel == 0,
+         "confirming level completion should clear horizontal velocity");
+  expect(state.player.y_vel == 0,
+         "confirming level completion should clear vertical velocity");
+  expect(!state.player.is_airborne,
+         "confirming level completion should clear airborne state");
+  expect(state.projectiles.empty(),
+         "confirming level completion should clear transient projectiles");
+  expect(state.active_entities.empty(),
+         "confirming level completion should clear transient entities");
+  expect(state.mapped_objects.empty(),
+         "confirming level completion should clear transient mapped objects");
+  expect(state.player.gems == 3,
+         "confirming level completion should preserve earned gems");
+  expect(state.player.firepower == 2,
+         "confirming level completion should preserve firepower progress");
+  expect(state.player.lives == 2,
+         "confirming level completion should preserve remaining lives");
+  expect(state.progression.mode_inventory_mask == 0x03U,
+         "confirming level completion should preserve the mode inventory");
+}
+
+void test_level_completion_confirm_keeps_current_level_when_next_level_is_unavailable() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.current_level = 1;
+  state.current_room = 3;
+  state.player.x = 88;
+  state.player.y = 66;
+  state.player.gems = 1;
+  state.player.firepower = 1;
+  state.player.lives = 1;
+  state.level_complete = true;
+  state.ui.modal_active = true;
+  state.ui.modal_prompt = "Level Complete!";
+  state.ui.level_complete_modal = true;
+  state.ui.modal_confirmed = true;
+  state.flags.player_special_state_active = true;
+  state.projectiles.push_back(comic2::ProjectileState{.active = true});
+
+  comic2::handle_player_special_state(state);
+
+  expect(state.current_level == 1,
+         "missing level resources should leave the player on the current level");
+  expect(state.current_room == 3,
+         "missing level resources should preserve the current room");
+  expect(state.player.x == 88,
+         "missing level resources should preserve the current player position");
+  expect(state.player.y == 66,
+         "missing level resources should preserve the current player y position");
+  expect(state.player.gems == 1,
+         "missing level resources should preserve collected gems");
+  expect(state.player.firepower == 1,
+         "missing level resources should preserve firepower progress");
+  expect(state.player.lives == 1,
+         "missing level resources should preserve lives");
+  expect(!state.projectiles.empty(),
+         "missing level resources should leave transient state unchanged");
+}
+
 void test_player_mode_activation_tracks_mode_inventory() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.ui.active_mode_mask = 0x01U;

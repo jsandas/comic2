@@ -7,6 +7,7 @@
 #include "comic2/audio.hpp"
 #include "comic2/player_controller.hpp"
 #include "comic2/renderer.hpp"
+#include "comic2/resource_loader.hpp"
 #include "comic2/room_loader.hpp"
 #include "comic2/tile_collision.hpp"
 
@@ -189,6 +190,59 @@ void reset_runtime_for_new_game(RuntimeState &state) {
   state.ui = UiState{};
   state.progression = ProgressionState{};
   state.transition_state = RoomTransitionState{};
+  state.projectiles.clear();
+  state.runtime_slots.clear();
+  state.active_entities.clear();
+  state.mapped_objects.clear();
+  state.activation_state = EntityActivationState{};
+  state.activation_toggle = 1;
+  state.camera_y = 0;
+}
+
+void reset_player_state_for_level_entry(RuntimeState &state) {
+  state.player.x = 64;
+  state.player.y = 96;
+  state.player.x_vel = 0;
+  state.player.y_vel = 0;
+  state.player.is_airborne = false;
+  state.player.is_physics_active = true;
+  state.player.is_animation_active = false;
+  state.player.is_attack_active = false;
+  state.player.animation_state =
+      static_cast<std::uint8_t>(PlayerAnimationState::Idle);
+  state.player.animation_frame = 0;
+  state.player.animation_ticks = 0;
+  state.player.attack_overlay_ticks = 0;
+  state.player.death_timer_ticks = 0;
+  state.player.overlay_active = false;
+  state.player.overlay_ticks = 0;
+  state.player.overlay_sprite_frame = 0;
+  state.player.active_mode_effect = 0;
+  state.player.mode_effect_ticks = 0;
+  state.player.invuln_ticks = 0;
+  state.player.damage_recoil_ticks = 0;
+  state.player.facing_right = true;
+  state.player.hp = 12;
+  state.transition_state = RoomTransitionState{};
+  state.flags.level_transition_pending = false;
+  state.flags.player_special_state_active = false;
+  state.flags.room_event_triggered = false;
+  state.flags.timed_overlay_pending = false;
+  state.flags.distance_interaction_active = false;
+  state.flags.special_logic1_active = false;
+  state.flags.special_logic2_active = false;
+  state.flags.tile_hazard_triggered = false;
+  state.pending_room_transition.reset();
+  state.ui.modal_active = false;
+  state.ui.modal_prompt.clear();
+  state.ui.modal_confirmed = false;
+  state.ui.modal_game_over = false;
+  state.ui.game_over = false;
+  state.ui.level_complete_modal = false;
+  state.ui.pending_event_message.clear();
+  state.ui.room_event_consumed = false;
+  state.level_complete = false;
+  state.level_completion_gems_required = 0;
   state.projectiles.clear();
   state.runtime_slots.clear();
   state.active_entities.clear();
@@ -394,18 +448,65 @@ void handle_tile_hazard(RuntimeState &state) {
   state.flags.tile_hazard_triggered = false;
 }
 
+bool handle_level_completion_transition(RuntimeState &state) {
+  if (!state.level_complete || !state.ui.level_complete_modal) {
+    return false;
+  }
+
+  const std::uint16_t target_level =
+      static_cast<std::uint16_t>(state.current_level + 1U);
+  const std::uint16_t target_room = 0U;
+
+  RuntimeState candidate_state = state;
+  candidate_state.current_level = target_level;
+  candidate_state.current_room = target_room;
+  reset_player_state_for_level_entry(candidate_state);
+  clear_frpak_decode_cache(candidate_state);
+
+  bool loaded = false;
+  if (!candidate_state.assets_root.empty()) {
+    loaded = load_room_tilemap_from_asset_root(candidate_state,
+                                               candidate_state.assets_root,
+                                               candidate_state.current_level,
+                                               candidate_state.current_room);
+  }
+  if (!loaded && !candidate_state.room_resource_bytes.empty()) {
+    loaded = load_room_tilemap_from_resource_buffer(
+        candidate_state, candidate_state.room_resource_bytes,
+        candidate_state.current_level, candidate_state.current_room);
+  }
+
+  if (!loaded) {
+    state.ui.modal_active = false;
+    state.ui.modal_prompt.clear();
+    state.ui.modal_confirmed = false;
+    state.ui.modal_game_over = false;
+    state.ui.level_complete_modal = false;
+    state.level_complete = false;
+    state.level_completion_gems_required = 0;
+    state.flags.player_special_state_active = false;
+    return false;
+  }
+
+  state = std::move(candidate_state);
+  state.ui.modal_active = false;
+  state.ui.modal_prompt.clear();
+  state.ui.modal_confirmed = false;
+  state.ui.modal_game_over = false;
+  state.ui.level_complete_modal = false;
+  state.level_complete = false;
+  state.level_completion_gems_required = 0;
+  state.flags.player_special_state_active = false;
+  return true;
+}
+
 void handle_player_special_state(RuntimeState &state) {
   state.flags.player_special_state_active = true;
 
   if (state.level_complete && state.ui.level_complete_modal) {
     if (state.ui.modal_confirmed) {
       state.ui.modal_confirmed = false;
-      state.ui.modal_active = false;
-      state.ui.modal_prompt.clear();
-      state.ui.level_complete_modal = false;
-      state.level_complete = false;
-      state.level_completion_gems_required = 0;
-      reset_runtime_for_new_game(state);
+      handle_level_completion_transition(state);
       return;
     }
 

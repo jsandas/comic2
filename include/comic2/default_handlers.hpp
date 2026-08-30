@@ -5,6 +5,7 @@
 namespace comic2 {
 
 void handle_level_transition(RuntimeState &state);
+bool handle_level_completion_transition(RuntimeState &state);
 void handle_special_logic1(RuntimeState &state);
 void handle_special_logic2(RuntimeState &state);
 void handle_airborne_physics(RuntimeState &state);
