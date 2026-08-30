@@ -59,6 +59,24 @@ void test_apply_input_tick_consumes_jump_counter() {
   expect(state.player.is_airborne, "jump input should enter airborne state");
 }
 
+void test_apply_input_tick_updates_facing_direction_from_horizontal_input() {
+  comic2::RuntimeState left_state;
+  left_state.input.left_pressed = true;
+
+  comic2::apply_input_tick(left_state, comic2::PlayerMotionConfig{});
+
+  expect(!left_state.player.facing_right,
+         "left input should set player facing left");
+
+  comic2::RuntimeState right_state;
+  right_state.input.right_pressed = true;
+
+  comic2::apply_input_tick(right_state, comic2::PlayerMotionConfig{});
+
+  expect(right_state.player.facing_right,
+         "right input should set player facing right");
+}
+
 void test_apply_physics_tick_lands_on_ground() {
   comic2::RuntimeState state;
   state.room_grid = make_flat_floor_grid();
@@ -215,15 +233,55 @@ void test_grounded_physics_does_not_snap_when_rising() {
          "rising motion should keep physics active");
 }
 
+void test_mode_effects_modify_motion_config_for_speed_and_jump() {
+  comic2::RuntimeState state;
+  state.player.active_mode_effect = 0x01U;
+  state.player.mode_effect_ticks = 5U;
+
+  const comic2::PlayerMotionConfig base_motion{};
+  const comic2::PlayerMotionConfig effective_motion =
+      comic2::get_effective_motion_config(state, base_motion);
+
+  expect(effective_motion.walk_step == 16,
+         "speed-boost mode should double walk speed");
+  expect(effective_motion.air_drift_step == 2,
+         "speed-boost mode should double air drift speed");
+
+  state.player.active_mode_effect = 0x03U;
+  const comic2::PlayerMotionConfig jump_boost_motion =
+      comic2::get_effective_motion_config(state, base_motion);
+
+  expect(jump_boost_motion.jump_impulse == -7,
+         "jump-boost mode should increase jump impulse magnitude");
+}
+
+void test_inactive_mode_effects_leave_motion_config_unchanged() {
+  comic2::RuntimeState state;
+  state.player.active_mode_effect = 0x01U;
+  state.player.mode_effect_ticks = 0U;
+
+  const comic2::PlayerMotionConfig base_motion{};
+  const comic2::PlayerMotionConfig effective_motion =
+      comic2::get_effective_motion_config(state, base_motion);
+
+  expect(effective_motion.walk_step == base_motion.walk_step,
+         "expired mode effects should not alter movement config");
+  expect(effective_motion.jump_impulse == base_motion.jump_impulse,
+         "expired mode effects should not alter jump config");
+}
+
 } // namespace
 
 void run_player_controller_tests() {
   test_apply_input_tick_moves_right();
   test_apply_input_tick_consumes_jump_counter();
+  test_apply_input_tick_updates_facing_direction_from_horizontal_input();
   test_apply_physics_tick_lands_on_ground();
   test_jump_while_moving_left_and_right();
   test_short_hop_vs_full_jump_counter_usage();
   test_ledge_walk_off_transitions_into_fall();
   test_grounded_physics_respects_tile_height_without_ground_y();
   test_grounded_physics_does_not_snap_when_rising();
+  test_mode_effects_modify_motion_config_for_speed_and_jump();
+  test_inactive_mode_effects_leave_motion_config_unchanged();
 }

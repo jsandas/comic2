@@ -27,6 +27,28 @@ std::size_t checked_offset(const EgaPlanarSurface &surface, std::size_t x_byte,
   return y_row * surface.row_stride_bytes() + x_byte;
 }
 
+std::uint8_t read_surface_color(const EgaPlanarSurface &surface, std::int32_t x,
+                                std::int32_t y) {
+  if (x < 0 || y < 0 || x >= surface.width_pixels() ||
+      y >= surface.height_rows()) {
+    return 0;
+  }
+
+  const auto x_byte = static_cast<std::size_t>(x / 8);
+  const auto bit = static_cast<std::uint8_t>(7 - (x % 8));
+  const auto y_row = static_cast<std::size_t>(y);
+  std::uint8_t color_index = 0;
+
+  for (std::size_t plane = 0; plane < EgaPlanarSurface::kPlaneCount; ++plane) {
+    const auto value = surface.get_plane_byte(plane, x_byte, y_row);
+    if ((value & static_cast<std::uint8_t>(1U << bit)) != 0U) {
+      color_index |= static_cast<std::uint8_t>(1U << plane);
+    }
+  }
+
+  return color_index;
+}
+
 void set_surface_pixel(EgaPlanarSurface &surface, std::int32_t x,
                        std::int32_t y, std::uint8_t color_index) {
   if (x < 0 || y < 0 || x >= surface.width_pixels() ||
@@ -49,6 +71,51 @@ void set_surface_pixel(EgaPlanarSurface &surface, std::int32_t x,
     }
     surface.set_plane_byte(plane, x_byte, y_row, value);
   }
+}
+
+void or_surface_pixel(EgaPlanarSurface &surface, std::int32_t x, std::int32_t y,
+                      std::uint8_t color_index) {
+  if (x < 0 || y < 0 || x >= surface.width_pixels() ||
+      y >= surface.height_rows()) {
+    return;
+  }
+
+  const auto x_byte = static_cast<std::size_t>(x / 8);
+  const auto bit = static_cast<std::uint8_t>(7 - (x % 8));
+  const auto mask = static_cast<std::uint8_t>(1U << bit);
+  const auto y_row = static_cast<std::size_t>(y);
+
+  for (std::size_t plane = 0; plane < EgaPlanarSurface::kPlaneCount; ++plane) {
+    if (((color_index >> plane) & 0x1U) == 0U) {
+      continue;
+    }
+
+    auto value = surface.get_plane_byte(plane, x_byte, y_row);
+    value = static_cast<std::uint8_t>(value | mask);
+    surface.set_plane_byte(plane, x_byte, y_row, value);
+  }
+}
+
+std::uint8_t read_sprite_pixel_color(const Ega4PlaneImage &sprite,
+                                     std::size_t x_pixels, std::size_t y_rows) {
+  if (x_pixels >= static_cast<std::size_t>(sprite.width_bytes) * 8U ||
+      y_rows >= static_cast<std::size_t>(sprite.height_rows)) {
+    return 0;
+  }
+
+  const auto x_byte = x_pixels / 8U;
+  const auto bit = static_cast<std::uint8_t>(7U - (x_pixels % 8U));
+  const auto row_off = y_rows * static_cast<std::size_t>(sprite.width_bytes);
+  std::uint8_t color_index = 0;
+
+  for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
+    const auto value = sprite.planes[plane][row_off + x_byte];
+    if ((value & static_cast<std::uint8_t>(1U << bit)) != 0U) {
+      color_index |= static_cast<std::uint8_t>(1U << plane);
+    }
+  }
+
+  return color_index;
 }
 
 void fill_surface_rect(EgaPlanarSurface &surface, std::int32_t x0,
@@ -135,6 +202,130 @@ void EgaPageFlipper::present_and_flip_page() {
   active_page_ ^= 0x2000;
 }
 
+namespace {
+
+std::uint8_t resolve_entity_color(const RuntimeEntitySlot32 &slot) {
+  const auto behavior = slot.behavior_state & 0x000F;
+  if (behavior == kBehaviorGem) {
+    return 0x03U;
+  }
+  if (behavior == kBehaviorPowerup) {
+    return 0x0CU;
+  }
+
+  const std::uint16_t seed = static_cast<std::uint16_t>(
+      slot.behavior_state + slot.mapped_object_ptr + slot.type_flags);
+  return static_cast<std::uint8_t>(((seed & 0x0F) | 0x01U) & 0x0FU);
+}
+
+void set_sprite_pixel(Ega4PlaneImage &sprite, std::size_t x_pixels,
+                      std::size_t y_rows, std::uint8_t color) {
+  if (x_pixels >= 16U || y_rows >= 16U) {
+    return;
+  }
+
+  const std::size_t x_byte = x_pixels / 8U;
+  const std::uint8_t bit = static_cast<std::uint8_t>(7U - (x_pixels % 8U));
+  const std::size_t row_off =
+      y_rows * static_cast<std::size_t>(sprite.width_bytes);
+
+  for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
+    if ((color >> plane) & 0x1U) {
+      sprite.planes[plane][row_off + x_byte] |=
+          static_cast<std::uint8_t>(1U << bit);
+    }
+  }
+}
+
+Ega4PlaneImage make_entity_placeholder_sprite(const RuntimeEntitySlot32 &slot) {
+  Ega4PlaneImage sprite{};
+  constexpr std::uint16_t kSpriteWidthBytes = 2;
+  constexpr std::uint16_t kSpriteHeightRows = 16;
+  sprite.width_bytes = kSpriteWidthBytes;
+  sprite.height_rows = kSpriteHeightRows;
+  sprite.row_span_bytes =
+      static_cast<std::uint16_t>(kSpriteWidthBytes * kSpriteHeightRows);
+
+  const std::uint8_t color = resolve_entity_color(slot);
+  for (auto &plane_bytes : sprite.planes) {
+    plane_bytes.assign(static_cast<std::size_t>(sprite.width_bytes) *
+                           sprite.height_rows,
+                       0x00);
+  }
+
+  const auto behavior = slot.behavior_state & 0x000F;
+  if (behavior == kBehaviorGem) {
+    set_sprite_pixel(sprite, 0, 0, color);
+    set_sprite_pixel(sprite, 8, 4, color);
+    set_sprite_pixel(sprite, 9, 4, color);
+    set_sprite_pixel(sprite, 8, 5, color);
+    set_sprite_pixel(sprite, 9, 5, color);
+    set_sprite_pixel(sprite, 8, 6, color);
+    return sprite;
+  }
+
+  if (behavior == kBehaviorPowerup) {
+    set_sprite_pixel(sprite, 0, 0, color);
+    set_sprite_pixel(sprite, 7, 4, color);
+    set_sprite_pixel(sprite, 8, 4, color);
+    set_sprite_pixel(sprite, 7, 5, color);
+    set_sprite_pixel(sprite, 8, 5, color);
+    set_sprite_pixel(sprite, 7, 6, color);
+    set_sprite_pixel(sprite, 8, 6, color);
+    return sprite;
+  }
+
+  for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
+    if ((color >> plane) & 0x1U) {
+      auto &plane_bytes = sprite.planes[plane];
+      for (std::size_t row = 0; row < sprite.height_rows; ++row) {
+        const std::size_t row_off = row * sprite.width_bytes;
+        plane_bytes[row_off] = 0xFF;
+        plane_bytes[row_off + 1] = 0xFF;
+      }
+    }
+  }
+
+  return sprite;
+}
+
+std::uint8_t resolve_projectile_color(const ProjectileState &projectile) {
+  const std::uint16_t seed = static_cast<std::uint16_t>(
+      projectile.anim_frame * 5U + (projectile.active ? 0x01U : 0x00U) +
+      (projectile.x_vel != 0 ? 0x02U : 0x00U));
+  return static_cast<std::uint8_t>(((seed & 0x0FU) | 0x04U) & 0x0FU);
+}
+
+Ega4PlaneImage
+make_projectile_placeholder_sprite(const ProjectileState &projectile) {
+  Ega4PlaneImage sprite{};
+  constexpr std::uint16_t kSpriteWidthBytes = 2;
+  constexpr std::uint16_t kSpriteHeightRows = 8;
+  sprite.width_bytes = kSpriteWidthBytes;
+  sprite.height_rows = kSpriteHeightRows;
+  sprite.row_span_bytes =
+      static_cast<std::uint16_t>(kSpriteWidthBytes * kSpriteHeightRows);
+
+  const std::uint8_t color = resolve_projectile_color(projectile);
+  for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
+    auto &plane_bytes = sprite.planes[plane];
+    plane_bytes.assign(static_cast<std::size_t>(sprite.width_bytes) *
+                           sprite.height_rows,
+                       0x00);
+    if ((color >> plane) & 0x1U) {
+      for (std::size_t row = 0; row < sprite.height_rows; ++row) {
+        const std::size_t row_off = row * sprite.width_bytes;
+        plane_bytes[row_off] = 0xFF;
+        plane_bytes[row_off + 1] = 0xFF;
+      }
+    }
+  }
+
+  return sprite;
+}
+
+} // namespace
+
 void gfx_rle_blit_opaque_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
                                 std::size_t y_rows,
                                 const Ega4PlaneImage &image_data) {
@@ -173,6 +364,17 @@ void gfx_rle_blit_opaque_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
   }
 }
 
+bool is_sprite_in_viewport(std::int32_t x, std::int32_t y, std::int32_t width,
+                           std::int32_t height, std::int32_t viewport_x,
+                           std::int32_t viewport_y, std::int32_t viewport_width,
+                           std::int32_t viewport_height) {
+  const std::int32_t viewport_right = viewport_x + viewport_width;
+  const std::int32_t viewport_bottom = viewport_y + viewport_height;
+
+  return (x + width > viewport_x) && (x < viewport_right) &&
+         (y + height > viewport_y) && (y < viewport_bottom);
+}
+
 void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
                                    std::size_t y_rows,
                                    const Ega4PlaneImage &image_data) {
@@ -187,24 +389,125 @@ void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
         "image width_bytes and height_rows must be non-zero for blitting");
   }
 
-  // Calculate destination row stride in bytes
-  const auto dest_row_stride = dest.row_stride_bytes();
-  const auto dest_byte_offset = x_pixels / 8;
+  if ((x_pixels % 8U) == 0U) {
+    const auto dest_row_stride = dest.row_stride_bytes();
+    const auto dest_byte_offset = x_pixels / 8;
 
-  // For each plane, OR row-by-row using explicit image dimensions
-  for (std::size_t plane_index = 0; plane_index < 4; ++plane_index) {
-    const auto &source_plane = image_data.planes[plane_index];
-    auto dest_plane_span = dest.plane(plane_index);
-    auto dest_plane = dest_plane_span.data();
+    for (std::size_t plane_index = 0; plane_index < 4; ++plane_index) {
+      const auto &source_plane = image_data.planes[plane_index];
+      auto dest_plane_span = dest.plane(plane_index);
+      auto dest_plane = dest_plane_span.data();
 
-    for (std::size_t row = 0; row < image_data.height_rows; ++row) {
-      const auto source_offset = row * image_data.width_bytes;
-      const auto dest_offset =
-          (y_rows + row) * dest_row_stride + dest_byte_offset;
+      for (std::size_t row = 0; row < image_data.height_rows; ++row) {
+        const auto source_offset = row * image_data.width_bytes;
+        const auto dest_offset =
+            (y_rows + row) * dest_row_stride + dest_byte_offset;
 
-      for (std::size_t i = 0; i < image_data.width_bytes; ++i) {
-        dest_plane[dest_offset + i] |= source_plane[source_offset + i];
+        for (std::size_t i = 0; i < image_data.width_bytes; ++i) {
+          dest_plane[dest_offset + i] |= source_plane[source_offset + i];
+        }
       }
+    }
+    return;
+  }
+
+  const auto sprite_width_pixels =
+      static_cast<std::size_t>(image_data.width_bytes) * 8U;
+  for (std::size_t row = 0; row < image_data.height_rows; ++row) {
+    for (std::size_t src_x = 0; src_x < sprite_width_pixels; ++src_x) {
+      const auto color_index = read_sprite_pixel_color(image_data, src_x, row);
+      if (color_index == 0U) {
+        continue;
+      }
+
+      const auto dest_x = static_cast<std::int32_t>(x_pixels) +
+                          static_cast<std::int32_t>(src_x);
+      const auto dest_y =
+          static_cast<std::int32_t>(y_rows) + static_cast<std::int32_t>(row);
+      or_surface_pixel(dest, dest_x, dest_y, color_index);
+    }
+  }
+}
+
+void draw_runtime_entity_sprites(EgaPlanarSurface &frame,
+                                 const RuntimeState &state) {
+  const std::int32_t max_x = std::max<std::int32_t>(
+      0, static_cast<std::int32_t>(frame.width_pixels()) - 16);
+  const std::int32_t max_y = std::max<std::int32_t>(
+      0, static_cast<std::int32_t>(frame.height_rows()) - 16);
+
+  for (const auto &slot : state.runtime_slots) {
+    if (!is_runtime_slot_active(slot)) {
+      continue;
+    }
+
+    const std::int32_t px0 = slot.x;
+    const std::int32_t py0 = slot.y - state.camera_y;
+    if (px0 < -16 || py0 < -16) {
+      continue;
+    }
+    if (!is_sprite_in_viewport(px0, py0, 16, 16)) {
+      continue;
+    }
+
+    const std::int32_t clamped_x =
+        std::max<std::int32_t>(0, std::min(px0, max_x));
+    const std::int32_t clamped_y =
+        std::max<std::int32_t>(0, std::min(py0, max_y));
+    const auto sprite = make_entity_placeholder_sprite(slot);
+    gfx_rle_blit_masked_or_4plane(frame, static_cast<std::size_t>(clamped_x),
+                                  static_cast<std::size_t>(clamped_y), sprite);
+  }
+}
+
+void draw_runtime_projectile_sprites(EgaPlanarSurface &frame,
+                                     const RuntimeState &state) {
+  const std::int32_t max_x = std::max<std::int32_t>(
+      0, static_cast<std::int32_t>(frame.width_pixels()) - 16);
+  const std::int32_t max_y = std::max<std::int32_t>(
+      0, static_cast<std::int32_t>(frame.height_rows()) - 16);
+
+  for (const auto &projectile : state.projectiles) {
+    if (!projectile.active) {
+      continue;
+    }
+
+    const std::int32_t px0 = projectile.x;
+    const std::int32_t py0 = projectile.y - state.camera_y;
+    if (px0 < -8 || py0 < -8) {
+      continue;
+    }
+    if (!is_sprite_in_viewport(px0, py0, 8, 8)) {
+      continue;
+    }
+
+    const std::int32_t clamped_x =
+        std::max<std::int32_t>(0, std::min(px0, max_x));
+    const std::int32_t clamped_y =
+        std::max<std::int32_t>(0, std::min(py0, max_y));
+    const auto sprite = make_projectile_placeholder_sprite(projectile);
+    gfx_rle_blit_masked_or_4plane(frame, static_cast<std::size_t>(clamped_x),
+                                  static_cast<std::size_t>(clamped_y), sprite);
+  }
+}
+
+void apply_transition_palette_tint(EgaPlanarSurface &surface,
+                                   const RoomTransitionState &transition) {
+  if (!transition.active) {
+    return;
+  }
+
+  const std::uint8_t tint = transition.palette_tint & 0x0F;
+  const std::uint8_t shift = transition.palette_shift & 0x03;
+  const std::uint8_t frame_bias =
+      static_cast<std::uint8_t>((transition.frame_index % 8U) + shift);
+
+  for (std::int32_t y = 0; y < surface.height_rows(); ++y) {
+    for (std::int32_t x = 0; x < surface.width_pixels(); ++x) {
+      const auto color = read_surface_color(surface, x, y);
+      const auto base =
+          static_cast<std::uint8_t>((color + tint + frame_bias) & 0x0F);
+      set_surface_pixel(surface, x, y, base);
     }
   }
 }

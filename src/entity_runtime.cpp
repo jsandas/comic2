@@ -14,14 +14,6 @@ constexpr std::int16_t kPlayerHitboxWidth = 16;
 constexpr std::int16_t kPlayerHitboxHeight = 32;
 constexpr std::uint8_t kInvulnerabilityTicks = 12;
 constexpr std::int16_t kDamageKnockback = 6;
-constexpr std::uint16_t kBehaviorChase = 0x0001;
-constexpr std::uint16_t kBehaviorBounce = 0x0002;
-constexpr std::uint16_t kBehaviorJump = 0x0003;
-constexpr std::uint16_t kBehaviorGravity = 0x0006;
-constexpr std::uint16_t kBehaviorShoot = 0x0007;
-constexpr std::uint16_t kBehaviorGem = 0x0004;
-constexpr std::uint16_t kBehaviorPowerup = 0x0005;
-
 [[maybe_unused]] constexpr std::uint16_t kBehaviorChaseValue = kBehaviorChase;
 [[maybe_unused]] constexpr std::uint16_t kBehaviorBounceValue = kBehaviorBounce;
 [[maybe_unused]] constexpr std::uint16_t kBehaviorJumpValue = kBehaviorJump;
@@ -237,8 +229,16 @@ void update_entity_behaviors(RuntimeState &state) {
 }
 
 void apply_entity_combat(RuntimeState &state) {
+  const bool mode_invulnerability_active =
+      state.player.active_mode_effect == 0x02U &&
+      state.player.mode_effect_ticks > 0U;
+
   if (state.player.invuln_ticks > 0) {
     --state.player.invuln_ticks;
+  }
+  if (mode_invulnerability_active) {
+    state.player.invuln_ticks =
+        std::max(state.player.invuln_ticks, kInvulnerabilityTicks);
   }
   if (state.player.damage_recoil_ticks > 0) {
     --state.player.damage_recoil_ticks;
@@ -259,17 +259,24 @@ void apply_entity_combat(RuntimeState &state) {
     const auto behavior = slot.behavior_state & 0x000F;
     if (behavior == kBehaviorGem) {
       ++state.player.gems;
+      state.player.score =
+          static_cast<std::uint16_t>(state.player.score + 100U);
       deactivate_runtime_slot(slot);
       continue;
     }
     if (behavior == kBehaviorPowerup) {
       state.player.firepower = static_cast<std::uint8_t>(
           std::min<std::uint8_t>(state.player.firepower + 1, 8));
+      state.player.score = static_cast<std::uint16_t>(state.player.score + 50U);
       deactivate_runtime_slot(slot);
       continue;
     }
 
     if (damage_applied || state.player.invuln_ticks != 0) {
+      continue;
+    }
+
+    if (mode_invulnerability_active) {
       continue;
     }
 
@@ -283,6 +290,10 @@ void apply_entity_combat(RuntimeState &state) {
     }
     state.player.invuln_ticks = kInvulnerabilityTicks;
     state.player.damage_recoil_ticks = 4;
+    state.player.animation_state =
+        static_cast<std::uint8_t>(PlayerAnimationState::Hurt);
+    state.player.animation_frame = 0;
+    state.player.animation_ticks = 0;
     recoil_x -= kDamageKnockback;
     recoil_y -= 2;
     damage_applied = true;

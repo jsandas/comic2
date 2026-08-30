@@ -5,6 +5,7 @@
 namespace comic2 {
 
 void handle_level_transition(RuntimeState &state);
+bool handle_level_completion_transition(RuntimeState &state);
 void handle_special_logic1(RuntimeState &state);
 void handle_special_logic2(RuntimeState &state);
 void handle_airborne_physics(RuntimeState &state);
@@ -14,7 +15,12 @@ void handle_player_animation(RuntimeState &state);
 void handle_attack_animation(RuntimeState &state);
 void handle_distance_interaction(RuntimeState &state);
 void handle_tile_hazard(RuntimeState &state);
-void handle_player_special_state(const RuntimeState &state);
+void handle_player_special_state(RuntimeState &state);
+void reset_player_respawn_state(RuntimeState &state);
+void update_player_mode_cycle(RuntimeState &state);
+void update_player_mode_activation(RuntimeState &state);
+void update_player_mode_effect(RuntimeState &state);
+void update_progression_state(RuntimeState &state);
 void handle_input_fallback(RuntimeState &state);
 
 void install_default_stage_hooks(GameDispatcher &dispatcher);

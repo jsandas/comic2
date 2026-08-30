@@ -76,7 +76,9 @@ bool should_draw_hud_overlay(const RuntimeState &state) {
   return state.ui.menu_state != MenuState::None || state.ui.modal_active ||
          state.player.score != 0 || state.player.gems != 0 ||
          state.player.lives != 3 || state.ui.active_mode_mask != 0 ||
-         state.ui.inventory_mask != 0 || state.ui.cinematic_frame != 0;
+         state.ui.inventory_mask != 0 ||
+         state.progression.mode_inventory_mask != 0 ||
+         state.ui.cinematic_frame != 0;
 }
 
 } // namespace
@@ -109,6 +111,23 @@ std::uint8_t bcd_decrement(std::uint8_t value) {
   return static_cast<std::uint8_t>(value - 0x10U);
 }
 
+void ui_render_modal_prompt(EgaPlanarSurface &surface,
+                            const RuntimeState &state) {
+  if (!state.ui.modal_active || state.ui.modal_prompt.empty()) {
+    return;
+  }
+
+  draw_rect(surface, 48, 72, 224, 56, 0x04);
+  draw_rect(surface, 56, 80, 208, 40, 0x0F);
+  draw_rect(surface, 64, 92, 192, 8, 0x0E);
+
+  if (state.ui.modal_game_over) {
+    draw_rect(surface, 64, 104, 192, 8, 0x0C);
+  } else {
+    draw_rect(surface, 64, 104, 192, 8, 0x0E);
+  }
+}
+
 void hud_render_overlay(EgaPlanarSurface &surface, const RuntimeState &state) {
   if (!should_draw_hud_overlay(state)) {
     return;
@@ -119,14 +138,31 @@ void hud_render_overlay(EgaPlanarSurface &surface, const RuntimeState &state) {
   write_two_digit_counter(surface, 56, 188, state.player.gems);
   write_two_digit_counter(surface, 104, 188, state.player.lives);
 
+  draw_rect(surface, 144, 188, 8, 8, 0x0F);
+  draw_rect(surface, 152, 188, 8, 8, 0x0E);
+  draw_rect(surface, 160, 188, 8, 8, 0x0C);
+
   if ((state.ui.active_mode_mask & 0x01U) != 0U) {
-    draw_rect(surface, 152, 188, 8, 8, 0x0F);
+    draw_rect(surface, 144, 188, 8, 8, 0x0F);
+  }
+  if ((state.ui.active_mode_mask & 0x02U) != 0U) {
+    draw_rect(surface, 144, 188, 8, 8, 0x0E);
+  }
+  if ((state.ui.active_mode_mask & 0x04U) != 0U) {
+    draw_rect(surface, 144, 188, 8, 8, 0x0D);
+  }
+  if ((state.ui.active_mode_mask & 0x08U) != 0U) {
+    draw_rect(surface, 144, 188, 8, 8, 0x0C);
   }
   if ((state.ui.inventory_mask & 0x01U) != 0U) {
-    draw_rect(surface, 168, 188, 8, 8, 0x0E);
+    draw_rect(surface, 152, 188, 8, 8, 0x0E);
   }
   if ((state.ui.inventory_mask & 0x02U) != 0U) {
-    draw_rect(surface, 184, 188, 8, 8, 0x0C);
+    draw_rect(surface, 160, 188, 8, 8, 0x0C);
+  }
+  if (((state.ui.inventory_mask & 0x04U) != 0U) ||
+      state.progression.mode_inventory_mask != 0U) {
+    draw_rect(surface, 160, 188, 8, 8, 0x0C);
   }
 }
 

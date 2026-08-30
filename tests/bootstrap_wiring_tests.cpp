@@ -343,6 +343,180 @@ void test_render_bootstrap_frame_uses_room_tile_data() {
         "tile border should remain accented at the far edge");
 }
 
+void test_render_bootstrap_frame_renders_active_runtime_entities() {
+  auto state_without_entities = comic2::make_default_runtime_state();
+  state_without_entities.player.x = 128;
+  state_without_entities.player.y = 128;
+  state_without_entities.room_grid.tile_w = 0;
+  state_without_entities.room_grid.tile_h = 0;
+  state_without_entities.runtime_slots.clear();
+
+  auto state_with_entities = state_without_entities;
+  state_with_entities.runtime_slots.resize(1);
+  state_with_entities.runtime_slots[0].mapped_object_ptr = 1;
+  state_with_entities.runtime_slots[0].behavior_state = 0x0004;
+  state_with_entities.runtime_slots[0].x = 8;
+  state_with_entities.runtime_slots[0].y = 8;
+
+  comic2::MemoryFramePresenter without_entities;
+  comic2::render_bootstrap_frame(without_entities, state_without_entities);
+
+  comic2::MemoryFramePresenter with_entities;
+  comic2::render_bootstrap_frame(with_entities, state_with_entities);
+
+  const auto &frame_without = without_entities.last_frame();
+  const auto &frame_with = with_entities.last_frame();
+  const auto color_without = read_color_index(frame_without, 8, 8);
+  const auto color_with = read_color_index(frame_with, 8, 8);
+
+  check(color_with != color_without,
+        "active runtime entities should change the rendered frame at their "
+        "sprite position");
+}
+
+void test_render_bootstrap_frame_distinguishes_pickups_from_enemies() {
+  auto state = comic2::make_default_runtime_state();
+  state.player.x = 64;
+  state.player.y = 64;
+  state.room_grid.tile_w = 0;
+  state.room_grid.tile_h = 0;
+
+  auto background_state = state;
+  background_state.runtime_slots.clear();
+
+  auto enemy_state = state;
+  enemy_state.runtime_slots.clear();
+  enemy_state.runtime_slots.resize(1);
+  enemy_state.runtime_slots[0].mapped_object_ptr = 1;
+  enemy_state.runtime_slots[0].behavior_state = 0x0001;
+  enemy_state.runtime_slots[0].x = 0;
+  enemy_state.runtime_slots[0].y = 0;
+
+  auto gem_state = state;
+  gem_state.runtime_slots.clear();
+  gem_state.runtime_slots.resize(1);
+  gem_state.runtime_slots[0].mapped_object_ptr = 1;
+  gem_state.runtime_slots[0].behavior_state = 0x0004;
+  gem_state.runtime_slots[0].x = 0;
+  gem_state.runtime_slots[0].y = 0;
+
+  auto powerup_state = state;
+  powerup_state.runtime_slots.clear();
+  powerup_state.runtime_slots.resize(1);
+  powerup_state.runtime_slots[0].mapped_object_ptr = 1;
+  powerup_state.runtime_slots[0].behavior_state = 0x0005;
+  powerup_state.runtime_slots[0].x = 0;
+  powerup_state.runtime_slots[0].y = 0;
+
+  comic2::MemoryFramePresenter background_presenter;
+  comic2::render_bootstrap_frame(background_presenter, background_state);
+
+  comic2::MemoryFramePresenter enemy_presenter;
+  comic2::render_bootstrap_frame(enemy_presenter, enemy_state);
+
+  comic2::MemoryFramePresenter gem_presenter;
+  comic2::render_bootstrap_frame(gem_presenter, gem_state);
+
+  comic2::MemoryFramePresenter powerup_presenter;
+  comic2::render_bootstrap_frame(powerup_presenter, powerup_state);
+
+  const auto background_color =
+      read_color_index(background_presenter.last_frame(), 8, 4);
+  const auto enemy_sample =
+      read_color_index(enemy_presenter.last_frame(), 8, 4);
+  const auto gem_sample = read_color_index(gem_presenter.last_frame(), 8, 4);
+  const auto powerup_sample =
+      read_color_index(powerup_presenter.last_frame(), 7, 4);
+
+  check(enemy_sample != background_color,
+        "enemy placeholder sprites should change a sample pixel in the sprite");
+  check(gem_sample != background_color,
+        "gem pickups should render a visible compact sprite");
+  check(powerup_sample != gem_sample,
+        "powerups should render with a distinct pickup pattern from gems");
+}
+
+void test_render_bootstrap_frame_renders_active_projectiles() {
+  auto state_without_projectiles = comic2::make_default_runtime_state();
+  state_without_projectiles.player.x = 64;
+  state_without_projectiles.player.y = 64;
+  state_without_projectiles.room_grid.tile_w = 0;
+  state_without_projectiles.room_grid.tile_h = 0;
+
+  auto state_with_active_projectile = state_without_projectiles;
+  state_with_active_projectile.projectiles.push_back(
+      comic2::ProjectileState{.x = 8, .y = 8, .active = true});
+
+  auto state_with_inactive_projectile = state_without_projectiles;
+  state_with_inactive_projectile.projectiles.push_back(
+      comic2::ProjectileState{.x = 8, .y = 8, .active = false});
+
+  comic2::MemoryFramePresenter without_projectiles;
+  comic2::render_bootstrap_frame(without_projectiles,
+                                 state_without_projectiles);
+
+  comic2::MemoryFramePresenter with_active_projectile;
+  comic2::render_bootstrap_frame(with_active_projectile,
+                                 state_with_active_projectile);
+
+  comic2::MemoryFramePresenter with_inactive_projectile;
+  comic2::render_bootstrap_frame(with_inactive_projectile,
+                                 state_with_inactive_projectile);
+
+  const auto &frame_without = without_projectiles.last_frame();
+  const auto &frame_with_active = with_active_projectile.last_frame();
+  const auto &frame_with_inactive = with_inactive_projectile.last_frame();
+
+  const auto color_without = read_color_index(frame_without, 8, 8);
+  const auto color_with_active = read_color_index(frame_with_active, 8, 8);
+  const auto color_with_inactive = read_color_index(frame_with_inactive, 8, 8);
+
+  check(color_with_active != color_without,
+        "active projectiles should change the rendered frame at their sprite "
+        "position");
+  check(color_with_inactive == color_without,
+        "inactive projectiles should not alter the rendered frame");
+}
+
+void test_render_bootstrap_frame_hides_player_on_invuln_blink_frames() {
+  auto state = comic2::make_default_runtime_state();
+  state.player.x = 0;
+  state.player.y = 0;
+  state.player.invuln_ticks = 0;
+
+  comic2::MemoryFramePresenter visible_presenter;
+  comic2::render_bootstrap_frame(visible_presenter, state);
+  const auto visible_color =
+      read_color_index(visible_presenter.last_frame(), 0, 0);
+
+  state.player.invuln_ticks = 3;
+  comic2::MemoryFramePresenter hidden_presenter;
+  comic2::render_bootstrap_frame(hidden_presenter, state);
+  const auto hidden_color =
+      read_color_index(hidden_presenter.last_frame(), 0, 0);
+
+  check(
+      visible_color != hidden_color,
+      "render should skip the player marker on hidden invulnerability frames");
+}
+
+void test_render_bootstrap_frame_renders_timed_overlay() {
+  auto state = comic2::make_default_runtime_state();
+  state.player.x = 12;
+  state.player.y = 12;
+  state.player.overlay_active = true;
+  state.player.overlay_ticks = 6;
+  state.player.overlay_sprite_frame = 2;
+
+  comic2::MemoryFramePresenter presenter;
+  comic2::render_bootstrap_frame(presenter, state);
+
+  const auto overlay_color =
+      read_color_index(presenter.last_frame(), 12 + 4, 12 + 4);
+  check(overlay_color != 0x00,
+        "timed overlay should render a visible sprite over the player");
+}
+
 void test_render_bootstrap_frame_asset_backed_hash_regression() {
   auto state = comic2::make_default_runtime_state();
   state.player.x = 16;
@@ -543,6 +717,11 @@ void run_bootstrap_wiring_tests() {
   test_render_loop_renders_multiple_frames();
   test_render_loop_updates_state_while_presenting_frames();
   test_render_bootstrap_frame_uses_room_tile_data();
+  test_render_bootstrap_frame_renders_active_runtime_entities();
+  test_render_bootstrap_frame_distinguishes_pickups_from_enemies();
+  test_render_bootstrap_frame_renders_active_projectiles();
+  test_render_bootstrap_frame_hides_player_on_invuln_blink_frames();
+  test_render_bootstrap_frame_renders_timed_overlay();
   test_render_bootstrap_frame_asset_backed_hash_regression();
   test_render_bootstrap_frame_falls_back_when_asset_decode_fails();
   test_bootstrap_loader_reads_reference_room_data();

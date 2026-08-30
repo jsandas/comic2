@@ -6,6 +6,7 @@
 
 #include "comic2/default_handlers.hpp"
 #include "comic2/dispatcher.hpp"
+#include "comic2/game_state.hpp"
 
 namespace {
 
@@ -298,6 +299,600 @@ void test_default_stage_hook_coverage() {
   }
 }
 
+void test_player_animation_handler_advances_walk_cycle() {
+  comic2::RuntimeState state;
+  state.player.is_animation_active = true;
+  state.player.animation_state =
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::WalkCycle);
+  state.player.animation_frame = 1;
+  state.player.animation_ticks = 0;
+  state.player.is_airborne = false;
+  state.input.right_pressed = true;
+
+  comic2::handle_player_animation(state);
+
+  expect(state.player.animation_state ==
+             static_cast<std::uint8_t>(comic2::PlayerAnimationState::WalkCycle),
+         "walk cycle should remain the active animation state");
+  expect(state.player.animation_frame == 2,
+         "walk cycle should advance the frame counter");
+  expect(state.player.animation_ticks == 1,
+         "walk cycle should advance tick progress");
+}
+
+void test_attack_handler_uses_attack_overlay_state() {
+  comic2::RuntimeState state;
+  state.player.is_attack_active = true;
+  state.player.animation_state =
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::Idle);
+  state.player.animation_frame = 0;
+  state.player.attack_overlay_ticks = 2;
+
+  comic2::handle_attack_animation(state);
+
+  expect(state.player.animation_state ==
+             static_cast<std::uint8_t>(comic2::PlayerAnimationState::Attack),
+         "attack animation should switch to attack state");
+  expect(state.player.attack_overlay_ticks == 1,
+         "attack overlay timer should count down");
+}
+
+void test_timed_overlay_handler_starts_and_counts_down() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.flags.timed_overlay_pending = true;
+  state.player.overlay_sprite_frame = 3;
+
+  comic2::handle_timed_overlay(state);
+
+  expect(!state.flags.timed_overlay_pending,
+         "timed overlay flag should be consumed when overlay starts");
+  expect(state.player.overlay_active,
+         "timed overlay should activate when pending is set");
+  expect(state.player.overlay_ticks == 30,
+         "timed overlay should start with a fixed duration");
+  expect(state.player.overlay_sprite_frame == 3,
+         "timed overlay should preserve the configured sprite frame");
+
+  for (int i = 0; i < 29; ++i) {
+    comic2::handle_timed_overlay(state);
+  }
+
+  expect(state.player.overlay_active,
+         "timed overlay should remain active until the countdown expires");
+  expect(state.player.overlay_ticks == 1,
+         "timed overlay should count down each handler tick");
+
+  comic2::handle_timed_overlay(state);
+
+  expect(!state.player.overlay_active,
+         "timed overlay should clear once its countdown reaches zero");
+  expect(state.player.overlay_ticks == 0,
+         "timed overlay should finish with a cleared countdown value");
+}
+
+void test_death_flow_prompts_when_lives_are_exhausted() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.hp = 0;
+  state.player.lives = 1;
+  state.flags.player_special_state_active = true;
+
+  comic2::handle_tile_hazard(state);
+  expect(state.flags.player_special_state_active,
+         "fatal damage should enter the death special-state flow");
+  expect(state.player.animation_state ==
+             static_cast<std::uint8_t>(comic2::PlayerAnimationState::Death),
+         "fatal damage should switch the player into death animation");
+
+  comic2::handle_player_special_state(state);
+  expect(state.player.death_timer_ticks == 2,
+         "death flow should decrement the countdown each tick");
+  expect(!state.ui.modal_active,
+         "death flow should wait for the countdown before opening a modal");
+
+  comic2::handle_player_special_state(state);
+  comic2::handle_player_special_state(state);
+  expect(state.ui.modal_active,
+         "death flow should open a modal prompt once the countdown completes");
+  expect(state.ui.modal_game_over, "death flow should enter the game-over "
+                                   "modal when the final life is exhausted");
+}
+
+void test_death_countdown_decrements_lives_and_respawns_at_spawn() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.hp = 0;
+  state.player.lives = 2;
+  state.player.x = 42;
+  state.player.y = 18;
+  state.player.x_vel = 4;
+  state.player.y_vel = -3;
+  state.player.is_airborne = true;
+  state.player.facing_right = false;
+  state.flags.player_special_state_active = true;
+
+  comic2::handle_tile_hazard(state);
+  comic2::handle_player_special_state(state);
+  comic2::handle_player_special_state(state);
+  comic2::handle_player_special_state(state);
+
+  expect(state.player.lives == 1,
+         "death countdown should decrement lives once when it completes");
+  expect(state.ui.modal_active,
+         "death countdown should open the continue prompt while lives remain");
+  expect(state.ui.modal_prompt == "Continue?",
+         "death countdown should present the continue prompt when respawn is "
+         "available");
+
+  state.ui.modal_confirmed = true;
+  comic2::handle_player_special_state(state);
+
+  expect(
+      state.player.x == 160,
+      "confirming continue should respawn the player at the default spawn x");
+  expect(
+      state.player.y == 160,
+      "confirming continue should respawn the player at the default spawn y");
+  expect(state.player.x_vel == 0,
+         "confirming continue should clear horizontal velocity on respawn");
+  expect(state.player.y_vel == 0,
+         "confirming continue should clear vertical velocity on respawn");
+  expect(!state.player.is_airborne,
+         "confirming continue should clear airborne state on respawn");
+}
+
+void test_confirming_continue_respawns_player() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.hp = 0;
+  state.player.lives = 2;
+  state.ui.modal_active = true;
+  state.ui.modal_prompt = "Continue?";
+  state.ui.modal_game_over = false;
+  state.player.animation_state =
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::Death);
+
+  state.ui.modal_confirmed = true;
+  comic2::handle_player_special_state(state);
+
+  expect(!state.ui.modal_active,
+         "confirming continue should dismiss the modal and resume play");
+  expect(state.player.hp == 12,
+         "confirming continue should restore player health");
+  expect(state.player.animation_state ==
+             static_cast<std::uint8_t>(comic2::PlayerAnimationState::Idle),
+         "confirming continue should restore the idle animation state");
+  expect(!state.player.is_animation_active,
+         "confirming continue should clear the death animation flag");
+  expect(state.player.death_timer_ticks == 0,
+         "confirming continue should clear the death countdown");
+  expect(state.player.invuln_ticks == 0,
+         "confirming continue should clear invulnerability state");
+  expect(state.player.damage_recoil_ticks == 0,
+         "confirming continue should clear recoil state");
+  expect(!state.player.is_attack_active,
+         "confirming continue should clear the attack overlay state");
+}
+
+void test_game_over_confirm_restarts_runtime_state() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.lives = 0;
+  state.player.score = 125;
+  state.player.gems = 3;
+  state.player.firepower = 2;
+  state.player.x = 77;
+  state.player.y = 91;
+  state.player.is_airborne = true;
+  state.player.y_vel = -3;
+  state.ui.modal_active = true;
+  state.ui.modal_prompt = "Game Over";
+  state.ui.modal_game_over = true;
+  state.ui.game_over = true;
+  state.flags.player_special_state_active = true;
+
+  state.ui.modal_confirmed = true;
+  comic2::handle_player_special_state(state);
+
+  expect(!state.ui.modal_active,
+         "confirming game over should clear the modal and begin restart");
+  expect(!state.ui.game_over,
+         "game-over confirmation should clear the terminal game-over state");
+  expect(state.player.lives == 3,
+         "game-over confirmation should restore the default life count");
+  expect(state.player.score == 0,
+         "game-over confirmation should reset the score for a fresh run");
+  expect(state.player.gems == 0,
+         "game-over confirmation should reset collected gems for a fresh run");
+  expect(
+      state.player.x == 64,
+      "game-over confirmation should reset the player to the default spawn x");
+  expect(
+      state.player.y == 96,
+      "game-over confirmation should reset the player to the default spawn y");
+  expect(!state.flags.player_special_state_active,
+         "game-over confirmation should exit the special state flow");
+}
+
+void test_game_over_input_restarts_without_modal_confirm() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.lives = 0;
+  state.ui.modal_active = true;
+  state.ui.modal_prompt = "Game Over";
+  state.ui.modal_game_over = true;
+  state.ui.game_over = true;
+  state.flags.player_special_state_active = true;
+  state.input.jump_pressed = true;
+
+  comic2::handle_player_special_state(state);
+
+  expect(!state.ui.game_over,
+         "jump input should clear the game-over terminal state");
+  expect(state.player.lives == 3,
+         "jump input should restart the run from the default life count");
+  expect(!state.ui.modal_active,
+         "jump input should dismiss the game-over modal during restart");
+}
+
+void test_down_input_cycles_active_mode_mask() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.active_mode_mask = 0;
+  state.progression.mode_inventory_mask = 0x07U;
+  state.input.down_pressed = true;
+
+  comic2::update_player_mode_cycle(state);
+  expect(state.ui.active_mode_mask == 1U,
+         "down input should advance the active mode mask to the first slot");
+
+  comic2::update_player_mode_cycle(state);
+  expect(state.ui.active_mode_mask == 2U,
+         "repeated down input should advance the active mode mask again");
+}
+
+void test_down_input_cycles_only_through_collected_modes() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.active_mode_mask = 0x01U;
+  state.progression.mode_inventory_mask = 0x05U;
+  state.input.down_pressed = true;
+
+  comic2::update_player_mode_cycle(state);
+  expect(state.ui.active_mode_mask == 0x04U,
+         "down input should skip uncollected modes and pick the next valid "
+         "selection");
+
+  comic2::update_player_mode_cycle(state);
+  expect(state.ui.active_mode_mask == 0x01U,
+         "down input should wrap from the last valid mode back to the first");
+}
+
+void test_down_input_is_a_noop_when_no_modes_are_collected() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.active_mode_mask = 0x00U;
+  state.progression.mode_inventory_mask = 0x00U;
+  state.input.down_pressed = true;
+
+  comic2::update_player_mode_cycle(state);
+  expect(state.ui.active_mode_mask == 0x00U,
+         "down input should not change the selection when no modes are owned");
+}
+
+void test_down_input_updates_selection_immediately_on_down_press() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.active_mode_mask = 0x00U;
+  state.progression.mode_inventory_mask = 0x07U;
+  state.input.down_pressed = true;
+
+  comic2::update_player_mode_cycle(state);
+  expect(
+      state.ui.active_mode_mask == 0x01U,
+      "down input should update the selection immediately on a single press");
+}
+
+void test_mode_activation_starts_effect_and_consumes_selected_mode() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.active_mode_mask = 0x02U;
+  state.input.mode_activate_pressed = true;
+
+  comic2::update_player_mode_activation(state);
+
+  expect(state.ui.active_mode_mask == 0x02U,
+         "mode activation should keep the selected mode visible");
+  expect(state.player.active_mode_effect == 0x02U,
+         "mode activation should start the matching active-mode effect");
+  expect(state.player.mode_effect_ticks == 30U,
+         "mode activation should initialize the effect countdown");
+}
+
+void test_mode_effect_countdown_expires_after_ticks() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.active_mode_effect = 0x02U;
+  state.player.mode_effect_ticks = 1U;
+
+  comic2::update_player_mode_effect(state);
+
+  expect(state.player.active_mode_effect == 0U,
+         "mode effect should clear when its countdown expires");
+  expect(state.player.mode_effect_ticks == 0U,
+         "mode effect countdown should reach zero when expired");
+}
+
+void test_input_fallback_expires_mode_effects_on_tick() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.active_mode_effect = 0x02U;
+  state.player.mode_effect_ticks = 1U;
+
+  comic2::handle_input_fallback(state);
+
+  expect(state.player.active_mode_effect == 0U,
+         "input fallback should clear an expired mode effect");
+  expect(state.player.mode_effect_ticks == 0U,
+         "input fallback should leave the mode countdown at zero once expired");
+}
+
+void test_room_event_message_is_queued_for_display() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.flags.room_event_triggered = true;
+
+  comic2::handle_input_fallback(state);
+
+  expect(state.ui.pending_event_message == "Room Event Triggered",
+         "room-event trigger should queue a displayable message");
+  expect(!state.ui.modal_active,
+         "queued room-event message should wait for the modal display step");
+}
+
+void test_room_event_message_becomes_modal_prompt() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.pending_event_message = "Room Event Triggered";
+
+  comic2::handle_input_fallback(state);
+
+  expect(state.ui.modal_active,
+         "pending room-event message should open the modal prompt path");
+  expect(state.ui.modal_prompt == "Room Event Triggered",
+         "pending room-event message should become the modal prompt");
+  expect(state.ui.pending_event_message.empty(),
+         "room-event message should be consumed once shown");
+}
+
+void test_room_event_message_is_only_queued_once_per_trigger() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.flags.room_event_triggered = true;
+
+  comic2::handle_input_fallback(state);
+
+  expect(state.ui.pending_event_message == "Room Event Triggered",
+         "first room-event trigger should queue a message");
+  expect(state.ui.room_event_consumed,
+         "first room-event trigger should mark the one-shot state consumed");
+
+  state.flags.room_event_triggered = true;
+  state.ui.pending_event_message.clear();
+  comic2::handle_input_fallback(state);
+
+  expect(state.ui.pending_event_message.empty(),
+         "repeated room-event triggers should not re-queue the message");
+  expect(!state.ui.modal_active,
+         "repeated room-event triggers should not reopen the modal prompt");
+}
+
+void test_level_completion_activates_when_gem_threshold_is_met() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.gems = 2;
+  state.level_completion_gems_required = 2;
+
+  comic2::handle_input_fallback(state);
+
+  expect(state.level_complete, "gem collection should mark the level as "
+                               "complete once the threshold is met");
+  expect(state.ui.modal_active,
+         "level completion should open the completion modal");
+  expect(state.ui.modal_prompt == "Level Complete!",
+         "level completion should present a clear completion prompt");
+}
+
+void test_level_completion_does_not_trigger_before_threshold() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.gems = 1;
+  state.level_completion_gems_required = 2;
+
+  comic2::handle_input_fallback(state);
+
+  expect(
+      !state.level_complete,
+      "level completion should stay pending before the gem threshold is met");
+  expect(
+      !state.ui.modal_active,
+      "level completion should not open a modal before the threshold is met");
+}
+
+void test_level_completion_confirm_advances_to_next_level_and_resets_transient_state() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.current_level = 0;
+  state.current_room = 2;
+  state.player.gems = 3;
+  state.player.firepower = 2;
+  state.player.lives = 2;
+  state.player.x = 44;
+  state.player.y = 58;
+  state.player.x_vel = 4;
+  state.player.y_vel = -3;
+  state.player.is_airborne = true;
+  state.player.is_physics_active = true;
+  state.progression.mode_inventory_mask = 0x03U;
+  state.ui.active_mode_mask = 0x02U;
+  state.ui.inventory_mask = 0x05U;
+  state.level_complete = true;
+  state.ui.modal_active = true;
+  state.ui.modal_prompt = "Level Complete!";
+  state.ui.level_complete_modal = true;
+  state.ui.modal_confirmed = true;
+  state.flags.player_special_state_active = true;
+  state.projectiles.push_back(comic2::ProjectileState{.active = true});
+  state.active_entities.push_back(comic2::ActiveEntity8{});
+  state.mapped_objects.push_back(comic2::MappedObject12{});
+  state.activation_state = comic2::EntityActivationState{};
+  state.activation_toggle = 7;
+
+  std::vector<std::uint8_t> decoded_room_bytes(0x2C4, 0x00);
+  decoded_room_bytes[0x2A0] = 0x00;
+  decoded_room_bytes[0x2A1] = 0x00;
+  decoded_room_bytes[0x2A2] = 0x04;
+  decoded_room_bytes[0x2A3] = 0x00;
+  decoded_room_bytes[0x2A4] = 0x03;
+  decoded_room_bytes[0x2A5] = 0x00;
+  const auto encoded_room_bytes = encode_literal_signed_rle(decoded_room_bytes);
+  state.room_resource_bytes.resize(0x20 + encoded_room_bytes.size(), 0x00);
+  state.room_resource_bytes[2] = 0x01;
+  state.room_resource_bytes[3] = 0x00;
+  state.room_resource_bytes[0x04] = 0x04;
+  state.room_resource_bytes[0x05] = 0x00;
+  state.room_resource_bytes[0x06] = 0x03;
+  state.room_resource_bytes[0x07] = 0x00;
+  state.room_resource_bytes[0x08] = 0x20;
+  state.room_resource_bytes[0x09] = 0x00;
+  std::copy(encoded_room_bytes.begin(), encoded_room_bytes.end(),
+            state.room_resource_bytes.begin() + 0x20);
+
+  comic2::handle_player_special_state(state);
+
+  expect(state.current_level == 1,
+         "confirming level completion should advance to the next level");
+  expect(state.current_room == 0,
+         "confirming level completion should reset to the start room");
+  expect(state.player.x == 64,
+         "confirming level completion should reset the player to the spawn x");
+  expect(state.player.y == 96,
+         "confirming level completion should reset the player to the spawn y");
+  expect(state.player.x_vel == 0,
+         "confirming level completion should clear horizontal velocity");
+  expect(state.player.y_vel == 0,
+         "confirming level completion should clear vertical velocity");
+  expect(!state.player.is_airborne,
+         "confirming level completion should clear airborne state");
+  expect(state.projectiles.empty(),
+         "confirming level completion should clear transient projectiles");
+  expect(state.active_entities.empty(),
+         "confirming level completion should clear transient entities");
+  expect(state.mapped_objects.empty(),
+         "confirming level completion should clear transient mapped objects");
+  expect(state.player.gems == 3,
+         "confirming level completion should preserve earned gems");
+  expect(state.player.firepower == 2,
+         "confirming level completion should preserve firepower progress");
+  expect(state.player.lives == 2,
+         "confirming level completion should preserve remaining lives");
+  expect(state.progression.mode_inventory_mask == 0x03U,
+         "confirming level completion should preserve the mode inventory");
+}
+
+void test_level_completion_confirm_keeps_current_level_when_next_level_is_unavailable() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.current_level = 1;
+  state.current_room = 3;
+  state.player.x = 88;
+  state.player.y = 66;
+  state.player.gems = 1;
+  state.player.firepower = 1;
+  state.player.lives = 1;
+  state.level_complete = true;
+  state.ui.modal_active = true;
+  state.ui.modal_prompt = "Level Complete!";
+  state.ui.level_complete_modal = true;
+  state.ui.modal_confirmed = true;
+  state.flags.player_special_state_active = true;
+  state.projectiles.push_back(comic2::ProjectileState{.active = true});
+
+  comic2::handle_player_special_state(state);
+
+  expect(
+      state.current_level == 1,
+      "missing level resources should leave the player on the current level");
+  expect(state.current_room == 3,
+         "missing level resources should preserve the current room");
+  expect(state.player.x == 88,
+         "missing level resources should preserve the current player position");
+  expect(
+      state.player.y == 66,
+      "missing level resources should preserve the current player y position");
+  expect(state.player.gems == 1,
+         "missing level resources should preserve collected gems");
+  expect(state.player.firepower == 1,
+         "missing level resources should preserve firepower progress");
+  expect(state.player.lives == 1,
+         "missing level resources should preserve lives");
+  expect(!state.projectiles.empty(),
+         "missing level resources should leave transient state unchanged");
+}
+
+void test_player_mode_activation_tracks_mode_inventory() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.ui.active_mode_mask = 0x01U;
+  state.ui.inventory_mask = 0U;
+  state.input.mode_activate_pressed = true;
+
+  comic2::update_player_mode_activation(state);
+
+  expect(state.progression.mode_inventory_mask == 0x01U,
+         "activating a mode should record it in the progression inventory");
+  expect((state.ui.inventory_mask & 0x04U) != 0U,
+         "activating a mode should expose the collection in the HUD inventory "
+         "mask");
+  expect(state.ui.active_mode_mask == 0x01U,
+         "activating a mode should keep the active mode selection visible");
+}
+
+void test_progression_state_updates_inventory_bits() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.gems = 3;
+  state.player.firepower = 2;
+  state.player.lives = 2;
+  state.ui.active_mode_mask = 0;
+  state.ui.inventory_mask = 0;
+
+  comic2::update_progression_state(state);
+
+  expect((state.ui.inventory_mask & 0x01U) != 0U,
+         "progression state should mark collected gems in the inventory mask");
+  expect((state.ui.inventory_mask & 0x02U) != 0U,
+         "progression state should mark increased firepower in the inventory "
+         "mask");
+  expect((state.ui.active_mode_mask & 0x01U) != 0U,
+         "progression state should mark the player as having an active mode");
+}
+
+void test_progression_state_keeps_inventory_bits_stable() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.gems = 0;
+  state.player.firepower = 1;
+  state.player.lives = 0;
+  state.ui.active_mode_mask = 0x01;
+  state.ui.inventory_mask = 0x03;
+
+  comic2::update_progression_state(state);
+
+  expect(state.ui.inventory_mask == 0x03U,
+         "progression state should preserve already-known inventory bits");
+  expect(state.ui.active_mode_mask == 0x01U,
+         "progression state should preserve already-known active mode bits");
+}
+
+void test_respawn_reset_preserves_persistent_progression_state() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.gems = 3;
+  state.player.firepower = 2;
+  state.player.lives = 2;
+  comic2::update_progression_state(state);
+
+  const auto persisted = state.progression;
+  comic2::reset_player_respawn_state(state);
+
+  expect(state.progression.flags == persisted.flags,
+         "respawn reset should preserve the persistent progression flags");
+  expect(state.progression.gems_collected,
+         "respawn reset should keep gem progression marked as collected");
+  expect(state.progression.firepower_unlocked,
+         "respawn reset should keep firepower progression marked as unlocked");
+  expect(state.progression.lives_available,
+         "respawn reset should keep life progression marked as available");
+}
+
 void test_tile_hazard_stage_instantly_kills_player() {
   comic2::GameDispatcher dispatcher;
   comic2::install_default_stage_hooks(dispatcher);
@@ -417,6 +1012,45 @@ void test_input_fallback_arms_grounded_physics_for_next_tick() {
   const auto second = dispatcher.run_tick(state);
   expect(second.stage == comic2::DispatchStage::GroundedPhysics,
          "second tick should execute grounded physics after arming");
+}
+
+void test_transition_completion_finalizes_room_and_player_position() {
+  comic2::GameDispatcher dispatcher;
+  comic2::install_default_stage_hooks(dispatcher);
+
+  comic2::RuntimeState state;
+  state.current_level = 1;
+  state.current_room = 0;
+  state.player.x = 12;
+  state.player.y = 50;
+  state.player.x_vel = 3;
+  state.player.y_vel = -2;
+  state.player.is_airborne = true;
+  state.player.is_physics_active = true;
+  state.transition_state.active = true;
+  state.transition_state.completed = false;
+  state.transition_state.target_room = 2;
+  state.transition_state.target_player_x = 16;
+  state.transition_state.tick_count = 31;
+  state.transition_state.frame_index = 31;
+
+  const auto result = dispatcher.run_tick(state);
+  expect(result.stage == comic2::DispatchStage::InputHandling,
+         "completed transition should still run through the input stage");
+  expect(state.transition_state.completed,
+         "transition should complete when its timer expires");
+  expect(state.current_room == 2,
+         "transition completion should update the current room");
+  expect(state.player.x == 16,
+         "transition completion should place the player at the target x");
+  expect(state.player.x_vel == 0,
+         "transition completion should clear horizontal velocity");
+  expect(state.player.y_vel == 0,
+         "transition completion should clear vertical velocity");
+  expect(!state.player.is_airborne,
+         "transition completion should clear airborne state");
+  expect(!state.transition_state.player_frozen,
+         "completed transition should release player control");
 }
 
 void test_level_transition_loads_room_tilemap() {
@@ -738,9 +1372,36 @@ void run_dispatcher_tests() {
   test_deterministic_tick_replay();
   test_dispatcher_trace_log();
   test_default_stage_hook_coverage();
+  test_player_animation_handler_advances_walk_cycle();
+  test_attack_handler_uses_attack_overlay_state();
+  test_timed_overlay_handler_starts_and_counts_down();
+  test_death_flow_prompts_when_lives_are_exhausted();
+  test_death_countdown_decrements_lives_and_respawns_at_spawn();
+  test_confirming_continue_respawns_player();
+  test_game_over_confirm_restarts_runtime_state();
+  test_game_over_input_restarts_without_modal_confirm();
+  test_down_input_cycles_active_mode_mask();
+  test_down_input_cycles_only_through_collected_modes();
+  test_down_input_is_a_noop_when_no_modes_are_collected();
+  test_down_input_updates_selection_immediately_on_down_press();
+  test_player_mode_activation_tracks_mode_inventory();
+  test_mode_activation_starts_effect_and_consumes_selected_mode();
+  test_mode_effect_countdown_expires_after_ticks();
+  test_input_fallback_expires_mode_effects_on_tick();
+  test_room_event_message_is_queued_for_display();
+  test_room_event_message_becomes_modal_prompt();
+  test_room_event_message_is_only_queued_once_per_trigger();
+  test_level_completion_activates_when_gem_threshold_is_met();
+  test_level_completion_does_not_trigger_before_threshold();
+  test_level_completion_confirm_advances_to_next_level_and_resets_transient_state();
+  test_level_completion_confirm_keeps_current_level_when_next_level_is_unavailable();
+  test_progression_state_updates_inventory_bits();
+  test_progression_state_keeps_inventory_bits_stable();
+  test_respawn_reset_preserves_persistent_progression_state();
   test_tile_hazard_stage_instantly_kills_player();
   test_stage_flags_are_consumed_by_default_handlers();
   test_input_fallback_arms_grounded_physics_for_next_tick();
+  test_transition_completion_finalizes_room_and_player_position();
   test_level_transition_loads_room_tilemap();
   test_level_transition_right_edge_reloads_target_room_from_assets();
   test_level_transition_left_edge_room0_clamps_without_transition();
