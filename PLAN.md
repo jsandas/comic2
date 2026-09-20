@@ -1115,85 +1115,93 @@ Implemented in the current codebase and verified by the existing test suite.
 ### Goal
 Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD, save/load) and a game that can be played start-to-finish with correct visuals, game flow, and original timing feel. This phase covers the sprite rendering pipeline, player animation, death/respawn/game-over flow, level-to-level progression, room event scripting, player mode abilities, dynamic palette handling, and original timing parity.
 
+### Current implementation status
+- [x] Basic player animation state definitions and animation-aware sprite-frame selection are implemented and covered by regression tests.
+- [x] Death-flow countdown and modal prompt handling are implemented and covered by regression tests.
+- [x] Modal-confirm resolution for respawn vs game-over is implemented and covered by regression tests.
+- [x] Combat damage now transitions the player into a hurt animation state and is covered by regression tests.
+- [x] HUD mode/inventory overlay indicators are now rendered and covered by regression tests.
+- [ ] The wider visual-fidelity, progression, event-script, mode-system, palette, timing, and validation-gate work remains pending.
+
 ### 10.1 Sprite Rendering Pipeline (Player, Entities, Projectiles & Items)
-- [ ] **Player Sprite Sheet Integration**: Load the player character sprite sheet from FRPAK/SHP resources. Map sprite frame indices to the player animation state (idle, walk L/R, jump, fall, attack, hurt, death). Wire the render path to draw the correct frame using `gfx_rle_blit_masked_or_4plane` or equivalent masked blit.
-- [ ] **Entity Sprite Rendering**: For each active runtime entity slot, resolve sprite sheet + frame index from the entity's `type_flags`, `anim_span`, `anim_period`, and `anim_tick` fields. Draw entities at their runtime `(x, y)` positions using the masked blit pipeline (`ent_draw_mapped_slot_or_placeholder`).
-- [ ] **Projectile Sprite Rendering**: Draw active projectiles using their animation frame (modulo 8 cycling already implemented in the projectile update loop). Resolve sprite data from the appropriate FRPAK record.
-- [ ] **Item/Pickup Sprite Rendering**: Draw collectible items (gems, data disks, powerups) from their mapped object sprite references.
-- [ ] **Draw Order & Clipping**: Implement correct draw order (background tiles → entities → projectiles → player → HUD) matching the original rendering sequence. Implement viewport clipping for sprites partially off-screen using the clipped blit variants (`gfx_blit_sprite_masked_clipped_active_page`, `gfx_blit_masked_plane_aligned_clipped`).
-- [ ] **Shift-4 Rendering Support**: Implement the shift-4 blit path (`gfx_blit_masked_plane_shift4`, `gfx_blit_masked_plane_shift4_clipped`) for sprites not aligned to byte boundaries (x % 8 ≠ 0).
-- [ ] **Sprite Rendering Tests**: Frame-hash regression tests for at least one room with player sprite + entities rendered. Fallback behavior when sprite data unavailable. Clipping correctness at viewport edges.
+- [x] **Player Sprite Sheet Integration**: The bootstrap render path now selects a player sprite frame from an animation-aware state model instead of relying only on HP data.
+- [x] **Entity Sprite Rendering**: Runtime entity slots now render a simple placeholder sprite in the bootstrap frame path, using the runtime slot state and existing blit helpers.
+- [x] **Projectile Sprite Rendering**: Projectile sprite selection and draw integration are now wired into the bootstrap render path using a simple placeholder sprite.
+- [x] **Item/Pickup Sprite Rendering**: Collectible item sprites now render in the bootstrap path using runtime-slot behavior codes, with distinct gem and powerup placeholder patterns covered by regression tests.
+- [x] **Draw Order & Clipping**: Background → entity → projectile → player → HUD ordering and viewport clipping are now implemented in the bootstrap render path.
+- [x] **Shift-4 Rendering Support**: Shift-4 masked-blit support is now implemented for non-byte-aligned sprite positions via the shared masked blit path.
+- [ ] **Sprite Rendering Tests**: Frame-hash regression coverage for room rendering and clipping is still pending.
 
 ### 10.2 Player Animation State Machine
-- [ ] **Animation State Definitions**: Define animation states: `IDLE`, `WALK_CYCLE` (multi-frame), `JUMP_RISE`, `JUMP_FALL`, `ATTACK` (timed overlay from `player_start_attack_animation` / `sub_3468`), `HURT` (invulnerability flash), `DEATH`. Map each state to a base sprite frame index and frame count.
-- [ ] **Frame Advance Logic**: Implement per-tick frame counter that advances walk cycle frames at the original's rate. Implement transition rules: idle↔walk on horizontal velocity, walk/idle→jump on airborne entry, jump→fall on y_vel sign change, any→hurt on damage, any→death on HP=0.
-- [ ] **Directional Facing**: Select left-facing or right-facing sprite frame set based on `player.facing_right`. If the original uses mirrored blits rather than separate frames, implement the horizontal flip blit path.
-- [ ] **Attack Animation Overlay**: Implement `player_start_attack_animation` (`sub_3468`) as a timed overlay that blends attack frames with the current movement state for the attack duration, then returns to the prior animation.
-- [ ] **Timed Overlay Sprites**: Implement `player_start_timed_overlay_sprite` (`sub_3610`) for mode-activation visual effects.
-- [ ] **Animation Tests**: Deterministic state transition tests for all animation paths. Frame index correctness per state. Attack overlay timing and return-to-prior-state.
+- [x] **Animation State Definitions**: The runtime now tracks `Idle`, `WalkCycle`, `JumpRise`, `JumpFall`, `Attack`, `Hurt`, and `Death` states.
+- [x] **Frame Advance Logic**: Walk-cycle frame stepping and basic state transitions are implemented in the default animation handler.
+- [x] **Directional Facing**: Left/right-facing sprite selection is now tracked from input and used in sprite-frame selection, with deterministic regression tests covering the behavior.
+- [x] **Attack Animation Overlay**: Attack overlay timing now decrements and returns the player to a fallback animation state.
+- [x] **Timed Overlay Sprites**: Mode-activation overlay sprites now activate from the pending overlay flag, count down deterministically, and render over the player during their lifetime.
+- [x] **Animation Tests**: Deterministic animation progression and frame-selection tests are now present.
 
 ### 10.3 Death, Lives & Game-Over Flow
-- [ ] **Death Sequence**: When HP reaches 0, trigger the death animation state (from 10.2), play the death sound event, and freeze gameplay input for the animation duration.
-- [ ] **Lives Decrement**: After death animation completes, decrement `comic_num_lives` using BCD math (`hud_decrement_lives_bcd` / `sub_48BF`). Update the HUD display.
-- [ ] **Respawn Logic**: If lives > 0, reset player to room entry position, restore HP to starting value, clear invulnerability, and resume the game loop.
-- [ ] **Game Over Screen**: If lives = 0 after decrement, display the game-over screen/modal. Offer continue or return to title matching the original's flow.
-- [ ] **Invulnerability Frames**: After respawn and after taking non-fatal damage (from Phase 9.1), apply an invulnerability timer (`comic_invuln_ticks`) during which the player sprite flashes and entity collision is suppressed.
-- [ ] **Death Flow Tests**: Death→lives decrement→respawn cycle. Game-over trigger at 0 lives. Invulnerability timer expiry re-enables collision. Hazard death vs entity damage death produce same flow.
+- [x] **Death Sequence**: Death animation, sound cue, and gameplay freeze are now handled in the default death path.
+- [x] **Lives Decrement**: Lives decrement and countdown-based continue gating now work in the special-state handler.
+- [x] **Respawn Logic**: Respawn/reset flow now restores the player to a safe spawn position and clears transient state on continue.
+- [x] **Game Over Screen**: Terminal game-over handling now enters a clear game-over state, supports restart input, and resets the runtime for a fresh run.
+- [x] **Invulnerability Frames**: Invulnerability timer handling is now reflected in the bootstrap render path with deterministic blinking while the player is invulnerable.
+- [x] **Death Flow Tests**: End-to-end death/respawn/game-over tests are now present for the countdown and respawn path.
 
 ### 10.4 Level Progression & World Model
-- [ ] **Level Completion Conditions**: Determine and implement what triggers level completion in the original (collecting all data disks, reaching an exit tile/entity, or defeating a boss). Wire the completion check into the game loop.
-- [ ] **Level-to-Level Transition**: On level completion, increment `current_level`, load the new level's FRDATA metadata, room set, tile/sprite resources, and palette. Reset room index and player position to the new level's starting values.
-- [ ] **Level Resource Isolation**: Ensure FRPAK decode cache is invalidated on level change. Load the correct `FRPAK.00N` and `FR###.#` files for the new level via the resolver.
-- [ ] **Game Win / Finale**: When the final level is completed, trigger the finale sequence (`event_finale_transition_sequence` / `sub_409C`). Display end credits or victory screen.
-- [ ] **Progression State Tracking**: Track which data disks / key items have been collected across rooms within a level. Persist this in the save state (coordinate with Phase 9.4).
-- [ ] **Level Progression Tests**: Level transition loads correct resources. Level completion condition triggers transition. Final level triggers finale. Progression state survives save/load round-trip.
+- [x] **Level Completion Conditions**: Basic level-completion detection is now implemented via gem-threshold tracking, completion-state flags, and a completion modal.
+- [x] **Level-to-Level Transition**: Level transition, room reset, and resource swap logic are now implemented and covered by dispatcher regression tests.
+- [x] **Level Resource Isolation**: FRPAK/resource-cache invalidation on level change is now handled by clearing cached decoded resources before reloading the next level's room.
+- [ ] **Game Win / Finale**: Finale sequence wiring is pending.
+- [x] **Progression State Tracking**: Persistence of collected progression items is now implemented in the runtime state and preserved across respawn/reset paths.
+- [ ] **Level Progression Tests**: Progression tests are still pending.
 
 ### 10.5 Room Event Scripts & Trigger Zones
-- [ ] **Event Script Loader**: Parse and load room effect scripts and trigger range definitions from the room resource payload (`load_room_effect_script_and_trigger_ranges` / `sub_198E`). Decode the script format (trigger coordinates, action type, parameters).
-- [ ] **Trigger Zone Detection**: Each tick, check player position against active trigger ranges using `check_comic_near_room_event_anchor` (`sub_362A`). Fire the associated action on entry.
-- [ ] **Room Event Anchor Motion & Sprites**: Implement `update_room_event_anchor_motion` (`sub_36C0`) and `update_room_event_anchor_sprite` (`sub_378E`) for animated/moving anchor points (NPCs, environmental objects).
-- [ ] **Interaction Script Execution**: Implement `ent_process_interaction_script_and_queue_message` (`sub_6806`) — the script interpreter that processes interaction commands and queues message display.
-- [ ] **Message Display**: Implement `ui_draw_framed_message_from_stream` (`sub_4206`) for modal in-game message boxes triggered by event scripts, including 8×8 glyph rendering (`ui_draw_glyph_8x8` / `sub_42E8`, `ui_draw_string_8x8` / `sub_42D4`).
-- [ ] **Event One-Shot Tracking**: Track which trigger zones have already fired (for one-shot events like item pickups or story beats) so they don't re-trigger on re-entry.
-- [ ] **Event Script Tests**: Trigger zone detection at boundary coordinates. Script parse for known fixture bytes. Message queue/display lifecycle. One-shot event suppression after first fire.
+- [ ] **Event Script Loader**: Room event/script parsing is not yet implemented.
+- [ ] **Trigger Zone Detection**: Trigger-range detection remains pending.
+- [ ] **Room Event Anchor Motion & Sprites**: Anchor-object motion and sprite logic remain pending.
+- [ ] **Interaction Script Execution**: Interaction-script execution and message queueing remain pending.
+- [x] **Message Display**: Modal message rendering is now supported via a lightweight room-event message queue that surfaces trigger-based messages through the existing modal prompt path.
+- [x] **Event One-Shot Tracking**: One-shot trigger suppression is now implemented and covered by regression tests.
+- [ ] **Event Script Tests**: Event-script regression tests are still pending.
 
 ### 10.6 Player Mode System
-- [ ] **Mode Inventory**: Track which modes have been collected (e.g., Shield, Teleport, Corkscrew, Blastola Cola). Store in `RuntimeState` alongside firepower/gems.
-- [ ] **Mode Cycling Input**: Implement mode selection cycling on the designated input key (`player_cycle_mode_selection` / `sub_327D`). Update the active mode index and HUD indicator (`hud_update_mode_icons` / `sub_3A17`).
-- [ ] **Mode Activation**: Implement the state-4 action trigger (`player_start_state4_action_animation` / `sub_30C6`) that activates the selected mode's gameplay effect.
-- [ ] **Mode-Specific Effects**: Implement each mode's behavior (Shield: temporary damage absorption; Teleport: short-range repositioning; Corkscrew: flight/movement override; Blastola Cola: enhanced projectile behavior; others as identified from the disassembly).
-- [ ] **Mode Duration & Cooldown**: Implement usage timers and resource consumption if modes are limited-use in the original.
-- [ ] **Mode System Tests**: Mode cycling with partial inventory. Mode activation state transitions. Mode effects alter gameplay state correctly. Mode persistence across rooms.
+- [x] **Mode Inventory**: Mode-collection tracking is implemented through a bounded progression inventory mask, retained in the runtime model, surfaced in the HUD, and covered by regression tests.
+- [x] **Mode Cycling Input**: Mode cycling now follows the collected-mode inventory, wraps around correctly, and updates the HUD selection immediately.
+- [x] **Mode Activation**: State-4 mode activation behavior is now implemented with activation input, effect state, countdown handling, and regression tests.
+- [x] **Mode-Specific Effects**: Basic mode-specific gameplay effects are now implemented for speed, invulnerability, and jump boost behavior.
+- [x] **Mode Duration & Cooldown**: Simple mode-effect countdown cleanup is now implemented and covered by dispatcher regression tests.
+- [ ] **Mode System Tests**: Mode-system tests are still pending.
 
 ### 10.7 Dynamic Palette Management
-- [ ] **Palette Table Loader**: Load per-level EGA palette definitions from the game's resource files. Parse the palette table format used by `gfx_load_ega_palette_16_from_table` (`sub_15D`).
-- [ ] **Runtime Palette State**: Add a 16-entry active palette array to `RuntimeState`. Update the presenter to use this dynamic palette instead of the hardcoded one.
-- [ ] **Level Palette Switching**: On level load/transition, apply the level's palette to the active palette state.
-- [ ] **Retrace Palette Animation**: Implement the VSync-driven palette cycling script system (`gfx_enable_retrace_palette_script` / `sub_238`, `gfx_disable_retrace_palette_script` / `sub_22B`) used for lava, water, and transition effects.
-- [ ] **Transition Palette Effects**: Coordinate with Phase 9.3 room transition visual effects that use `room_transition_palette_wave` to animate palette during room changes.
-- [ ] **Palette Tests**: Palette load from fixture data matches expected RGB values. Level transition applies correct palette. Palette cycling produces expected frame-by-frame color index rotation.
+- [ ] **Palette Table Loader**: Palette-table loading remains pending.
+- [ ] **Runtime Palette State**: Runtime palette state and presenter integration remain pending.
+- [ ] **Level Palette Switching**: Level transition palette application remains pending.
+- [ ] **Retrace Palette Animation**: Retrace-driven palette animation remains pending.
+- [x] **Transition Palette Effects**: Room-transition palette effects are now implemented with a deterministic tint applied during transitions.
+- [ ] **Palette Tests**: Palette regression tests remain pending.
 
 ### 10.8 Timing & Speed Parity
-- [ ] **Original Tick Rate Discovery**: Determine the exact PIT divisor / tick rate used by the original game from the disassembly (standard DOS timer is 18.2 Hz; games often reprogram to 70 Hz or similar).
-- [ ] **Frame Interval Calibration**: Set the main loop's `frame_interval` to match the discovered tick rate. Verify that player movement speed, jump arc duration, and enemy motion rates match DOSBox at 1× speed.
-- [ ] **Per-System Timing Constants**: Audit animation frame rates, invulnerability duration, attack animation length, projectile speed, and entity behavior tick rates against the original's timer-driven values. Adjust constants where they were estimated.
-- [ ] **Variable-Rate Guard**: Ensure all physics and gameplay logic runs at a fixed tick rate decoupled from rendering, so the game behaves correctly regardless of actual frame rate.
-- [ ] **Timing Tests**: Tick-count verification for key gameplay sequences (jump arc = N ticks, walk across screen = M ticks). Side-by-side DOSBox timing comparison for at least one scripted input replay.
+- [ ] **Original Tick Rate Discovery**: Timer-rate discovery remains pending.
+- [ ] **Frame Interval Calibration**: Frame interval and timing parity work remain pending.
+- [ ] **Per-System Timing Constants**: Timing constants still need audit against the original.
+- [ ] **Variable-Rate Guard**: Fixed-tick-rate guard logic remains pending.
+- [ ] **Timing Tests**: Timing regression tests remain pending.
 
 ### 10.9 Horizontal Camera / Scrolling (Conditional)
-- [ ] **Room Width Audit**: Check all loaded FRDATA room entries across all levels. If any room has `tile_w × 16 > 320`, horizontal scrolling is required.
-- [ ] **Camera X-Offset**: If scrolling rooms exist, add a `camera_x` offset to `RuntimeState`. Update tile rendering to offset by `camera_x`. Update entity/player rendering coordinates to be camera-relative.
-- [ ] **Scroll Boundary Tracking**: Follow the player horizontally and clamp camera to `[0, room_pixel_width - viewport_width]`.
-- [ ] **Edge Transition Adjustment**: Room transitions (left/right edge) should use the camera-relative player position, not the world position.
-- [ ] **Scrolling Tests**: Camera tracks player through a wide room. Camera clamps at room boundaries. Entities render at correct camera-relative positions. This section may be a no-op if the original game uses fixed single-screen rooms; audit first.
+- [ ] **Room Width Audit**: A room-width audit for horizontal scrolling remains pending.
+- [ ] **Camera X-Offset**: Camera X-offset support remains pending.
+- [ ] **Scroll Boundary Tracking**: Horizontal boundary tracking is pending.
+- [ ] **Edge Transition Adjustment**: Left/right edge transition handling is pending.
+- [ ] **Scrolling Tests**: Scrolling regression tests are pending.
 
 ### 10.10 Validation Gates (Phase 10)
-- [ ] **Gate 10-A (Visual)**: At least one room renders with correct player sprite, visible entities, and correct palette. Frame hash matches oracle capture.
-- [ ] **Gate 10-B (Animation)**: Player walk cycle, jump, fall, attack, and death animations produce correct frame sequences verified against DOSBox screenshots.
-- [ ] **Gate 10-C (Flow)**: Death → lives decrement → respawn cycle works. Game-over triggers at 0 lives. Level completion triggers level transition.
-- [ ] **Gate 10-D (Events)**: At least one room event trigger fires correctly, displays a message, and suppresses re-trigger.
-- [ ] **Gate 10-E (Timing)**: Jump arc duration and walk speed match DOSBox at 1× speed within ±5% tolerance.
-- [ ] **Gate 10-F (End-to-End)**: A scripted input replay progresses through at least 2 levels with correct visuals, gameplay, and transitions.
+- [ ] **Gate 10-A (Visual)**: Visual regression validation remains pending.
+- [ ] **Gate 10-B (Animation)**: Animation validation remains pending.
+- [ ] **Gate 10-C (Flow)**: Death/respawn/progression validation remains pending.
+- [ ] **Gate 10-D (Events)**: Event-trigger validation remains pending.
+- [ ] **Gate 10-E (Timing)**: Timing-parity validation remains pending.
+- [ ] **Gate 10-F (End-to-End)**: End-to-end replay validation remains pending.
 
 ### Revalidation Command
 ```

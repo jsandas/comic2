@@ -19,6 +19,43 @@
 
 namespace comic2 {
 
+std::size_t select_player_sprite_frame(const RuntimeState &state) {
+  const auto animation_state =
+      static_cast<PlayerAnimationState>(state.player.animation_state);
+
+  const auto facing_offset = state.player.facing_right ? 0U : 8U;
+
+  switch (animation_state) {
+  case PlayerAnimationState::WalkCycle:
+    return static_cast<std::size_t>(state.player.animation_frame) +
+           facing_offset;
+  case PlayerAnimationState::JumpRise:
+  case PlayerAnimationState::JumpFall:
+    return 4U + facing_offset;
+  case PlayerAnimationState::Attack:
+    return 5U + facing_offset;
+  case PlayerAnimationState::Hurt:
+    return 6U + facing_offset;
+  case PlayerAnimationState::Death:
+    return 7U + facing_offset;
+  case PlayerAnimationState::Idle:
+  default:
+    return static_cast<std::size_t>(state.player.hp % 4U) + facing_offset;
+  }
+}
+
+bool should_render_player_sprite(const RuntimeState &state) {
+  if (state.player.invuln_ticks == 0) {
+    return true;
+  }
+
+  return (state.player.invuln_ticks % 2U) == 0U;
+}
+
+bool should_render_timed_overlay(const RuntimeState &state) {
+  return state.player.overlay_active && state.player.overlay_ticks > 0;
+}
+
 namespace {
 
 constexpr int kDefaultBootstrapTicks = 2;
@@ -326,20 +363,56 @@ bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame,
 bool draw_player_sprite_from_asset(EgaPlanarSurface &frame,
                                    const RuntimeState &state,
                                    const Ega4PlaneImage &atlas) {
-  const std::size_t sprite_index = static_cast<std::size_t>(state.player.hp);
+  const std::size_t sprite_index = select_player_sprite_frame(state);
   Ega4PlaneImage sprite;
   if (!extract_tile_from_asset(atlas, sprite_index, sprite)) {
     return false;
   }
 
-  const std::size_t px = static_cast<std::size_t>(std::max<std::int16_t>(
-      0, std::min<std::int16_t>(state.player.x, frame.width_pixels() - 16)));
-  const std::size_t py = static_cast<std::size_t>(std::max<std::int16_t>(
-      0, std::min<std::int16_t>(state.player.y, frame.height_rows() - 16)));
-  gfx_rle_blit_masked_or_4plane(frame, px, py, sprite);
+  const std::int32_t px = state.player.x;
+  const std::int32_t py = state.player.y - state.camera_y;
+  if (!is_sprite_in_viewport(px, py, 16, 16)) {
+    return true;
+  }
+
+  const std::size_t clamped_px =
+      static_cast<std::size_t>(std::max<std::int16_t>(
+          0, std::min<std::int16_t>(px, frame.width_pixels() - 16)));
+  const std::size_t clamped_py =
+      static_cast<std::size_t>(std::max<std::int16_t>(
+          0, std::min<std::int16_t>(py, frame.height_rows() - 16)));
+  gfx_rle_blit_masked_or_4plane(frame, clamped_px, clamped_py, sprite);
   return true;
 }
+bool draw_timed_overlay_sprite_from_asset(EgaPlanarSurface &frame,
+                                          const RuntimeState &state,
+                                          const Ega4PlaneImage &atlas) {
+  if (!should_render_timed_overlay(state)) {
+    return false;
+  }
 
+  Ega4PlaneImage sprite;
+  const std::size_t sprite_index =
+      static_cast<std::size_t>(state.player.overlay_sprite_frame);
+  if (!extract_tile_from_asset(atlas, sprite_index, sprite)) {
+    return false;
+  }
+
+  const std::int32_t px = state.player.x;
+  const std::int32_t py = state.player.y - state.camera_y;
+  if (!is_sprite_in_viewport(px, py, 16, 16)) {
+    return true;
+  }
+
+  const std::size_t clamped_px =
+      static_cast<std::size_t>(std::max<std::int16_t>(
+          0, std::min<std::int16_t>(px, frame.width_pixels() - 16)));
+  const std::size_t clamped_py =
+      static_cast<std::size_t>(std::max<std::int16_t>(
+          0, std::min<std::int16_t>(py, frame.height_rows() - 16)));
+  gfx_rle_blit_masked_or_4plane(frame, clamped_px, clamped_py, sprite);
+  return true;
+}
 std::optional<Ega4PlaneImage> try_decode_bootstrap_asset(RuntimeState &state) {
   if (state.frpak_catalog.files.empty()) {
     return std::nullopt;
@@ -362,6 +435,10 @@ void draw_player_marker(EgaPlanarSurface &frame, const RuntimeState &state) {
   const std::int32_t px0 = state.player.x;
   const std::int32_t py0 = state.player.y - state.camera_y;
   const std::uint8_t body_color = state.player.is_airborne ? 0x0E : 0x0C;
+
+  if (!is_sprite_in_viewport(px0, py0, 8, 16)) {
+    return;
+  }
 
   for (std::int32_t py = 0; py < 16; ++py) {
     for (std::int32_t px = 0; px < 8; ++px) {
@@ -487,14 +564,10 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
   EgaPlanarSurface frame(320, 200);
   const bool has_room_grid = has_room_grid_data(state);
   bool used_asset_background = false;
+  std::optional<Ega4PlaneImage> asset;
 
-  if (const auto asset = try_decode_bootstrap_asset(state); asset.has_value()) {
+  if ((asset = try_decode_bootstrap_asset(state)).has_value()) {
     used_asset_background = draw_room_tilemap_from_asset(frame, state, *asset);
-    if (used_asset_background) {
-      if (!draw_player_sprite_from_asset(frame, state, *asset)) {
-        draw_player_marker(frame, state);
-      }
-    }
   }
 
   if (!used_asset_background && has_room_grid) {
@@ -503,11 +576,36 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
     draw_fallback_background(frame, state);
   }
 
-  if (!used_asset_background) {
+  // Phase 10.1: draw background first.
+  draw_runtime_entity_sprites(frame, state);
+
+  // Phase 10.1: draw projectiles above entities.
+  draw_runtime_projectile_sprites(frame, state);
+
+  // Phase 10.1: draw the player above projectiles.
+  if (used_asset_background && should_render_player_sprite(state)) {
+    if (!draw_player_sprite_from_asset(frame, state, *asset)) {
+      draw_player_marker(frame, state);
+    }
+  }
+
+  if (!used_asset_background && should_render_player_sprite(state)) {
+    draw_player_marker(frame, state);
+  }
+
+  // Phase 10.1: draw any timed overlay last before the HUD.
+  if (used_asset_background && should_render_timed_overlay(state)) {
+    if (!draw_timed_overlay_sprite_from_asset(frame, state, *asset)) {
+      draw_player_marker(frame, state);
+    }
+  }
+
+  if (!used_asset_background && should_render_timed_overlay(state)) {
     draw_player_marker(frame, state);
   }
 
   if (state.transition_state.active) {
+    apply_transition_palette_tint(frame, state.transition_state);
     if (state.transition_state.effect_type == 0) {
       room_transition_palette_wave(frame, state.transition_state);
     } else {
@@ -520,6 +618,10 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
       state.ui.menu_state == MenuState::Help ||
       state.ui.menu_state == MenuState::GameSelect) {
     ui_render_option_list(frame, state);
+  }
+
+  if (state.ui.modal_active) {
+    ui_render_modal_prompt(frame, state);
   }
 
   hud_render_overlay(frame, state);

@@ -14,11 +14,13 @@ namespace comic2 {
 class EgaPlanarSurface {
 public:
   static constexpr std::size_t kPlaneCount = 4;
+  static constexpr std::uint16_t kDefaultWidthPixels = 320;
+  static constexpr std::uint16_t kDefaultHeightRows = 200;
   static constexpr std::uint16_t kPage0 = 0x0000;
   static constexpr std::uint16_t kPage1 = 0x2000;
 
-  explicit EgaPlanarSurface(std::uint16_t width_pixels = 320,
-                            std::uint16_t height_rows = 200);
+  explicit EgaPlanarSurface(std::uint16_t width_pixels = kDefaultWidthPixels,
+                            std::uint16_t height_rows = kDefaultHeightRows);
 
   std::uint16_t width_pixels() const noexcept { return width_pixels_; }
   std::uint16_t height_rows() const noexcept { return height_rows_; }
@@ -120,6 +122,20 @@ void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
                                    std::size_t y_rows,
                                    const Ega4PlaneImage &image_data);
 
+bool is_sprite_in_viewport(
+    std::int32_t x, std::int32_t y, std::int32_t width, std::int32_t height,
+    std::int32_t viewport_x = 0, std::int32_t viewport_y = 0,
+    std::int32_t viewport_width =
+        static_cast<std::int32_t>(EgaPlanarSurface::kDefaultWidthPixels),
+    std::int32_t viewport_height =
+        static_cast<std::int32_t>(EgaPlanarSurface::kDefaultHeightRows));
+void draw_runtime_entity_sprites(EgaPlanarSurface &frame,
+                                 const RuntimeState &state);
+void draw_runtime_projectile_sprites(EgaPlanarSurface &frame,
+                                     const RuntimeState &state);
+
+void apply_transition_palette_tint(EgaPlanarSurface &surface,
+                                   const RoomTransitionState &transition);
 void room_transition_palette_wave(EgaPlanarSurface &surface,
                                   const RoomTransitionState &transition);
 void room_transition_reveal_sequence_a(EgaPlanarSurface &surface,

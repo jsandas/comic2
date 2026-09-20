@@ -27,9 +27,20 @@ struct InputState {
   bool left_pressed = false;
   bool right_pressed = false;
   bool down_pressed = false;
+  bool mode_activate_pressed = false;
   bool pause_pressed = false;
 
   bool operator==(const InputState &) const = default;
+};
+
+enum class PlayerAnimationState : std::uint8_t {
+  Idle = 0,
+  WalkCycle = 1,
+  JumpRise = 2,
+  JumpFall = 3,
+  Attack = 4,
+  Hurt = 5,
+  Death = 6,
 };
 
 struct PlayerState {
@@ -43,6 +54,18 @@ struct PlayerState {
   bool is_animation_active = false;
   bool is_attack_active = false;
   bool facing_right = true;
+
+  std::uint8_t animation_state =
+      static_cast<std::uint8_t>(PlayerAnimationState::Idle);
+  std::uint8_t animation_frame = 0;
+  std::uint8_t animation_ticks = 0;
+  std::uint8_t attack_overlay_ticks = 0;
+  std::uint8_t death_timer_ticks = 0;
+  bool overlay_active = false;
+  std::uint8_t overlay_ticks = 0;
+  std::uint8_t overlay_sprite_frame = 0;
+  std::uint8_t active_mode_effect = 0;
+  std::uint8_t mode_effect_ticks = 0;
 
   std::uint8_t jump_counter = 0;
   std::uint8_t hp = 12;
@@ -64,6 +87,7 @@ struct DispatcherFlags {
   bool distance_interaction_active = false;
   bool player_special_state_active = false;
   bool tile_hazard_triggered = false;
+  bool room_event_triggered = false;
 
   bool operator==(const DispatcherFlags &) const = default;
 };
@@ -78,13 +102,28 @@ struct PendingRoomTransition {
 struct RoomTransitionState {
   bool active = false;
   bool player_frozen = false;
+  bool completed = false;
   std::uint16_t effect_type = 0;
   std::uint16_t frame_index = 0;
   std::uint16_t tick_count = 0;
+  std::uint16_t target_room = 0;
+  std::int16_t target_player_x = 0;
   std::int16_t player_entry_offset = 0;
   std::int16_t player_exit_offset = 0;
+  std::uint8_t palette_tint = 0;
+  std::uint8_t palette_shift = 0;
 
   bool operator==(const RoomTransitionState &) const = default;
+};
+
+struct ProgressionState {
+  std::uint8_t flags = 0;
+  bool gems_collected = false;
+  bool firepower_unlocked = false;
+  bool lives_available = false;
+  std::uint8_t mode_inventory_mask = 0;
+
+  bool operator==(const ProgressionState &) const = default;
 };
 
 struct UiState {
@@ -100,6 +139,12 @@ struct UiState {
   bool modal_active = false;
   std::uint8_t awaited_key = 0;
   std::string modal_prompt;
+  std::string pending_event_message;
+  bool room_event_consumed = false;
+  bool modal_confirmed = false;
+  bool modal_game_over = false;
+  bool game_over = false;
+  bool level_complete_modal = false;
 };
 
 struct RuntimeState {
@@ -119,7 +164,10 @@ struct RuntimeState {
   PlayerState player;
   InputState input;
   DispatcherFlags flags;
+  ProgressionState progression;
   UiState ui;
+  bool level_complete = false;
+  std::uint8_t level_completion_gems_required = 0;
   std::int32_t camera_y = 0;
   RoomTransitionState transition_state;
 

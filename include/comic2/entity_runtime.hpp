@@ -9,6 +9,14 @@ namespace comic2 {
 
 struct RuntimeState;
 
+inline constexpr std::uint16_t kBehaviorChase = 0x0001;
+inline constexpr std::uint16_t kBehaviorBounce = 0x0002;
+inline constexpr std::uint16_t kBehaviorJump = 0x0003;
+inline constexpr std::uint16_t kBehaviorGem = 0x0004;
+inline constexpr std::uint16_t kBehaviorPowerup = 0x0005;
+inline constexpr std::uint16_t kBehaviorGravity = 0x0006;
+inline constexpr std::uint16_t kBehaviorShoot = 0x0007;
+
 struct EntityViewportBounds {
   std::int16_t min_x = 0;
   std::int16_t max_x = 319;
