@@ -122,15 +122,13 @@ void gfx_rle_blit_masked_or_4plane(EgaPlanarSurface &dest, std::size_t x_pixels,
                                    std::size_t y_rows,
                                    const Ega4PlaneImage &image_data);
 
-bool is_sprite_in_viewport(std::int32_t x, std::int32_t y, std::int32_t width,
-                           std::int32_t height, std::int32_t viewport_x = 0,
-                           std::int32_t viewport_y = 0,
-                           std::int32_t viewport_width =
-                               static_cast<std::int32_t>(
-                                   EgaPlanarSurface::kDefaultWidthPixels),
-                           std::int32_t viewport_height =
-                               static_cast<std::int32_t>(
-                                   EgaPlanarSurface::kDefaultHeightRows));
+bool is_sprite_in_viewport(
+    std::int32_t x, std::int32_t y, std::int32_t width, std::int32_t height,
+    std::int32_t viewport_x = 0, std::int32_t viewport_y = 0,
+    std::int32_t viewport_width =
+        static_cast<std::int32_t>(EgaPlanarSurface::kDefaultWidthPixels),
+    std::int32_t viewport_height =
+        static_cast<std::int32_t>(EgaPlanarSurface::kDefaultHeightRows));
 void draw_runtime_entity_sprites(EgaPlanarSurface &frame,
                                  const RuntimeState &state);
 void draw_runtime_projectile_sprites(EgaPlanarSurface &frame,

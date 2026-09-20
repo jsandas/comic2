@@ -233,9 +233,11 @@ void test_masked_blit_clips_shifted_sprite_at_viewport_edge() {
 
 void test_is_sprite_in_viewport_defaults_to_full_surface_bounds() {
   expect(comic2::is_sprite_in_viewport(250, 180, 16, 16),
-         "default viewport should keep sprites visible within the full 320x200 frame");
+         "default viewport should keep sprites visible within the full 320x200 "
+         "frame");
   expect(!comic2::is_sprite_in_viewport(320, 180, 16, 16),
-         "default viewport should treat entities past the frame edge as off-screen");
+         "default viewport should treat entities past the frame edge as "
+         "off-screen");
 }
 
 void test_render_bootstrap_frame_skips_entities_outside_viewport() {
