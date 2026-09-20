@@ -853,8 +853,10 @@ void test_progression_state_updates_inventory_bits() {
   expect((state.ui.inventory_mask & 0x02U) != 0U,
          "progression state should mark increased firepower in the inventory "
          "mask");
-  expect(state.ui.active_mode_mask == 0U,
-         "progression state should not change the active mode selection");
+  expect(state.ui.active_mode_mask == 0x01U,
+         "progression state should activate the life-progression mode bit when "
+         "lives are available");
+}
 
 void test_progression_state_keeps_inventory_bits_stable() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();

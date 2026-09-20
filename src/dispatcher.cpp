@@ -1,13 +1,17 @@
 #include "comic2/dispatcher.hpp"
 
+#include "comic2/renderer.hpp"
+
 namespace comic2 {
 
 namespace {
 constexpr ProjectileBounds kDefaultProjectileBounds{};
 constexpr std::int16_t kDefaultViewportMinX = 0;
 constexpr std::int16_t kDefaultViewportMinY = 0;
-constexpr std::int16_t kDefaultViewportWidth = 200;
-constexpr std::int16_t kDefaultViewportHeight = 152;
+constexpr std::int16_t kDefaultViewportWidth =
+    static_cast<std::int16_t>(EgaPlanarSurface::kDefaultWidthPixels);
+constexpr std::int16_t kDefaultViewportHeight =
+    static_cast<std::int16_t>(EgaPlanarSurface::kDefaultHeightRows);
 } // namespace
 
 DispatchStage GameDispatcher::choose_stage(const RuntimeState &state) {

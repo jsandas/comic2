@@ -632,6 +632,9 @@ void update_player_mode_activation(RuntimeState &state) {
   }
 
   constexpr std::uint8_t kModeBitMask = 0x0FU;
+  const std::uint8_t selected_mode =
+      static_cast<std::uint8_t>(state.ui.active_mode_mask & kModeBitMask);
+  if (selected_mode == 0U) {
     return;
   }
 
@@ -639,8 +642,9 @@ void update_player_mode_activation(RuntimeState &state) {
   state.player.active_mode_effect = selected_mode;
   state.player.mode_effect_ticks = 30U;
   state.flags.timed_overlay_pending = true;
-  state.progression.mode_inventory_mask = static_cast<std::uint8_t>(
-      state.progression.mode_inventory_mask | selected_mode);
+  state.progression.mode_inventory_mask =
+      static_cast<std::uint8_t>(state.progression.mode_inventory_mask |
+                                selected_mode);
   state.ui.inventory_mask =
       static_cast<std::uint8_t>(state.ui.inventory_mask | 0x04U);
 }

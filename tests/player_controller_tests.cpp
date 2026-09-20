@@ -245,6 +245,8 @@ void test_mode_effects_modify_motion_config_for_speed_and_jump() {
   expect(effective_motion.walk_step == 16,
          "speed-boost mode should double walk speed");
   expect(effective_motion.air_drift_step == 2,
+         "speed-boost mode should shift drift step to the boosted value");
+
   state.player.active_mode_effect = 0x04U;
   const comic2::PlayerMotionConfig jump_boost_motion =
       comic2::get_effective_motion_config(state, base_motion);

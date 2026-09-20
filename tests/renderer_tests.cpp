@@ -231,6 +231,13 @@ void test_masked_blit_clips_shifted_sprite_at_viewport_edge() {
          "shifted sprite should not write past the viewport edge");
 }
 
+void test_is_sprite_in_viewport_defaults_to_full_surface_bounds() {
+  expect(comic2::is_sprite_in_viewport(250, 180, 16, 16),
+         "default viewport should keep sprites visible within the full 320x200 frame");
+  expect(!comic2::is_sprite_in_viewport(320, 180, 16, 16),
+         "default viewport should treat entities past the frame edge as off-screen");
+}
+
 void test_render_bootstrap_frame_skips_entities_outside_viewport() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.runtime_slots.clear();
@@ -309,6 +316,7 @@ void run_renderer_tests() {
   test_masked_blit_keeps_byte_aligned_positions();
   test_masked_blit_handles_shifted_positions();
   test_masked_blit_clips_shifted_sprite_at_viewport_edge();
+  test_is_sprite_in_viewport_defaults_to_full_surface_bounds();
   test_render_bootstrap_frame_skips_entities_outside_viewport();
   test_render_bootstrap_frame_renders_entities_on_viewport_edge();
   test_render_bootstrap_frame_draws_player_after_entities();
