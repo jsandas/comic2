@@ -631,10 +631,7 @@ void update_player_mode_activation(RuntimeState &state) {
     return;
   }
 
-  constexpr std::uint8_t kModeBitMask = 0x03U;
-  const std::uint8_t selected_mode =
-      static_cast<std::uint8_t>(state.ui.active_mode_mask & kModeBitMask);
-  if (selected_mode == 0U) {
+  constexpr std::uint8_t kModeBitMask = 0x0FU;
     return;
   }
 

@@ -9,7 +9,7 @@ namespace comic2 {
 
 inline constexpr std::uint8_t kModeSpeedBoost = 0x01U;
 inline constexpr std::uint8_t kModeInvulnerability = 0x02U;
-inline constexpr std::uint8_t kModeJumpBoost = 0x03U;
+inline constexpr std::uint8_t kModeJumpBoost = 0x04U;
 
 struct PlayerMotionConfig {
   std::int16_t walk_step = 8;
