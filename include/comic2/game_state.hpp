@@ -117,6 +117,16 @@ struct RoomTransitionState {
   bool operator==(const RoomTransitionState &) const = default;
 };
 
+struct RoomEventAnchorState {
+  bool active = false;
+  std::int16_t x = 0;
+  std::int16_t y = 0;
+  std::int16_t velocity_x = 0;
+  std::int16_t velocity_y = 0;
+
+  bool operator==(const RoomEventAnchorState &) const = default;
+};
+
 struct EgaPaletteState {
   bool loaded = false;
   std::array<std::array<std::uint8_t, 4>, 16> entries{};
@@ -180,6 +190,7 @@ struct RuntimeState {
   std::int32_t camera_y = 0;
   EgaPaletteState palette;
   RoomTransitionState transition_state;
+  RoomEventAnchorState room_event_anchor;
 
   std::vector<MappedObject12> mapped_objects;
   std::vector<ActiveEntity8> active_entities;

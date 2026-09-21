@@ -696,6 +696,87 @@ void test_room_event_message_is_only_queued_once_per_trigger() {
          "repeated room-event triggers should not reopen the modal prompt");
 }
 
+void test_object_interaction_script_queues_context_message() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.x = 96;
+  state.player.y = 100;
+  state.mapped_objects.push_back(comic2::MappedObject12{
+      .room_x = 0,
+      .room_y = 0,
+      .descriptor_ptr = 0x1234,
+      .state_flags = 0x0002,
+      .world_x = 90,
+      .world_y = 90,
+  });
+
+  comic2::handle_input_fallback(state);
+
+  expect(state.ui.modal_active, "nearby interaction objects should surface a "
+                                "context message through the modal path");
+  expect(state.ui.modal_prompt == "Object Interaction",
+         "interaction context should be promoted into the active modal prompt");
+  expect(state.ui.pending_event_message.empty(),
+         "interaction prompts should be consumed once delivered to the modal "
+         "flow");
+}
+
+void test_room_event_anchor_motion_moves_and_clamps_to_room_bounds() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.room_grid.tile_w = 20;
+  state.room_grid.tile_h = 15;
+  state.room_grid.row_pointers.assign(15, 0);
+  state.room_grid.tile_data.assign(300, 0x00);
+  state.room_event_anchor.active = true;
+  state.room_event_anchor.x = 5;
+  state.room_event_anchor.y = 10;
+  state.room_event_anchor.velocity_x = 8;
+  state.room_event_anchor.velocity_y = 4;
+
+  comic2::update_room_event_anchor_motion(state);
+
+  expect(state.room_event_anchor.x == 13,
+         "room event anchor should advance by its configured x velocity");
+  expect(state.room_event_anchor.y == 14,
+         "room event anchor should advance by its configured y velocity");
+  expect(state.room_event_anchor.x <= 320,
+         "room event anchor should remain within the screen-space bounds");
+}
+
+void test_room_event_anchor_proximity_arms_event_flow() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.room_event_anchor.active = true;
+  state.room_event_anchor.x = 96;
+  state.room_event_anchor.y = 100;
+  state.player.x = 104;
+  state.player.y = 96;
+
+  const bool near = comic2::check_comic_near_room_event_anchor(state);
+
+  expect(near,
+         "room event anchor should arm when the player enters its proximity "
+         "window");
+  expect(state.room_event_anchor.active,
+         "room event anchor should remain active while the player is near");
+}
+
+void test_room_event_anchor_sprite_reseeds_when_it_passes_the_player() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.room_event_anchor.active = true;
+  state.room_event_anchor.x = 180;
+  state.room_event_anchor.y = 80;
+  state.player.x = 96;
+  state.player.y = 100;
+
+  comic2::update_room_event_anchor_sprite(state);
+
+  expect(
+      state.room_event_anchor.x == 0,
+      "anchor sprite should reseed on the left side after passing the player");
+  expect(
+      state.room_event_anchor.y <= 184,
+      "anchor sprite should remain within the visible room band after reseed");
+}
+
 void test_level_completion_activates_when_gem_threshold_is_met() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.player.gems = 2;
@@ -1441,6 +1522,10 @@ void run_dispatcher_tests() {
   test_room_event_message_is_queued_for_display();
   test_room_event_message_becomes_modal_prompt();
   test_room_event_message_is_only_queued_once_per_trigger();
+  test_object_interaction_script_queues_context_message();
+  test_room_event_anchor_motion_moves_and_clamps_to_room_bounds();
+  test_room_event_anchor_proximity_arms_event_flow();
+  test_room_event_anchor_sprite_reseeds_when_it_passes_the_player();
   test_level_completion_activates_when_gem_threshold_is_met();
   test_level_completion_does_not_trigger_before_threshold();
   test_level_completion_confirm_advances_to_next_level_and_resets_transient_state();

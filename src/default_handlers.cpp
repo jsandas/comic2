@@ -180,6 +180,40 @@ void queue_room_event_message(RuntimeState &state) {
   state.ui.pending_event_message = "Room Event Triggered";
 }
 
+void handle_mapped_object_interaction(RuntimeState &state) {
+  if (state.ui.room_event_consumed) {
+    return;
+  }
+
+  for (const auto &mapped_object : state.mapped_objects) {
+    if ((mapped_object.state_flags & 0x0002U) == 0U) {
+      continue;
+    }
+
+    const std::int16_t object_left =
+        static_cast<std::int16_t>(mapped_object.world_x);
+    const std::int16_t object_top =
+        static_cast<std::int16_t>(mapped_object.world_y);
+    const std::int16_t object_right = object_left + 16;
+    const std::int16_t object_bottom = object_top + 16;
+
+    const std::int16_t player_left = state.player.x;
+    const std::int16_t player_top = state.player.y;
+    const std::int16_t player_right = player_left + 16;
+    const std::int16_t player_bottom = player_top + 32;
+
+    const bool overlaps =
+        (object_right > player_left) && (object_left < player_right) &&
+        (object_bottom > player_top) && (object_top < player_bottom);
+    if (overlaps) {
+      if (state.ui.pending_event_message.empty()) {
+        state.ui.pending_event_message = "Object Interaction";
+      }
+      return;
+    }
+  }
+}
+
 void show_pending_room_event_message(RuntimeState &state) {
   if (state.ui.pending_event_message.empty() || state.ui.modal_active) {
     return;
@@ -486,6 +520,47 @@ void handle_distance_interaction(RuntimeState &state) {
   state.flags.distance_interaction_active = false;
 }
 
+bool check_comic_near_room_event_anchor(const RuntimeState &state) {
+  const auto &anchor = state.room_event_anchor;
+  if (!anchor.active) {
+    return false;
+  }
+
+  const std::int16_t dx = std::abs(state.player.x - anchor.x);
+  const std::int16_t dy = std::abs(state.player.y - anchor.y);
+  return dx <= 16 && dy <= 12;
+}
+
+void update_room_event_anchor_motion(RuntimeState &state) {
+  auto &anchor = state.room_event_anchor;
+  if (!anchor.active) {
+    return;
+  }
+
+  anchor.x += anchor.velocity_x;
+  anchor.y += anchor.velocity_y;
+
+  const std::int16_t max_x = 320;
+  const std::int16_t max_y = 200;
+  anchor.x = std::clamp(anchor.x, std::int16_t{0}, max_x);
+  anchor.y = std::clamp(anchor.y, std::int16_t{0}, max_y);
+}
+
+void update_room_event_anchor_sprite(RuntimeState &state) {
+  auto &anchor = state.room_event_anchor;
+  if (!anchor.active) {
+    return;
+  }
+
+  if (anchor.x > state.player.x) {
+    anchor.x = 0;
+    const std::int16_t lower = 0;
+    const std::int16_t upper = 184;
+    const std::int16_t next_y = static_cast<std::int16_t>(anchor.y - 8);
+    anchor.y = std::max(lower, std::min(upper, next_y));
+  }
+}
+
 void handle_tile_hazard(RuntimeState &state) {
   state.player.hp = 0;
   state.player.death_timer_ticks = 3;
@@ -772,6 +847,7 @@ void handle_input_fallback(RuntimeState &state) {
     return;
   }
 
+  handle_mapped_object_interaction(state);
   show_pending_room_event_message(state);
   if (state.ui.modal_active && !state.ui.modal_prompt.empty() &&
       state.ui.pending_event_message.empty() &&
