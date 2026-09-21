@@ -129,6 +129,37 @@ void apply_default_airborne_physics(RuntimeState &state) {
   update_player_hazard_state(state, kDefaultCollision);
 }
 
+void detect_proximity_room_event_trigger(RuntimeState &state) {
+  if (state.flags.room_event_triggered || state.ui.room_event_consumed) {
+    return;
+  }
+
+  for (const auto &mapped_object : state.mapped_objects) {
+    if ((mapped_object.state_flags & 0x0001U) == 0U) {
+      continue;
+    }
+
+    const std::int16_t object_left = static_cast<std::int16_t>(mapped_object.world_x);
+    const std::int16_t object_top = static_cast<std::int16_t>(mapped_object.world_y);
+    const std::int16_t object_right = object_left + 16;
+    const std::int16_t object_bottom = object_top + 16;
+
+    const std::int16_t player_left = state.player.x;
+    const std::int16_t player_top = state.player.y;
+    const std::int16_t player_right = player_left + 16;
+    const std::int16_t player_bottom = player_top + 32;
+
+    const bool overlaps = (object_right > player_left) &&
+                          (object_left < player_right) &&
+                          (object_bottom > player_top) &&
+                          (object_top < player_bottom);
+    if (overlaps) {
+      state.flags.room_event_triggered = true;
+      return;
+    }
+  }
+}
+
 void queue_room_event_message(RuntimeState &state) {
   if (!state.flags.room_event_triggered) {
     return;
@@ -716,6 +747,7 @@ void update_progression_state(RuntimeState &state) {
 }
 
 void handle_input_fallback(RuntimeState &state) {
+  detect_proximity_room_event_trigger(state);
   if (state.flags.room_event_triggered) {
     queue_room_event_message(state);
     return;

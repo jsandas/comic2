@@ -1158,7 +1158,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 
 ### 10.5 Room Event Scripts & Trigger Zones
 - [ ] **Event Script Loader**: Room event/script parsing is not yet implemented.
-- [ ] **Trigger Zone Detection**: Trigger-range detection remains pending.
+- [x] **Trigger Zone Detection**: Proximity-based trigger detection is now armed from mapped room objects with the event bit set, and it feeds the existing room-event message queue.
 - [ ] **Room Event Anchor Motion & Sprites**: Anchor-object motion and sprite logic remain pending.
 - [ ] **Interaction Script Execution**: Interaction-script execution and message queueing remain pending.
 - [x] **Message Display**: Modal message rendering is now supported via a lightweight room-event message queue that surfaces trigger-based messages through the existing modal prompt path.

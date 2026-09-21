@@ -625,6 +625,30 @@ void test_input_fallback_expires_mode_effects_on_tick() {
          "input fallback should leave the mode countdown at zero once expired");
 }
 
+void test_room_event_trigger_detects_proximity_mapped_object() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.current_room = 0;
+  state.player.x = 96;
+  state.player.y = 98;
+  state.mapped_objects.push_back(comic2::MappedObject12{
+      .room_x = 0,
+      .room_y = 0,
+      .descriptor_ptr = 0x1234,
+      .state_flags = 0x0001,
+      .world_x = 90,
+      .world_y = 90,
+  });
+
+  comic2::handle_input_fallback(state);
+
+  expect(!state.flags.room_event_triggered,
+         "proximity trigger should be consumed into the queued event message");
+  expect(state.ui.pending_event_message == "Room Event Triggered",
+         "proximity trigger should queue the room-event message");
+  expect(state.ui.room_event_consumed,
+         "proximity trigger should mark the event as consumed once");
+}
+
 void test_room_event_message_is_queued_for_display() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.flags.room_event_triggered = true;
@@ -1413,6 +1437,7 @@ void run_dispatcher_tests() {
   test_mode_activation_starts_effect_and_consumes_selected_mode();
   test_mode_effect_countdown_expires_after_ticks();
   test_input_fallback_expires_mode_effects_on_tick();
+  test_room_event_trigger_detects_proximity_mapped_object();
   test_room_event_message_is_queued_for_display();
   test_room_event_message_becomes_modal_prompt();
   test_room_event_message_is_only_queued_once_per_trigger();
