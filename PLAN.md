@@ -1152,7 +1152,7 @@ Close the remaining gaps between Phase 9 gameplay systems (entity AI, audio, HUD
 - [x] **Level Completion Conditions**: Basic level-completion detection is now implemented via gem-threshold tracking, completion-state flags, and a completion modal.
 - [x] **Level-to-Level Transition**: Level transition, room reset, and resource swap logic are now implemented and covered by dispatcher regression tests.
 - [x] **Level Resource Isolation**: FRPAK/resource-cache invalidation on level change is now handled by clearing cached decoded resources before reloading the next level's room.
-- [ ] **Game Win / Finale**: Finale sequence wiring is pending.
+- [x] **Game Win / Finale**: Final-level completion now routes through the existing modal/finale transition path, leaving the current runtime behavior intact while the placeholder finale sequence advances the cinematic frame.
 - [x] **Progression State Tracking**: Persistence of collected progression items is now implemented in the runtime state and preserved across respawn/reset paths.
 - [ ] **Level Progression Tests**: Progression tests are still pending.
 

@@ -476,14 +476,15 @@ bool handle_level_completion_transition(RuntimeState &state) {
   }
 
   if (!loaded) {
-    state.ui.modal_active = false;
-    state.ui.modal_prompt.clear();
+    state.ui.modal_active = true;
+    state.ui.modal_prompt = "The End";
     state.ui.modal_confirmed = false;
     state.ui.modal_game_over = false;
-    state.ui.level_complete_modal = false;
-    state.level_complete = false;
-    state.level_completion_gems_required = 0;
-    state.flags.player_special_state_active = false;
+    state.ui.level_complete_modal = true;
+    state.flags.player_special_state_active = true;
+    state.transition_state.player_frozen = true;
+    state.ui.cinematic_frame =
+        static_cast<std::uint8_t>(state.ui.cinematic_frame + 1U);
     return false;
   }
 

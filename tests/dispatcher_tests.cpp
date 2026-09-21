@@ -821,6 +821,30 @@ void test_level_completion_confirm_keeps_current_level_when_next_level_is_unavai
          "missing level resources should leave transient state unchanged");
 }
 
+void test_level_completion_finale_starts_when_next_level_is_unavailable() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.current_level = 1;
+  state.current_room = 3;
+  state.level_complete = true;
+  state.ui.modal_active = true;
+  state.ui.modal_prompt = "Level Complete!";
+  state.ui.level_complete_modal = true;
+  state.ui.modal_confirmed = true;
+  state.flags.player_special_state_active = true;
+
+  comic2::handle_player_special_state(state);
+
+  expect(state.current_level == 1,
+         "finale path should keep the player on the final level");
+  expect(state.ui.modal_active,
+         "finale path should keep the completion modal visible");
+  expect(state.ui.modal_prompt == "The End",
+         "finale path should switch to the end-of-game prompt before the final "
+         "sequence");
+  expect(state.ui.cinematic_frame == 1,
+         "finale transition should advance the cinematic frame via the stub");
+}
+
 void test_player_mode_activation_tracks_mode_inventory() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.ui.active_mode_mask = 0x01U;
@@ -1396,6 +1420,7 @@ void run_dispatcher_tests() {
   test_level_completion_does_not_trigger_before_threshold();
   test_level_completion_confirm_advances_to_next_level_and_resets_transient_state();
   test_level_completion_confirm_keeps_current_level_when_next_level_is_unavailable();
+  test_level_completion_finale_starts_when_next_level_is_unavailable();
   test_progression_state_updates_inventory_bits();
   test_progression_state_keeps_inventory_bits_stable();
   test_respawn_reset_preserves_persistent_progression_state();

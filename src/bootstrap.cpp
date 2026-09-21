@@ -620,6 +620,11 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
     ui_render_option_list(frame, state);
   }
 
+  if (state.level_complete && state.ui.level_complete_modal &&
+      state.ui.modal_active && state.ui.cinematic_frame != 0U) {
+    event_finale_transition_sequence(frame, state);
+  }
+
   if (state.ui.modal_active) {
     ui_render_modal_prompt(frame, state);
   }
