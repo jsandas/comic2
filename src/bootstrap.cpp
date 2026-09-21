@@ -239,9 +239,17 @@ void draw_room_tilemap(EgaPlanarSurface &frame, const RuntimeState &state) {
       const std::uint8_t base_color = static_cast<std::uint8_t>(tile_id & 0x0F);
       const std::uint8_t accent_color =
           static_cast<std::uint8_t>((base_color + 2U) & 0x0F);
-      const auto px0 = static_cast<std::int32_t>(tile_x * kTileSizePixels);
+      const auto px0 =
+          static_cast<std::int32_t>(tile_x * kTileSizePixels) - state.camera_x;
       const auto py0 =
           static_cast<std::int32_t>(tile_y * kTileSizePixels) - state.camera_y;
+
+      if (px0 + kTileSizePixels <= 0 || px0 >= frame.width_pixels()) {
+        continue;
+      }
+      if (py0 + kTileSizePixels <= 0 || py0 >= frame.height_rows()) {
+        continue;
+      }
 
       draw_room_tile(frame, px0, py0, base_color, accent_color);
     }
@@ -351,9 +359,14 @@ bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame,
         return false;
       }
 
-      const std::size_t px0 = tile_x * kTileSizePixels;
-      gfx_rle_blit_opaque_4plane(frame, px0, static_cast<std::size_t>(py0),
-                                 tile);
+      const std::int32_t px0 =
+          static_cast<std::int32_t>(tile_x * kTileSizePixels) - state.camera_x;
+      if (px0 + kTileSizePixels <= 0 || px0 >= frame.width_pixels()) {
+        continue;
+      }
+      gfx_rle_blit_opaque_4plane(
+          frame, static_cast<std::size_t>(std::max<std::int32_t>(0, px0)),
+          static_cast<std::size_t>(py0), tile);
     }
   }
 
@@ -369,7 +382,7 @@ bool draw_player_sprite_from_asset(EgaPlanarSurface &frame,
     return false;
   }
 
-  const std::int32_t px = state.player.x;
+  const std::int32_t px = state.player.x - state.camera_x;
   const std::int32_t py = state.player.y - state.camera_y;
   if (!is_sprite_in_viewport(px, py, 16, 16)) {
     return true;
@@ -398,7 +411,7 @@ bool draw_timed_overlay_sprite_from_asset(EgaPlanarSurface &frame,
     return false;
   }
 
-  const std::int32_t px = state.player.x;
+  const std::int32_t px = state.player.x - state.camera_x;
   const std::int32_t py = state.player.y - state.camera_y;
   if (!is_sprite_in_viewport(px, py, 16, 16)) {
     return true;
@@ -432,7 +445,7 @@ std::optional<Ega4PlaneImage> try_decode_bootstrap_asset(RuntimeState &state) {
 }
 
 void draw_player_marker(EgaPlanarSurface &frame, const RuntimeState &state) {
-  const std::int32_t px0 = state.player.x;
+  const std::int32_t px0 = state.player.x - state.camera_x;
   const std::int32_t py0 = state.player.y - state.camera_y;
   const std::uint8_t body_color = state.player.is_airborne ? 0x0E : 0x0C;
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -116,6 +117,13 @@ struct RoomTransitionState {
   bool operator==(const RoomTransitionState &) const = default;
 };
 
+struct EgaPaletteState {
+  bool loaded = false;
+  std::array<std::array<std::uint8_t, 4>, 16> entries{};
+
+  bool operator==(const EgaPaletteState &) const = default;
+};
+
 struct ProgressionState {
   std::uint8_t flags = 0;
   bool gems_collected = false;
@@ -168,7 +176,9 @@ struct RuntimeState {
   UiState ui;
   bool level_complete = false;
   std::uint8_t level_completion_gems_required = 0;
+  std::int32_t camera_x = 0;
   std::int32_t camera_y = 0;
+  EgaPaletteState palette;
   RoomTransitionState transition_state;
 
   std::vector<MappedObject12> mapped_objects;

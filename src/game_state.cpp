@@ -15,7 +15,10 @@ RuntimeState make_default_runtime_state() {
   state.player.lives = 3;
   state.player.invuln_ticks = 0;
   state.activation_toggle = 1;
+  state.camera_x = 0;
   state.camera_y = 0;
+  state.palette.loaded = false;
+  state.palette.entries.fill({0, 0, 0, 255});
 
   return state;
 }

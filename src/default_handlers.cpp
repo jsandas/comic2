@@ -139,8 +139,10 @@ void detect_proximity_room_event_trigger(RuntimeState &state) {
       continue;
     }
 
-    const std::int16_t object_left = static_cast<std::int16_t>(mapped_object.world_x);
-    const std::int16_t object_top = static_cast<std::int16_t>(mapped_object.world_y);
+    const std::int16_t object_left =
+        static_cast<std::int16_t>(mapped_object.world_x);
+    const std::int16_t object_top =
+        static_cast<std::int16_t>(mapped_object.world_y);
     const std::int16_t object_right = object_left + 16;
     const std::int16_t object_bottom = object_top + 16;
 
@@ -149,10 +151,9 @@ void detect_proximity_room_event_trigger(RuntimeState &state) {
     const std::int16_t player_right = player_left + 16;
     const std::int16_t player_bottom = player_top + 32;
 
-    const bool overlaps = (object_right > player_left) &&
-                          (object_left < player_right) &&
-                          (object_bottom > player_top) &&
-                          (object_top < player_bottom);
+    const bool overlaps =
+        (object_right > player_left) && (object_left < player_right) &&
+        (object_bottom > player_top) && (object_top < player_bottom);
     if (overlaps) {
       state.flags.room_event_triggered = true;
       return;
@@ -227,6 +228,8 @@ void reset_runtime_for_new_game(RuntimeState &state) {
   state.mapped_objects.clear();
   state.activation_state = EntityActivationState{};
   state.activation_toggle = 1;
+  state.camera_x = 0;
+  state.camera_x = 0;
   state.camera_y = 0;
 }
 
@@ -280,6 +283,7 @@ void reset_player_state_for_level_entry(RuntimeState &state) {
   state.mapped_objects.clear();
   state.activation_state = EntityActivationState{};
   state.activation_toggle = 1;
+  state.camera_x = 0;
   state.camera_y = 0;
 }
 
@@ -341,6 +345,9 @@ void handle_level_transition(RuntimeState &state) {
   candidate_state.transition_state.frame_index = 0;
   candidate_state.transition_state.tick_count = 0;
   room_transition_player_entry_sequence(candidate_state);
+  camera_update_x_follow_comic_clamped(
+      candidate_state, kViewportWidthPixels,
+      std::max<std::int32_t>(0, candidate_state.room_grid.tile_w * 16));
   camera_update_y_follow_comic_clamped(
       candidate_state, kViewportHeightPixels,
       std::max<std::int32_t>(0, candidate_state.room_grid.tile_h * 16));
@@ -390,6 +397,12 @@ void handle_airborne_physics(RuntimeState &state) {
   update_entity_behaviors(state);
   apply_entity_combat(state);
   apply_default_airborne_physics(state);
+  if (state.room_grid.tile_w > 0) {
+    camera_update_x_follow_comic_clamped(
+        state, kViewportWidthPixels,
+        std::max<std::int32_t>(
+            0, static_cast<std::int32_t>(state.room_grid.tile_w) * 16));
+  }
   state.player.is_physics_active = state.player.is_airborne;
 }
 
@@ -418,6 +431,12 @@ void handle_grounded_physics(RuntimeState &state) {
   update_entity_behaviors(state);
   apply_entity_combat(state);
   apply_default_grounded_physics(state);
+  if (state.room_grid.tile_w > 0) {
+    camera_update_x_follow_comic_clamped(
+        state, kViewportWidthPixels,
+        std::max<std::int32_t>(
+            0, static_cast<std::int32_t>(state.room_grid.tile_w) * 16));
+  }
   state.player.is_physics_active = state.player.is_airborne;
 }
 
