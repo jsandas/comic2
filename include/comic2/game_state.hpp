@@ -127,6 +127,14 @@ struct RoomEventAnchorState {
   bool operator==(const RoomEventAnchorState &) const = default;
 };
 
+struct RoomEventScriptState {
+  bool loaded = false;
+  std::vector<std::uint8_t> raw_script_bytes;
+  std::vector<std::uint8_t> raw_trigger_bytes;
+
+  bool operator==(const RoomEventScriptState &) const = default;
+};
+
 struct EgaPaletteState {
   bool loaded = false;
   std::array<std::array<std::uint8_t, 4>, 16> entries{};
@@ -191,6 +199,7 @@ struct RuntimeState {
   EgaPaletteState palette;
   RoomTransitionState transition_state;
   RoomEventAnchorState room_event_anchor;
+  RoomEventScriptState room_event_script;
 
   std::vector<MappedObject12> mapped_objects;
   std::vector<ActiveEntity8> active_entities;

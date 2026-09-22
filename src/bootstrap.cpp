@@ -60,6 +60,7 @@ namespace {
 
 constexpr int kDefaultBootstrapTicks = 2;
 constexpr std::int16_t kTileSizePixels = 16;
+constexpr std::chrono::milliseconds kOriginalTickInterval{110};
 
 // Global keyboard input handler (initialized on first use)
 KeyboardInputHandler *g_keyboard_handler = nullptr;
@@ -460,6 +461,30 @@ void draw_player_marker(EgaPlanarSurface &frame, const RuntimeState &state) {
   }
 }
 
+void draw_room_event_anchor_sprite(EgaPlanarSurface &frame,
+                                   const RuntimeState &state) {
+  const auto &anchor = state.room_event_anchor;
+  if (!anchor.active) {
+    return;
+  }
+
+  const std::int32_t px0 = anchor.x - state.camera_x;
+  const std::int32_t py0 = anchor.y - state.camera_y;
+  if (!is_sprite_in_viewport(px0, py0, 12, 12)) {
+    return;
+  }
+
+  for (std::int32_t py = 0; py < 12; ++py) {
+    for (std::int32_t px = 0; px < 12; ++px) {
+      const bool is_border = py == 0 || py == 11 || px == 0 || px == 11;
+      const bool is_center_cross = (px == 5 || px == 6 || py == 5 || py == 6);
+      if (is_border || is_center_cross) {
+        set_pixel(frame, px0 + px, py0 + py, 0x0B);
+      }
+    }
+  }
+}
+
 } // namespace
 
 SceneBootstrapSummary
@@ -512,6 +537,26 @@ int read_bootstrap_tick_budget(int default_ticks) {
   } catch (const std::exception &) {
     return default_ticks > 0 ? default_ticks : kDefaultBootstrapTicks;
   }
+}
+
+std::chrono::milliseconds
+read_bootstrap_frame_interval(std::chrono::milliseconds default_interval) {
+  const char *value = std::getenv("COMIC2_BOOTSTRAP_FRAME_MS");
+  if (value == nullptr || *value == '\0') {
+    return default_interval.count() > 0 ? default_interval
+                                        : kOriginalTickInterval;
+  }
+
+  try {
+    const int parsed = std::stoi(value);
+    if (parsed > 0) {
+      return std::chrono::milliseconds(parsed);
+    }
+  } catch (const std::exception &) {
+  }
+
+  return default_interval.count() > 0 ? default_interval
+                                      : kOriginalTickInterval;
 }
 
 bool poll_bootstrap_input(RuntimeState &state) {
@@ -594,6 +639,9 @@ void render_bootstrap_frame(IFramePresenter &presenter, RuntimeState &state) {
 
   // Phase 10.1: draw projectiles above entities.
   draw_runtime_projectile_sprites(frame, state);
+
+  // Phase 10.5: draw room-event anchors above projectiles.
+  draw_room_event_anchor_sprite(frame, state);
 
   // Phase 10.1: draw the player above projectiles.
   if (used_asset_background && should_render_player_sprite(state)) {

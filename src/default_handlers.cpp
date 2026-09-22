@@ -180,6 +180,21 @@ void queue_room_event_message(RuntimeState &state) {
   state.ui.pending_event_message = "Room Event Triggered";
 }
 
+std::string interaction_message_for_descriptor(std::uint16_t descriptor_ptr) {
+  switch (descriptor_ptr) {
+  case 0x8976:
+    return "Room Event Triggered";
+  case 0x8C50:
+    return "Object Interaction";
+  case 0x921B:
+    return "Object Interaction";
+  case 0x930A:
+    return "Object Interaction";
+  default:
+    return "Object Interaction";
+  }
+}
+
 void handle_mapped_object_interaction(RuntimeState &state) {
   if (state.ui.room_event_consumed) {
     return;
@@ -207,7 +222,8 @@ void handle_mapped_object_interaction(RuntimeState &state) {
         (object_bottom > player_top) && (object_top < player_bottom);
     if (overlaps) {
       if (state.ui.pending_event_message.empty()) {
-        state.ui.pending_event_message = "Object Interaction";
+        state.ui.pending_event_message =
+            interaction_message_for_descriptor(mapped_object.descriptor_ptr);
       }
       return;
     }
@@ -841,6 +857,12 @@ void update_progression_state(RuntimeState &state) {
 }
 
 void handle_input_fallback(RuntimeState &state) {
+  update_room_event_anchor_motion(state);
+  update_room_event_anchor_sprite(state);
+  if (check_comic_near_room_event_anchor(state)) {
+    state.flags.room_event_triggered = true;
+  }
+
   detect_proximity_room_event_trigger(state);
   if (state.flags.room_event_triggered) {
     queue_room_event_message(state);

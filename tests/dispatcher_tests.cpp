@@ -777,6 +777,25 @@ void test_room_event_anchor_sprite_reseeds_when_it_passes_the_player() {
       "anchor sprite should remain within the visible room band after reseed");
 }
 
+void test_room_event_anchor_is_advanced_during_input_handling() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.room_event_anchor.active = true;
+  state.room_event_anchor.x = 10;
+  state.room_event_anchor.y = 12;
+  state.room_event_anchor.velocity_x = 1;
+  state.room_event_anchor.velocity_y = 0;
+  state.player.x = 20;
+  state.player.y = 12;
+
+  comic2::handle_input_fallback(state);
+
+  expect(state.room_event_anchor.x == 11,
+         "input fallback should advance the room-event anchor position");
+  expect(state.ui.pending_event_message == "Room Event Triggered",
+         "input fallback should queue the room-event message when the player "
+         "is near the anchor");
+}
+
 void test_level_completion_activates_when_gem_threshold_is_met() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.player.gems = 2;
@@ -1526,6 +1545,7 @@ void run_dispatcher_tests() {
   test_room_event_anchor_motion_moves_and_clamps_to_room_bounds();
   test_room_event_anchor_proximity_arms_event_flow();
   test_room_event_anchor_sprite_reseeds_when_it_passes_the_player();
+  test_room_event_anchor_is_advanced_during_input_handling();
   test_level_completion_activates_when_gem_threshold_is_met();
   test_level_completion_does_not_trigger_before_threshold();
   test_level_completion_confirm_advances_to_next_level_and_resets_transient_state();
