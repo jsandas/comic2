@@ -279,7 +279,6 @@ void reset_runtime_for_new_game(RuntimeState &state) {
   state.activation_state = EntityActivationState{};
   state.activation_toggle = 1;
   state.camera_x = 0;
-  state.camera_x = 0;
   state.camera_y = 0;
 }
 
