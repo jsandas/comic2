@@ -129,6 +129,38 @@ void apply_default_airborne_physics(RuntimeState &state) {
   update_player_hazard_state(state, kDefaultCollision);
 }
 
+void detect_proximity_room_event_trigger(RuntimeState &state) {
+  if (state.flags.room_event_triggered || state.ui.room_event_consumed) {
+    return;
+  }
+
+  for (const auto &mapped_object : state.mapped_objects) {
+    if ((mapped_object.state_flags & 0x0001U) == 0U) {
+      continue;
+    }
+
+    const std::int16_t object_left =
+        static_cast<std::int16_t>(mapped_object.world_x);
+    const std::int16_t object_top =
+        static_cast<std::int16_t>(mapped_object.world_y);
+    const std::int16_t object_right = object_left + 16;
+    const std::int16_t object_bottom = object_top + 16;
+
+    const std::int16_t player_left = state.player.x;
+    const std::int16_t player_top = state.player.y;
+    const std::int16_t player_right = player_left + 16;
+    const std::int16_t player_bottom = player_top + 32;
+
+    const bool overlaps =
+        (object_right > player_left) && (object_left < player_right) &&
+        (object_bottom > player_top) && (object_top < player_bottom);
+    if (overlaps) {
+      state.flags.room_event_triggered = true;
+      return;
+    }
+  }
+}
+
 void queue_room_event_message(RuntimeState &state) {
   if (!state.flags.room_event_triggered) {
     return;
@@ -146,6 +178,56 @@ void queue_room_event_message(RuntimeState &state) {
 
   state.ui.room_event_consumed = true;
   state.ui.pending_event_message = "Room Event Triggered";
+}
+
+std::string interaction_message_for_descriptor(std::uint16_t descriptor_ptr) {
+  switch (descriptor_ptr) {
+  case 0x8976:
+    return "Room Event Triggered";
+  case 0x8C50:
+    return "Object Interaction";
+  case 0x921B:
+    return "Object Interaction";
+  case 0x930A:
+    return "Object Interaction";
+  default:
+    return "Object Interaction";
+  }
+}
+
+void handle_mapped_object_interaction(RuntimeState &state) {
+  if (state.ui.room_event_consumed) {
+    return;
+  }
+
+  for (const auto &mapped_object : state.mapped_objects) {
+    if ((mapped_object.state_flags & 0x0002U) == 0U) {
+      continue;
+    }
+
+    const std::int16_t object_left =
+        static_cast<std::int16_t>(mapped_object.world_x);
+    const std::int16_t object_top =
+        static_cast<std::int16_t>(mapped_object.world_y);
+    const std::int16_t object_right = object_left + 16;
+    const std::int16_t object_bottom = object_top + 16;
+
+    const std::int16_t player_left = state.player.x;
+    const std::int16_t player_top = state.player.y;
+    const std::int16_t player_right = player_left + 16;
+    const std::int16_t player_bottom = player_top + 32;
+
+    const bool overlaps =
+        (object_right > player_left) && (object_left < player_right) &&
+        (object_bottom > player_top) && (object_top < player_bottom);
+    if (overlaps) {
+      if (state.ui.pending_event_message.empty()) {
+        state.ui.pending_event_message =
+            interaction_message_for_descriptor(mapped_object.descriptor_ptr);
+      }
+      return;
+    }
+  }
 }
 
 void show_pending_room_event_message(RuntimeState &state) {
@@ -196,6 +278,7 @@ void reset_runtime_for_new_game(RuntimeState &state) {
   state.mapped_objects.clear();
   state.activation_state = EntityActivationState{};
   state.activation_toggle = 1;
+  state.camera_x = 0;
   state.camera_y = 0;
 }
 
@@ -249,6 +332,7 @@ void reset_player_state_for_level_entry(RuntimeState &state) {
   state.mapped_objects.clear();
   state.activation_state = EntityActivationState{};
   state.activation_toggle = 1;
+  state.camera_x = 0;
   state.camera_y = 0;
 }
 
@@ -310,6 +394,9 @@ void handle_level_transition(RuntimeState &state) {
   candidate_state.transition_state.frame_index = 0;
   candidate_state.transition_state.tick_count = 0;
   room_transition_player_entry_sequence(candidate_state);
+  camera_update_x_follow_comic_clamped(
+      candidate_state, kViewportWidthPixels,
+      std::max<std::int32_t>(0, candidate_state.room_grid.tile_w * 16));
   camera_update_y_follow_comic_clamped(
       candidate_state, kViewportHeightPixels,
       std::max<std::int32_t>(0, candidate_state.room_grid.tile_h * 16));
@@ -359,6 +446,12 @@ void handle_airborne_physics(RuntimeState &state) {
   update_entity_behaviors(state);
   apply_entity_combat(state);
   apply_default_airborne_physics(state);
+  if (state.room_grid.tile_w > 0) {
+    camera_update_x_follow_comic_clamped(
+        state, kViewportWidthPixels,
+        std::max<std::int32_t>(
+            0, static_cast<std::int32_t>(state.room_grid.tile_w) * 16));
+  }
   state.player.is_physics_active = state.player.is_airborne;
 }
 
@@ -387,6 +480,12 @@ void handle_grounded_physics(RuntimeState &state) {
   update_entity_behaviors(state);
   apply_entity_combat(state);
   apply_default_grounded_physics(state);
+  if (state.room_grid.tile_w > 0) {
+    camera_update_x_follow_comic_clamped(
+        state, kViewportWidthPixels,
+        std::max<std::int32_t>(
+            0, static_cast<std::int32_t>(state.room_grid.tile_w) * 16));
+  }
   state.player.is_physics_active = state.player.is_airborne;
 }
 
@@ -436,6 +535,47 @@ void handle_distance_interaction(RuntimeState &state) {
   state.flags.distance_interaction_active = false;
 }
 
+bool check_comic_near_room_event_anchor(const RuntimeState &state) {
+  const auto &anchor = state.room_event_anchor;
+  if (!anchor.active) {
+    return false;
+  }
+
+  const std::int16_t dx = std::abs(state.player.x - anchor.x);
+  const std::int16_t dy = std::abs(state.player.y - anchor.y);
+  return dx <= 16 && dy <= 12;
+}
+
+void update_room_event_anchor_motion(RuntimeState &state) {
+  auto &anchor = state.room_event_anchor;
+  if (!anchor.active) {
+    return;
+  }
+
+  anchor.x += anchor.velocity_x;
+  anchor.y += anchor.velocity_y;
+
+  const std::int16_t max_x = 320;
+  const std::int16_t max_y = 200;
+  anchor.x = std::clamp(anchor.x, std::int16_t{0}, max_x);
+  anchor.y = std::clamp(anchor.y, std::int16_t{0}, max_y);
+}
+
+void update_room_event_anchor_sprite(RuntimeState &state) {
+  auto &anchor = state.room_event_anchor;
+  if (!anchor.active) {
+    return;
+  }
+
+  if (anchor.x > state.player.x) {
+    anchor.x = 0;
+    const std::int16_t lower = 0;
+    const std::int16_t upper = 184;
+    const std::int16_t next_y = static_cast<std::int16_t>(anchor.y - 8);
+    anchor.y = std::max(lower, std::min(upper, next_y));
+  }
+}
+
 void handle_tile_hazard(RuntimeState &state) {
   state.player.hp = 0;
   state.player.death_timer_ticks = 3;
@@ -476,14 +616,15 @@ bool handle_level_completion_transition(RuntimeState &state) {
   }
 
   if (!loaded) {
-    state.ui.modal_active = false;
-    state.ui.modal_prompt.clear();
+    state.ui.modal_active = true;
+    state.ui.modal_prompt = "The End";
     state.ui.modal_confirmed = false;
     state.ui.modal_game_over = false;
-    state.ui.level_complete_modal = false;
-    state.level_complete = false;
-    state.level_completion_gems_required = 0;
-    state.flags.player_special_state_active = false;
+    state.ui.level_complete_modal = true;
+    state.flags.player_special_state_active = true;
+    state.transition_state.player_frozen = true;
+    state.ui.cinematic_frame =
+        static_cast<std::uint8_t>(state.ui.cinematic_frame + 1U);
     return false;
   }
 
@@ -715,11 +856,19 @@ void update_progression_state(RuntimeState &state) {
 }
 
 void handle_input_fallback(RuntimeState &state) {
+  update_room_event_anchor_motion(state);
+  update_room_event_anchor_sprite(state);
+  if (check_comic_near_room_event_anchor(state)) {
+    state.flags.room_event_triggered = true;
+  }
+
+  detect_proximity_room_event_trigger(state);
   if (state.flags.room_event_triggered) {
     queue_room_event_message(state);
     return;
   }
 
+  handle_mapped_object_interaction(state);
   show_pending_room_event_message(state);
   if (state.ui.modal_active && !state.ui.modal_prompt.empty() &&
       state.ui.pending_event_message.empty() &&

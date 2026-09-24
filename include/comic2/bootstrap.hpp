@@ -44,6 +44,9 @@ struct IntegratedLoopSummary {
 
 bool read_bootstrap_bool_env(const char *name);
 int read_bootstrap_tick_budget(int default_ticks = 2);
+std::chrono::milliseconds
+read_bootstrap_frame_interval(std::chrono::milliseconds default_interval =
+                                  std::chrono::milliseconds(110));
 std::size_t select_player_sprite_frame(const RuntimeState &state);
 bool should_render_player_sprite(const RuntimeState &state);
 bool should_render_timed_overlay(const RuntimeState &state);

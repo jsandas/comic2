@@ -136,6 +136,9 @@ void draw_runtime_projectile_sprites(EgaPlanarSurface &frame,
 
 void apply_transition_palette_tint(EgaPlanarSurface &surface,
                                    const RoomTransitionState &transition);
+void load_ega_palette_table(
+    RuntimeState &state,
+    const std::array<std::array<std::uint8_t, 4>, 16> &palette_table);
 void room_transition_palette_wave(EgaPlanarSurface &surface,
                                   const RoomTransitionState &transition);
 void room_transition_reveal_sequence_a(EgaPlanarSurface &surface,
@@ -148,6 +151,9 @@ void room_transition_draw_reveal_quad(EgaPlanarSurface &surface,
                                       std::uint8_t color);
 void room_transition_player_entry_sequence(RuntimeState &state);
 void room_transition_player_exit_sequence(RuntimeState &state);
+void camera_update_x_follow_comic_clamped(RuntimeState &state,
+                                          std::int32_t viewport_width,
+                                          std::int32_t room_width);
 void camera_update_y_follow_comic_clamped(RuntimeState &state,
                                           std::int32_t viewport_height,
                                           std::int32_t room_height);

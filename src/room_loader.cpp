@@ -231,6 +231,38 @@ decode_room_mapped_objects(std::span<const std::uint8_t> decoded_room_bytes) {
   return mapped_objects;
 }
 
+void load_room_effect_script_and_trigger_ranges(RuntimeState &state) {
+  state.room_event_anchor = RoomEventAnchorState{};
+  state.room_event_script = RoomEventScriptState{};
+
+  state.room_event_script.loaded = !state.room_resource_bytes.empty();
+  state.room_event_script.raw_script_bytes = state.room_resource_bytes;
+  state.room_event_script.raw_trigger_bytes = state.room_resource_bytes;
+
+  if (state.mapped_objects.empty()) {
+    return;
+  }
+
+  const auto event_object =
+      std::find_if(state.mapped_objects.begin(), state.mapped_objects.end(),
+                   [](const MappedObject12 &object) {
+                     return (object.state_flags & 0x0001U) != 0U;
+                   });
+
+  const MappedObject12 *anchor_source =
+      event_object != state.mapped_objects.end()
+          ? &(*event_object)
+          : &state.mapped_objects.front();
+
+  state.room_event_anchor.active = true;
+  state.room_event_anchor.x = static_cast<std::int16_t>(anchor_source->world_x);
+  state.room_event_anchor.y = static_cast<std::int16_t>(anchor_source->world_y);
+  state.room_event_anchor.velocity_x =
+      static_cast<std::int16_t>((state.current_room % 2U) == 0U ? 1 : -1);
+  state.room_event_anchor.velocity_y =
+      static_cast<std::int16_t>((state.current_level % 2U) == 0U ? 1 : -1);
+}
+
 bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
                                             std::span<const std::uint8_t> bytes,
                                             std::uint16_t level,
@@ -266,6 +298,7 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
   const auto mapped_objects = decode_room_mapped_objects(decoded.bytes);
   state.mapped_objects = mapped_objects.value_or(std::vector<MappedObject12>{});
   hydrate_entity_runtime_for_room(state);
+  load_room_effect_script_and_trigger_ranges(state);
 
   return true;
 }
@@ -305,6 +338,7 @@ bool load_room_tilemap_from_resource_file(
   const auto mapped_objects = decode_room_mapped_objects(decoded.bytes);
   state.mapped_objects = mapped_objects.value_or(std::vector<MappedObject12>{});
   hydrate_entity_runtime_for_room(state);
+  load_room_effect_script_and_trigger_ranges(state);
 
   return true;
 }

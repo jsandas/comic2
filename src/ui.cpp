@@ -261,7 +261,6 @@ bool play_intro_cinematic(EgaPlanarSurface &surface, RuntimeState &state) {
   return true;
 }
 
-// cppcheck-suppress unusedFunction ; reserved for Phase 10
 bool event_finale_transition_sequence(EgaPlanarSurface &surface,
                                       RuntimeState &state) {
   draw_rect(surface, 0, 0, 320, 200, 0x08);

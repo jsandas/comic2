@@ -136,6 +136,24 @@ void test_transition_effects_are_deterministic() {
          "reveal sequence A should alter the frame deterministically");
 }
 
+void test_runtime_palette_loader_uses_ega_table() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  std::array<std::array<std::uint8_t, 4>, 16> palette{};
+  for (std::size_t index = 0; index < palette.size(); ++index) {
+    palette[index] = {static_cast<std::uint8_t>(index * 10U),
+                      static_cast<std::uint8_t>(index * 11U),
+                      static_cast<std::uint8_t>(index * 12U), 255U};
+  }
+
+  comic2::load_ega_palette_table(state, palette);
+  expect(state.palette.loaded,
+         "runtime palette should mark itself loaded after a table upload");
+  expect(state.palette.entries[0][0] == 0U,
+         "the first palette entry should preserve the low-color channel");
+  expect(state.palette.entries[15][3] == 255U,
+         "the alpha channel should be preserved for the final palette entry");
+}
+
 void test_player_sprite_frame_selection_uses_animation_state() {
   comic2::RuntimeState state = comic2::make_default_runtime_state();
   state.player.animation_state =
@@ -191,6 +209,20 @@ void test_camera_y_clamps_to_room_bounds() {
   comic2::camera_update_y_follow_comic_clamped(state, 200, 320);
   expect(state.camera_y == 120,
          "camera Y should clamp to the room-height viewport limit");
+}
+
+void test_camera_x_clamps_to_room_bounds() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.room_grid.tile_w = 30;
+  state.room_grid.tile_h = 20;
+  state.room_grid.row_pointers.assign(20, 0);
+  state.room_grid.tile_data.assign(600, 0x01);
+  state.player.x = 640;
+  state.camera_x = 0;
+
+  comic2::camera_update_x_follow_comic_clamped(state, 320, 480);
+  expect(state.camera_x == 160,
+         "camera X should clamp to the room-width viewport limit");
 }
 
 void test_masked_blit_keeps_byte_aligned_positions() {
@@ -311,10 +343,12 @@ void run_renderer_tests() {
   test_presenter_copies_frame();
   test_transition_palette_tint_applies_to_surface_pixels();
   test_transition_effects_are_deterministic();
+  test_runtime_palette_loader_uses_ega_table();
   test_player_sprite_frame_selection_uses_animation_state();
   test_player_sprite_frame_selection_uses_facing_direction();
   test_invulnerability_blink_visibility_uses_tick_parity();
   test_camera_y_clamps_to_room_bounds();
+  test_camera_x_clamps_to_room_bounds();
   test_masked_blit_keeps_byte_aligned_positions();
   test_masked_blit_handles_shifted_positions();
   test_masked_blit_clips_shifted_sprite_at_viewport_edge();

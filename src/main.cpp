@@ -79,9 +79,10 @@ int main(int argc, char **argv) {
     }
 
     // Run until user quits (frame budget is effectively unbounded)
+    const auto frame_interval = comic2::read_bootstrap_frame_interval();
     const auto loop_summary = comic2::run_integrated_bootstrap_loop(
-        root, presenter, std::numeric_limits<int>::max(),
-        std::chrono::milliseconds(16), audio_backend.get());
+        root, presenter, std::numeric_limits<int>::max(), frame_interval,
+        audio_backend.get());
 
     std::cout << "render loop complete: frames_rendered="
               << loop_summary.loop.frames_rendered
