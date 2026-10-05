@@ -379,12 +379,11 @@ bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame,
 
       const std::int32_t px0 =
           static_cast<std::int32_t>(tile_x * kTileSizePixels) - state.camera_x;
-      if (px0 + kTileSizePixels <= 0 || px0 >= frame.width_pixels()) {
-        continue;
+      if (px0 < 0 || px0 + kTileSizePixels > frame.width_pixels()) {
+        continue; // Partial horizontal tiles unsupported (no clipping yet)
       }
-      gfx_rle_blit_opaque_4plane(
-          frame, static_cast<std::size_t>(std::max<std::int32_t>(0, px0)),
-          static_cast<std::size_t>(py0), tile);
+      gfx_rle_blit_opaque_4plane(frame, static_cast<std::size_t>(px0),
+                                 static_cast<std::size_t>(py0), tile);
     }
   }
 
