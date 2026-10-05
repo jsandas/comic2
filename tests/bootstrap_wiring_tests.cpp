@@ -363,6 +363,30 @@ void test_render_bootstrap_frame_uses_room_tile_data() {
         "tile border should remain accented at the far edge");
 }
 
+void test_render_bootstrap_frame_renders_scrolled_right_edge_tiles() {
+  auto state = comic2::make_default_runtime_state();
+  state.player.x = 300;
+  state.player.y = 180;
+  state.room_grid.tile_w = 30;
+  state.room_grid.tile_h = 1;
+  state.room_grid.row_pointers = {0};
+  state.room_grid.tile_data.assign(30, 0x00);
+  state.camera_x = 16;
+
+  // Tile index 20 should appear at the right edge when camera_x is 16.
+  state.room_grid.tile_data[20] = 0x0A;
+
+  comic2::MemoryFramePresenter presenter;
+  comic2::render_bootstrap_frame(presenter, state);
+
+  check(presenter.has_frame(), "render should present a scrolled frame");
+  const auto &frame = presenter.last_frame();
+  const auto right_edge_center = read_color_index(frame, 312, 8);
+
+  check(right_edge_center == 0x0A,
+        "camera-aligned tile iteration should render the right-edge tile when scrolled");
+}
+
 void test_render_bootstrap_frame_renders_active_runtime_entities() {
   auto state_without_entities = comic2::make_default_runtime_state();
   state_without_entities.player.x = 128;
@@ -763,6 +787,7 @@ void run_bootstrap_wiring_tests() {
   test_render_loop_renders_multiple_frames();
   test_render_loop_updates_state_while_presenting_frames();
   test_render_bootstrap_frame_uses_room_tile_data();
+  test_render_bootstrap_frame_renders_scrolled_right_edge_tiles();
   test_render_bootstrap_frame_renders_active_runtime_entities();
   test_render_bootstrap_frame_distinguishes_pickups_from_enemies();
   test_render_bootstrap_frame_renders_active_projectiles();

@@ -231,11 +231,23 @@ void draw_room_tilemap(EgaPlanarSurface &frame, const RuntimeState &state) {
   const std::size_t visible_tiles_y =
       static_cast<std::size_t>(frame.height_rows()) / kTileSizePixels;
 
-  for (std::size_t tile_y = 0;
-       tile_y < state.room_grid.tile_h && tile_y < visible_tiles_y; ++tile_y) {
-    for (std::size_t tile_x = 0;
-         tile_x < state.room_grid.tile_w && tile_x < visible_tiles_x;
-         ++tile_x) {
+  const std::size_t start_tile_x = state.camera_x > 0
+                     ? static_cast<std::size_t>(state.camera_x) /
+                       static_cast<std::size_t>(kTileSizePixels)
+                     : 0U;
+  const std::size_t start_tile_y = state.camera_y > 0
+                     ? static_cast<std::size_t>(state.camera_y) /
+                       static_cast<std::size_t>(kTileSizePixels)
+                     : 0U;
+  const std::size_t end_tile_x = std::min(
+    static_cast<std::size_t>(state.room_grid.tile_w),
+    start_tile_x + visible_tiles_x + 1U);
+  const std::size_t end_tile_y = std::min(
+    static_cast<std::size_t>(state.room_grid.tile_h),
+    start_tile_y + visible_tiles_y + 1U);
+
+  for (std::size_t tile_y = start_tile_y; tile_y < end_tile_y; ++tile_y) {
+  for (std::size_t tile_x = start_tile_x; tile_x < end_tile_x; ++tile_x) {
       const std::uint8_t tile_id = read_room_tile(state, tile_x, tile_y);
       const std::uint8_t base_color = static_cast<std::uint8_t>(tile_id & 0x0F);
       const std::uint8_t accent_color =
@@ -332,6 +344,13 @@ bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame,
 
   const std::size_t visible_tiles_x =
       static_cast<std::size_t>(frame.width_pixels()) / kTileSizePixels;
+    const std::size_t start_tile_x = state.camera_x > 0
+                       ? static_cast<std::size_t>(state.camera_x) /
+                         static_cast<std::size_t>(kTileSizePixels)
+                       : 0U;
+    const std::size_t end_tile_x = std::min(
+      static_cast<std::size_t>(state.room_grid.tile_w),
+      start_tile_x + visible_tiles_x + 1U);
 
   Ega4PlaneImage tile;
   for (std::size_t tile_y = 0; tile_y < state.room_grid.tile_h; ++tile_y) {
@@ -352,9 +371,7 @@ bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame,
         static_cast<std::int32_t>(frame.height_rows())) {
       break; // Tile is partially below viewport (no clipping support yet)
     }
-    for (std::size_t tile_x = 0;
-         tile_x < state.room_grid.tile_w && tile_x < visible_tiles_x;
-         ++tile_x) {
+    for (std::size_t tile_x = start_tile_x; tile_x < end_tile_x; ++tile_x) {
       const std::uint8_t tile_id = read_room_tile(state, tile_x, tile_y);
       if (!extract_tile_from_asset(atlas, tile_id, tile)) {
         return false;
