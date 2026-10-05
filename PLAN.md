@@ -1286,8 +1286,8 @@ Cross-referencing `comic2.asm` (specifically `load_resource` at line 2396 and ta
 - [x] Add asset-root tuple load path that hydrates `RuntimeState::level_tileset` and `RuntimeState::tile_hazard_bounds` from `FR###.0` before committing the room payload, while preserving the existing fallback scan for missing/corrupt canonical room assets.
 
 #### 11.3 Real Room Layout & Entity Spawn Pipeline (`FR###.1`)
-- [ ] Update `load_room_tilemap_from_resource_file` to consume `FR###.1` payloads directly via the level tuple resolver.
-- [ ] Parse room table header (`room_count`, `level_id`) and individual room dimensions (`tile_w`, `tile_h`).
+- [x] Update `load_room_tilemap_from_resource_file` to consume `FR###.1` payloads directly via the level tuple resolver.
+- [x] Parse room table header (`room_count`, `level_id`) and individual room dimensions (`tile_w`, `tile_h`).
 - [ ] Decode Signed-RLE room tilemap bytes into `RuntimeState::room_grid.tile_data` with indices indexing `RuntimeState::level_tileset`.
 - [ ] Extract `MappedObject12` records from room payload and populate `RuntimeState::mapped_objects`.
 - [ ] Update `draw_room_tilemap_from_asset` in `src/bootstrap.cpp` to render tiles directly from `RuntimeState::level_tileset` instead of slicing `FRPAK.001`.

@@ -40,11 +40,10 @@ encode_literal_signed_rle(const std::vector<std::uint8_t> &bytes) {
   return encoded;
 }
 
-std::vector<std::uint8_t> make_test_room_resource_bytes(std::uint16_t level,
-                                                       std::uint16_t room,
-                                                       std::uint16_t tile_w,
-                                                       std::uint16_t tile_h,
-                                                       std::uint8_t seed = 0x00) {
+std::vector<std::uint8_t>
+make_test_room_resource_bytes(std::uint16_t level, std::uint16_t room,
+                              std::uint16_t tile_w, std::uint16_t tile_h,
+                              std::uint8_t seed = 0x00) {
   std::vector<std::uint8_t> decoded_room_bytes(0x2D2, 0x00);
   decoded_room_bytes[0] = seed;
   decoded_room_bytes[0x2A0] = 0x00;
@@ -449,8 +448,47 @@ void test_room_loader_rejects_huge_offset() {
   expect(!entry.has_value(), "decode should reject oversized offsets safely");
 }
 
+void test_room_loader_parses_room_count_and_level_id_header() {
+  std::vector<std::uint8_t> bytes(0x40, 0x00);
+  bytes[0] = 0x02;
+  bytes[1] = 0x00;
+  bytes[2] = 0x03;
+  bytes[3] = 0x00;
+  bytes[0x04] = 0x04;
+  bytes[0x05] = 0x00;
+  bytes[0x06] = 0x03;
+  bytes[0x07] = 0x00;
+  bytes[0x08] = 0x20;
+  bytes[0x09] = 0x00;
+  bytes[0x0A] = 0x08;
+  bytes[0x0B] = 0x00;
+  bytes[0x0C] = 0x06;
+  bytes[0x0D] = 0x00;
+  bytes[0x0E] = 0x20;
+  bytes[0x0F] = 0x00;
+
+  const auto header = comic2::parse_room_table_header(bytes);
+  expect(header.has_value(), "room loader should parse an explicit FR###.1 header");
+  expect(header->room_count == 2,
+         "room table header should expose the explicit room count");
+  expect(header->level_id == 3,
+         "room table header should expose the explicit level id");
+
+  const auto spec = comic2::resolve_room_load_spec(
+      "/tmp/FR003.1", bytes, 3, 1, comic2::ResourceAssetKind::RoomPayload);
+  expect(spec.has_value(),
+         "resolver should honor the explicit room_count + level_id header");
+  expect(spec->room == 1, "resolver should select the requested room index");
+  expect(spec->room_entry.tile_w == 8,
+         "resolver should decode the selected room width from the table");
+  expect(spec->room_entry.tile_h == 6,
+         "resolver should decode the selected room height from the table");
+}
+
 void test_room_loader_rejects_out_of_bounds_room_index() {
-  std::vector<std::uint8_t> bytes(0x0A, 0x00);
+  std::vector<std::uint8_t> bytes(0x20, 0x00);
+  bytes[0] = 0x01;
+  bytes[1] = 0x00;
   bytes[2] = 0x03;
   bytes[3] = 0x00;
   bytes[0x04] = 0x04;
@@ -465,6 +503,23 @@ void test_room_loader_rejects_out_of_bounds_room_index() {
       comic2::load_room_tilemap_from_resource_buffer(state, bytes, 3, 1);
   expect(!loaded,
          "room loader should reject a room index that is outside the table");
+}
+
+void test_room_loader_rejects_malformed_room_header() {
+  std::vector<std::uint8_t> bytes = {0x05, 0x00, 0x03, 0x00};
+
+  const auto header = comic2::parse_room_table_header(bytes);
+  expect(header.has_value(), "header parser should accept a structurally valid FR###.1 header");
+  expect(header->room_count == 5, "header parser should retain room_count");
+
+  const auto spec = comic2::resolve_room_load_spec(
+      "/tmp/FR003.1", bytes, 3, 0, comic2::ResourceAssetKind::RoomPayload);
+  expect(!spec.has_value(),
+         "resolver should reject a malformed room header when the table is truncated");
+
+  std::vector<std::uint8_t> truncated = {0x02, 0x00, 0x03};
+  expect(!comic2::parse_room_table_header(truncated).has_value(),
+         "header parser should reject a truncated header");
 }
 
 void test_room_loader_rejects_sentinel_entries() {
@@ -877,15 +932,13 @@ std::filesystem::path find_original_asset_root() {
 }
 
 void test_room_loader_prefers_exact_level_tuple_room_file() {
-  const auto root = std::filesystem::temp_directory_path() /
-                   "comic2_room_tuple_exact";
+  const auto root =
+      std::filesystem::temp_directory_path() / "comic2_room_tuple_exact";
   std::filesystem::remove_all(root);
   std::filesystem::create_directories(root);
 
-  const auto target_bytes =
-      make_test_room_resource_bytes(4, 0, 4, 3, 0xAAU);
-  const auto fallback_bytes =
-      make_test_room_resource_bytes(3, 0, 4, 3, 0x55U);
+  const auto target_bytes = make_test_room_resource_bytes(4, 0, 4, 3, 0xAAU);
+  const auto fallback_bytes = make_test_room_resource_bytes(3, 0, 4, 3, 0x55U);
 
   std::ofstream(root / "FR004.1", std::ios::binary)
       .write(reinterpret_cast<const char *>(target_bytes.data()),
@@ -898,8 +951,10 @@ void test_room_loader_prefers_exact_level_tuple_room_file() {
   std::ofstream(root / "FR004.3", std::ios::binary).write("\x00", 1);
 
   comic2::RuntimeState state;
-  const bool loaded = comic2::load_room_tilemap_from_asset_root(state, root, 4, 0);
-  expect(loaded, "asset-root room load should succeed with the exact level tuple");
+  const bool loaded =
+      comic2::load_room_tilemap_from_asset_root(state, root, 4, 0);
+  expect(loaded,
+         "asset-root room load should succeed with the exact level tuple");
   expect(state.room_grid.tile_data[0] == 0xAA,
          "asset-root loader should prefer the canonical FR004.1 room payload");
 
@@ -907,15 +962,13 @@ void test_room_loader_prefers_exact_level_tuple_room_file() {
 }
 
 void test_room_loader_falls_back_when_canonical_room_file_is_corrupt() {
-  const auto root = std::filesystem::temp_directory_path() /
-                   "comic2_room_tuple_fallback";
+  const auto root =
+      std::filesystem::temp_directory_path() / "comic2_room_tuple_fallback";
   std::filesystem::remove_all(root);
   std::filesystem::create_directories(root);
 
-  const auto fallback_bytes =
-      make_test_room_resource_bytes(4, 0, 4, 3, 0x66U);
-  std::ofstream(root / "FR004.1", std::ios::binary)
-      .write("\x00\x00\x00", 3);
+  const auto fallback_bytes = make_test_room_resource_bytes(4, 0, 4, 3, 0x66U);
+  std::ofstream(root / "FR004.1", std::ios::binary).write("\x00\x00\x00", 3);
   std::ofstream(root / "FR004.9", std::ios::binary)
       .write(reinterpret_cast<const char *>(fallback_bytes.data()),
              static_cast<std::streamsize>(fallback_bytes.size()));
@@ -924,17 +977,20 @@ void test_room_loader_falls_back_when_canonical_room_file_is_corrupt() {
   std::ofstream(root / "FR004.3", std::ios::binary).write("\x00", 1);
 
   comic2::RuntimeState state;
-  const bool loaded = comic2::load_room_tilemap_from_asset_root(state, root, 4, 0);
-  expect(loaded, "asset-root room loader should fallback when the canonical room file is corrupt");
+  const bool loaded =
+      comic2::load_room_tilemap_from_asset_root(state, root, 4, 0);
+  expect(loaded, "asset-root room loader should fallback when the canonical "
+                 "room file is corrupt");
   expect(state.room_grid.tile_data[0] == 0x66,
-         "fallback scan should keep using a valid room payload when the canonical file is unusable");
+         "fallback scan should keep using a valid room payload when the "
+         "canonical file is unusable");
 
   std::filesystem::remove_all(root);
 }
 
 void test_room_loader_loads_level_tileset_from_asset_root_tuple() {
-  const auto root = std::filesystem::temp_directory_path() /
-                   "comic2_room_tileset_tuple";
+  const auto root =
+      std::filesystem::temp_directory_path() / "comic2_room_tileset_tuple";
   std::filesystem::remove_all(root);
   std::filesystem::create_directories(root);
 
@@ -953,9 +1009,11 @@ void test_room_loader_loads_level_tileset_from_asset_root_tuple() {
   std::ofstream(root / "FR004.3", std::ios::binary).write("\x00", 1);
 
   comic2::RuntimeState state;
-  const bool loaded = comic2::load_room_tilemap_from_asset_root(state, root, 0, 0);
-  expect(loaded,
-         "asset-root loader should load a canonical tuple with a valid tileset");
+  const bool loaded =
+      comic2::load_room_tilemap_from_asset_root(state, root, 0, 0);
+  expect(
+      loaded,
+      "asset-root loader should load a canonical tuple with a valid tileset");
   expect_eq(state.level_tileset.size(), 2,
             "level tileset should decode exactly two 16x16 4-plane tiles");
   expect(state.tile_hazard_bounds[0] == 0x001A &&
@@ -1034,8 +1092,10 @@ void run_subsystem_scaffold_tests() {
   test_ent_activation_pipeline_integration();
   test_room_loader_decodes_frdata_entry();
   test_room_loader_resolves_room_payload_location();
+  test_room_loader_parses_room_count_and_level_id_header();
   test_room_loader_rejects_huge_offset();
   test_room_loader_rejects_out_of_bounds_room_index();
+  test_room_loader_rejects_malformed_room_header();
   test_room_loader_rejects_sentinel_entries();
   test_room_loader_populates_runtime_state_from_resource_buffer();
   test_room_loader_handles_self_referential_resource_bytes_span();

@@ -120,6 +120,24 @@ bool try_load_level_tileset_for_root(RuntimeState &state,
 
 } // namespace
 
+std::optional<RoomTableHeader> parse_room_table_header(
+    std::span<const std::uint8_t> bytes) {
+  if (bytes.size() < 4) {
+    return std::nullopt;
+  }
+
+  const std::uint16_t room_count = read_u16(bytes, 0);
+  if (room_count == 0) {
+    return std::nullopt;
+  }
+
+  RoomTableHeader header{};
+  header.room_count = room_count;
+  header.level_id = static_cast<std::uint16_t>(bytes[2] |
+                                              (static_cast<std::uint16_t>(bytes[3]) << 8));
+  return header;
+}
+
 std::optional<RoomLoadSpec>
 resolve_room_load_spec(const std::filesystem::path &source_path,
                        std::span<const std::uint8_t> bytes, std::uint16_t level,
@@ -128,9 +146,21 @@ resolve_room_load_spec(const std::filesystem::path &source_path,
     return std::nullopt;
   }
 
+  std::optional<RoomTableHeader> room_header = parse_room_table_header(bytes);
   const std::uint16_t file_level = static_cast<std::uint16_t>(
       bytes[2] | (static_cast<std::uint16_t>(bytes[3]) << 8));
-  if (file_level != level && file_level != 0) {
+
+  if (room_header.has_value()) {
+    if (room_header->room_count == 0) {
+      return std::nullopt;
+    }
+    if (room >= room_header->room_count) {
+      return std::nullopt;
+    }
+    if (room_header->level_id != 0 && room_header->level_id != level) {
+      return std::nullopt;
+    }
+  } else if (file_level != level && file_level != 0) {
     return std::nullopt;
   }
 
@@ -153,6 +183,8 @@ resolve_room_load_spec(const std::filesystem::path &source_path,
   spec.source_path = source_path;
   spec.level = level;
   spec.room = room;
+  spec.room_count = room_header.has_value() ? room_header->room_count : 0;
+  spec.level_id = room_header.has_value() ? room_header->level_id : file_level;
   spec.asset_kind = asset_kind;
   spec.table_offset = kRoomTableOffset;
   spec.room_entry_offset = room_entry_offset;
@@ -369,16 +401,15 @@ bool load_room_tilemap_from_resource_file(
 
 bool try_load_room_payload_from_file(RuntimeState &state,
                                      const std::filesystem::path &source_path,
-                                     std::uint16_t level,
-                                     std::uint16_t room) {
+                                     std::uint16_t level, std::uint16_t room) {
   const auto bytes = load_file_bytes(source_path);
   if (!bytes.has_value()) {
     return false;
   }
 
   RuntimeState candidate_state = state;
-  if (load_room_tilemap_from_resource_file(candidate_state, source_path,
-                                           *bytes, level, room)) {
+  if (load_room_tilemap_from_resource_file(candidate_state, source_path, *bytes,
+                                           level, room)) {
     candidate_state.room_resource_bytes = *bytes;
     state = std::move(candidate_state);
     return true;
