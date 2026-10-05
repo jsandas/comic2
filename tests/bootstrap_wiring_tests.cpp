@@ -202,6 +202,26 @@ void test_bootstrap_tick_wires_input_dispatch_and_render() {
         "jump input should remain false when env says 0");
 }
 
+void test_bootstrap_frame_interval_defaults_to_original_tick_rate() {
+  set_test_env("COMIC2_BOOTSTRAP_FRAME_MS", "", 1);
+
+  const auto interval = comic2::read_bootstrap_frame_interval();
+
+  check(interval == std::chrono::milliseconds(110),
+        "bootstrap frame interval should default to the original 110 ms tick "
+        "pacing");
+}
+
+void test_bootstrap_frame_interval_can_be_overridden() {
+  set_test_env("COMIC2_BOOTSTRAP_FRAME_MS", "33", 1);
+
+  const auto interval = comic2::read_bootstrap_frame_interval();
+
+  check(interval == std::chrono::milliseconds(33),
+        "bootstrap frame interval should accept an override for calibration");
+  set_test_env("COMIC2_BOOTSTRAP_FRAME_MS", "", 1);
+}
+
 void test_integrated_loop_exits_cleanly_when_quit_is_requested() {
   const auto empty_root =
       std::filesystem::temp_directory_path() / "comic2_integrated_quit";
@@ -341,6 +361,30 @@ void test_render_bootstrap_frame_uses_room_tile_data() {
         "tile interior should use the base color derived from tile data");
   check(bottom_right_edge == 0x04,
         "tile border should remain accented at the far edge");
+}
+
+void test_render_bootstrap_frame_renders_scrolled_right_edge_tiles() {
+  auto state = comic2::make_default_runtime_state();
+  state.player.x = 300;
+  state.player.y = 180;
+  state.room_grid.tile_w = 30;
+  state.room_grid.tile_h = 1;
+  state.room_grid.row_pointers = {0};
+  state.room_grid.tile_data.assign(30, 0x00);
+  state.camera_x = 16;
+
+  // Tile index 20 should appear at the right edge when camera_x is 16.
+  state.room_grid.tile_data[20] = 0x0A;
+
+  comic2::MemoryFramePresenter presenter;
+  comic2::render_bootstrap_frame(presenter, state);
+
+  check(presenter.has_frame(), "render should present a scrolled frame");
+  const auto &frame = presenter.last_frame();
+  const auto right_edge_center = read_color_index(frame, 312, 8);
+
+  check(right_edge_center == 0x0A, "camera-aligned tile iteration should "
+                                   "render the right-edge tile when scrolled");
 }
 
 void test_render_bootstrap_frame_renders_active_runtime_entities() {
@@ -515,6 +559,30 @@ void test_render_bootstrap_frame_renders_timed_overlay() {
       read_color_index(presenter.last_frame(), 12 + 4, 12 + 4);
   check(overlay_color != 0x00,
         "timed overlay should render a visible sprite over the player");
+}
+
+void test_render_bootstrap_frame_renders_room_event_anchor_sprite() {
+  auto state_without_anchor = comic2::make_default_runtime_state();
+  state_without_anchor.player.x = 200;
+  state_without_anchor.player.y = 150;
+
+  auto state_with_anchor = state_without_anchor;
+  state_with_anchor.room_event_anchor.active = true;
+  state_with_anchor.room_event_anchor.x = 16;
+  state_with_anchor.room_event_anchor.y = 16;
+
+  comic2::MemoryFramePresenter without_anchor;
+  comic2::render_bootstrap_frame(without_anchor, state_without_anchor);
+
+  comic2::MemoryFramePresenter with_anchor;
+  comic2::render_bootstrap_frame(with_anchor, state_with_anchor);
+
+  const auto color_without =
+      read_color_index(without_anchor.last_frame(), 16, 16);
+  const auto color_with = read_color_index(with_anchor.last_frame(), 16, 16);
+
+  check(color_with != color_without,
+        "room-event anchors should render a visible placeholder sprite");
 }
 
 void test_render_bootstrap_frame_asset_backed_hash_regression() {
@@ -712,16 +780,20 @@ void test_scene_bootstrap_falls_back_with_missing_assets() {
 void run_bootstrap_wiring_tests() {
   test_bootstrap_entry_runs_without_crashing();
   test_bootstrap_tick_wires_input_dispatch_and_render();
+  test_bootstrap_frame_interval_defaults_to_original_tick_rate();
+  test_bootstrap_frame_interval_can_be_overridden();
   test_integrated_loop_exits_cleanly_when_quit_is_requested();
   test_dispatcher_moves_player_when_left_input_is_active();
   test_render_loop_renders_multiple_frames();
   test_render_loop_updates_state_while_presenting_frames();
   test_render_bootstrap_frame_uses_room_tile_data();
+  test_render_bootstrap_frame_renders_scrolled_right_edge_tiles();
   test_render_bootstrap_frame_renders_active_runtime_entities();
   test_render_bootstrap_frame_distinguishes_pickups_from_enemies();
   test_render_bootstrap_frame_renders_active_projectiles();
   test_render_bootstrap_frame_hides_player_on_invuln_blink_frames();
   test_render_bootstrap_frame_renders_timed_overlay();
+  test_render_bootstrap_frame_renders_room_event_anchor_sprite();
   test_render_bootstrap_frame_asset_backed_hash_regression();
   test_render_bootstrap_frame_falls_back_when_asset_decode_fails();
   test_bootstrap_loader_reads_reference_room_data();

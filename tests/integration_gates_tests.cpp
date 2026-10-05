@@ -576,6 +576,36 @@ void test_gate_phase_93_transition_flow_freezes_player_and_tracks_camera() {
                               "camera Y offset during presentation");
 }
 
+void test_gate_phase_10d_event_trigger_flow() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.player.x = 96;
+  state.player.y = 100;
+  state.mapped_objects.push_back(comic2::MappedObject12{
+      .room_x = 0,
+      .room_y = 0,
+      .descriptor_ptr = 0x1234,
+      .state_flags = 0x0001,
+      .world_x = 90,
+      .world_y = 90,
+  });
+
+  comic2::handle_input_fallback(state);
+
+  expect(
+      state.ui.pending_event_message == "Room Event Triggered",
+      "Gate 10-D should queue the room-event message when a trigger object is "
+      "proximity-triggered");
+  expect(state.ui.room_event_consumed,
+         "Gate 10-D should consume the trigger one time");
+
+  state.ui.pending_event_message.clear();
+  state.ui.room_event_consumed = true;
+  comic2::handle_input_fallback(state);
+
+  expect(state.ui.pending_event_message.empty(),
+         "Gate 10-D should suppress re-triggering while the event is consumed");
+}
+
 void test_gate_phase_92_audio_events_trigger_from_gameplay() {
   class RecordingAudioBackend final : public comic2::IAudioBackend {
   public:
@@ -636,5 +666,6 @@ void run_integration_gate_tests() {
   test_gate_e_left_boundary_clamps_at_room_zero();
   test_gate_e_projectile_collision_outcome();
   test_gate_phase_93_transition_flow_freezes_player_and_tracks_camera();
+  test_gate_phase_10d_event_trigger_flow();
   test_gate_phase_92_audio_events_trigger_from_gameplay();
 }

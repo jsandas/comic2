@@ -441,7 +441,7 @@ void draw_runtime_entity_sprites(EgaPlanarSurface &frame,
       continue;
     }
 
-    const std::int32_t px0 = slot.x;
+    const std::int32_t px0 = slot.x - state.camera_x;
     const std::int32_t py0 = slot.y - state.camera_y;
     if (px0 < -16 || py0 < -16) {
       continue;
@@ -472,7 +472,7 @@ void draw_runtime_projectile_sprites(EgaPlanarSurface &frame,
       continue;
     }
 
-    const std::int32_t px0 = projectile.x;
+    const std::int32_t px0 = projectile.x - state.camera_x;
     const std::int32_t py0 = projectile.y - state.camera_y;
     if (px0 < -8 || py0 < -8) {
       continue;
@@ -510,6 +510,13 @@ void apply_transition_palette_tint(EgaPlanarSurface &surface,
       set_surface_pixel(surface, x, y, base);
     }
   }
+}
+
+void load_ega_palette_table(
+    RuntimeState &state,
+    const std::array<std::array<std::uint8_t, 4>, 16> &palette_table) {
+  state.palette.loaded = true;
+  state.palette.entries = palette_table;
 }
 
 void room_transition_palette_wave(EgaPlanarSurface &surface,
@@ -577,6 +584,21 @@ void room_transition_player_exit_sequence(RuntimeState &state) {
   transition.player_exit_offset =
       static_cast<std::int16_t>(transition.frame_index * 2);
   transition.player_frozen = true;
+}
+
+void camera_update_x_follow_comic_clamped(RuntimeState &state,
+                                          std::int32_t viewport_width,
+                                          std::int32_t room_width) {
+  if (viewport_width <= 0) {
+    state.camera_x = 0;
+    return;
+  }
+
+  const std::int32_t room_pixels = std::max<std::int32_t>(room_width, 0);
+  const std::int32_t max_camera_x =
+      std::max<std::int32_t>(0, room_pixels - viewport_width);
+  const std::int32_t target_x = state.player.x - viewport_width / 2;
+  state.camera_x = std::clamp(target_x, 0, max_camera_x);
 }
 
 void camera_update_y_follow_comic_clamped(RuntimeState &state,

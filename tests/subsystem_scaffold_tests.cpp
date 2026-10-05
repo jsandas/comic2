@@ -656,6 +656,18 @@ void test_room_loader_wires_runtime_tables_from_loaded_mapped_objects() {
          "runtime slot wiring should cull out-of-viewport descriptor");
   expect(state.runtime_slots[0].mapped_object_ptr == 0,
          "first runtime slot should point at first mapped object");
+  expect(state.room_event_anchor.active,
+         "room loader should seed an active room-event anchor from mapped "
+         "objects");
+  expect(state.room_event_anchor.x == 20 && state.room_event_anchor.y == 30,
+         "room loader should seed the room-event anchor from the event object");
+  expect(state.room_event_anchor.velocity_x != 0 ||
+             state.room_event_anchor.velocity_y != 0,
+         "room loader should seed a moving room-event anchor");
+  expect(state.room_event_script.loaded,
+         "room loader should mark the raw room-event script state as loaded");
+  expect(state.room_event_script.raw_script_bytes == state.room_resource_bytes,
+         "room loader should preserve the raw room-event script bytes");
 }
 
 void test_room_loader_handles_corrupt_mapped_object_payload_stably() {
