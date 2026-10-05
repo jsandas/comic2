@@ -827,6 +827,73 @@ void test_bootstrap_populates_frpak_catalog_for_known_files() {
   std::filesystem::remove_all(root);
 }
 
+std::filesystem::path find_original_asset_root() {
+  std::filesystem::path cwd = std::filesystem::current_path();
+  for (int i = 0; i < 6; ++i) {
+    const auto candidate = cwd / "reference" / "original";
+    if (std::filesystem::exists(candidate) &&
+        std::filesystem::is_directory(candidate)) {
+      return candidate;
+    }
+    const auto parent = cwd.parent_path();
+    if (parent == cwd) {
+      break;
+    }
+    cwd = parent;
+  }
+  return {};
+}
+
+void test_phase11_level_resource_tuple_catalog() {
+  const auto root = find_original_asset_root();
+  expect(!root.empty(), "original asset root should be discoverable");
+
+  const auto level0 = comic2::resolve_level_resource_tuple(0, root);
+  expect(level0.has_value(), "level 0 tuple should resolve to original files");
+  expect(level0->tileset_filename == "FR000.0",
+         "level 0 tileset filename should match original catalog");
+  expect(level0->room_layout_filename == "FR000.1",
+         "level 0 room filename should match original catalog");
+  expect(level0->sprite_sheet_filename == "FR000.2",
+         "level 0 sprite filename should match original catalog");
+
+  const auto level4 = comic2::resolve_level_resource_tuple(4, root);
+  expect(level4.has_value(), "level 4 tuple should resolve to original files");
+  expect(level4->tileset_filename == "FR001.0",
+         "level 4 should reuse FR001.0 tileset");
+  expect(level4->room_layout_filename == "FR004.1",
+         "level 4 room filename should match original catalog");
+
+  const auto invalid = comic2::resolve_level_resource_tuple(99, root);
+  expect(!invalid.has_value(), "out-of-range level ids should fail cleanly");
+}
+
+void test_phase11_fr000_tileset_decode_parity() {
+  const auto root = find_original_asset_root();
+  expect(!root.empty(), "original asset root should be discoverable");
+
+  const auto bytes = comic2::load_file_bytes(root / "FR000.0");
+  expect(bytes.has_value(), "FR000.0 should be readable for decode parity");
+
+  const auto decoded =
+      comic2::decode_level_tileset(std::span<const std::uint8_t>(*bytes));
+  expect(decoded.has_value(), "FR000.0 should decode as a valid tileset");
+  expect(decoded->hazard_bounds[0] == 0x002A,
+         "hazard min should be parsed from the FR000.0 header");
+  expect(decoded->hazard_bounds[1] == 0x0033,
+         "hazard max should be parsed from the FR000.0 header");
+  expect_eq(decoded->tiles.size(), 144,
+            "FR000.0 should decode to exactly 144 16x16 4-plane tiles");
+  expect(decoded->tiles[0].row_span_bytes == 32,
+         "tile row span should reflect 2 bytes x 16 rows per plane");
+  expect(decoded->tiles[0].width_bytes == 2,
+         "tile width bytes should be 2 bytes for a 16-pixel row");
+  expect(decoded->tiles[0].height_rows == 16,
+         "tile height should remain 16 rows for each 16x16 tile");
+  expect(decoded->tiles[0].planes[0].size() == 32,
+         "each plane should contribute exactly 32 bytes in a 16x16 tile");
+}
+
 } // namespace
 
 void run_subsystem_scaffold_tests() {
@@ -857,4 +924,6 @@ void run_subsystem_scaffold_tests() {
   test_frpak_catalog_rejects_zero_row_span_header();
   test_frpak_catalog_record_bounds_validation();
   test_bootstrap_populates_frpak_catalog_for_known_files();
+  test_phase11_level_resource_tuple_catalog();
+  test_phase11_fr000_tileset_decode_parity();
 }

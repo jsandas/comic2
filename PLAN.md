@@ -1270,19 +1270,19 @@ Cross-referencing `comic2.asm` (specifically `load_resource` at line 2396 and ta
 ### Detailed Implementation Roadmap
 
 #### 11.1 Level Resource Catalog & Resolver (`unk_2E3CC` Table)
-- [ ] Define `LevelResourceTuple` struct (`tileset_filename`, `room_layout_filename`, `sprite_sheet_filename`, `script_filename`).
-- [ ] Implement canonical 15-level tuple mapping table directly matching original `unk_2E3CC` indirection.
-- [ ] Implement `resolve_level_resource_tuple(uint16_t level_id, const std::filesystem::path &root)` with support for level 4 tileset reuse (`FR001.0`) and optional script nullability.
+- [x] Define `LevelResourceTuple` struct (`tileset_filename`, `room_layout_filename`, `sprite_sheet_filename`, `script_filename`).
+- [x] Implement canonical 15-level tuple mapping table directly matching original `unk_2E3CC` indirection.
+- [x] Implement `resolve_level_resource_tuple(uint16_t level_id, const std::filesystem::path &root)` with support for level 4 tileset reuse (`FR001.0`) and optional script nullability.
 - [ ] Replace heuristic `FR###.#` directory searches in `src/room_loader.cpp` with exact tuple-based path resolution.
-- [ ] Add unit tests verifying resolution of all 15 level tuples against `reference/original/`.
+- [x] Add unit tests verifying resolution of all 15 level tuples against `reference/original/`.
 
 #### 11.2 16x16 Planar Tileset Decoder (`FR###.0`)
-- [ ] Implement `decode_level_tileset(std::span<const uint8_t> payload)` in `src/resource_loader.cpp`.
-- [ ] Parse 6-byte tileset header and extract `hazard_min` and `hazard_max` into `RuntimeState::tile_hazard_bounds`.
-- [ ] Decode signed-RLE payload from byte offset 6 into planar tile array:
+- [x] Implement `decode_level_tileset(std::span<const uint8_t> payload)` in `src/resource_loader.cpp`.
+- [x] Parse 6-byte tileset header and extract `hazard_min` and `hazard_max` into `RuntimeState::tile_hazard_bounds`.
+- [x] Decode signed-RLE payload from byte offset 6 into planar tile array:
   - Each tile = 16x16 pixels, 2 bytes/row, 16 rows = 32 bytes per plane * 4 planes = 128 bytes.
   - Store decoded tiles as `std::vector<Ega4PlaneImage>` (width=2, height=16) in `RuntimeState::level_tileset`.
-- [ ] Add deterministic test verifying `FR000.0` decodes exactly 144 tiles (18,432 bytes) with stable plane-byte hashes.
+- [x] Add deterministic test verifying `FR000.0` decodes exactly 144 tiles (18,432 bytes) with stable plane-byte hashes.
 
 #### 11.3 Real Room Layout & Entity Spawn Pipeline (`FR###.1`)
 - [ ] Update `load_room_tilemap_from_resource_file` to consume `FR###.1` payloads directly via the level tuple resolver.
