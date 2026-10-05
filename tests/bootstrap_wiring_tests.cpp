@@ -383,8 +383,8 @@ void test_render_bootstrap_frame_renders_scrolled_right_edge_tiles() {
   const auto &frame = presenter.last_frame();
   const auto right_edge_center = read_color_index(frame, 312, 8);
 
-  check(right_edge_center == 0x0A,
-        "camera-aligned tile iteration should render the right-edge tile when scrolled");
+  check(right_edge_center == 0x0A, "camera-aligned tile iteration should "
+                                   "render the right-edge tile when scrolled");
 }
 
 void test_render_bootstrap_frame_renders_active_runtime_entities() {
