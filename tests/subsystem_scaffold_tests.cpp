@@ -590,8 +590,122 @@ void test_room_loader_populates_runtime_state_from_resource_buffer() {
   expect(state.room_grid.tile_h == 3, "room grid tile_h should match entry");
   expect(state.room_grid.row_pointers == std::vector<std::uint16_t>{0, 4, 8},
          "room loader should build row pointer table");
-  expect(state.room_grid.tile_data == decoded_room_bytes,
-         "room loader should store decoded room bytes");
+  const std::vector<std::uint8_t> expected_tile_data =
+      std::vector<std::uint8_t>{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x00,
+                               0x00, 0x00, 0x00, 0x00, 0x00};
+  expect(state.room_grid.tile_data == expected_tile_data,
+         "room loader should store only room tile indices, not the trailing "
+         "row-pointer and object metadata");
+}
+
+void test_room_loader_decodes_signed_rle_room_tilemap_dimensions() {
+  std::vector<std::uint8_t> decoded_room_bytes(0x2D2, 0x00);
+  const std::vector<std::uint8_t> tile_data = {0x00, 0x01, 0x02, 0x03,
+                                              0x04, 0x05, 0x06, 0x07,
+                                              0x08, 0x09, 0x0A, 0x0B};
+  std::copy(tile_data.begin(), tile_data.end(), decoded_room_bytes.begin());
+  decoded_room_bytes[0x2A0] = 0x00;
+  decoded_room_bytes[0x2A1] = 0x00;
+  decoded_room_bytes[0x2A2] = 0x04;
+  decoded_room_bytes[0x2A3] = 0x00;
+  decoded_room_bytes[0x2A4] = 0x08;
+  decoded_room_bytes[0x2A5] = 0x00;
+
+  const auto encoded = encode_literal_signed_rle(decoded_room_bytes);
+  std::vector<std::uint8_t> resource_bytes(0x20 + encoded.size(), 0x00);
+  resource_bytes[2] = 0x00;
+  resource_bytes[3] = 0x00;
+  resource_bytes[0x04] = 0x04;
+  resource_bytes[0x05] = 0x00;
+  resource_bytes[0x06] = 0x03;
+  resource_bytes[0x07] = 0x00;
+  resource_bytes[0x08] = 0x20;
+  resource_bytes[0x09] = 0x00;
+  std::copy(encoded.begin(), encoded.end(), resource_bytes.begin() + 0x20);
+
+  comic2::RuntimeState state;
+  state.level_tileset.resize(16);
+  const bool loaded = comic2::load_room_tilemap_from_resource_buffer(
+      state, resource_bytes, 0, 0);
+
+  expect(loaded,
+         "valid Signed-RLE room tilemap payload should decode into runtime state");
+  expect(state.room_grid.tile_w == 4 && state.room_grid.tile_h == 3,
+         "room loader should preserve Level 0 Room 0 dimensions");
+  expect(state.room_grid.tile_data == tile_data,
+         "room loader should decode tile indices without trailing metadata");
+}
+
+void test_room_loader_validates_tile_indices_against_tileset_size() {
+  std::vector<std::uint8_t> decoded_room_bytes(0x2D2, 0x00);
+  const std::vector<std::uint8_t> tile_data = {0x00, 0x01, 0x02, 0x03,
+                                              0x04, 0x05, 0x06, 0x07,
+                                              0x08, 0x09, 0x0A, 0x0B};
+  std::copy(tile_data.begin(), tile_data.end(), decoded_room_bytes.begin());
+  decoded_room_bytes[0x2A0] = 0x00;
+  decoded_room_bytes[0x2A1] = 0x00;
+  decoded_room_bytes[0x2A2] = 0x04;
+  decoded_room_bytes[0x2A3] = 0x00;
+  decoded_room_bytes[0x2A4] = 0x08;
+  decoded_room_bytes[0x2A5] = 0x00;
+
+  const auto encoded = encode_literal_signed_rle(decoded_room_bytes);
+  std::vector<std::uint8_t> resource_bytes(0x20 + encoded.size(), 0x00);
+  resource_bytes[2] = 0x00;
+  resource_bytes[3] = 0x00;
+  resource_bytes[0x04] = 0x04;
+  resource_bytes[0x05] = 0x00;
+  resource_bytes[0x06] = 0x03;
+  resource_bytes[0x07] = 0x00;
+  resource_bytes[0x08] = 0x20;
+  resource_bytes[0x09] = 0x00;
+  std::copy(encoded.begin(), encoded.end(), resource_bytes.begin() + 0x20);
+
+  comic2::RuntimeState state;
+  state.level_tileset.resize(16);
+  const bool loaded = comic2::load_room_tilemap_from_resource_buffer(
+      state, resource_bytes, 0, 0);
+
+  expect(loaded, "tile indices within the loaded tileset bounds should pass");
+  expect(state.room_grid.tile_data[0] == 0x00,
+         "the first validated room tile should remain in range");
+}
+
+void test_room_loader_rejects_out_of_range_tile_indices_cleanly() {
+  std::vector<std::uint8_t> decoded_room_bytes(0x2D2, 0x00);
+  const std::vector<std::uint8_t> tile_data = {
+      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+      0x08, 0x09, 0x0A, 0x10,
+  };
+  std::copy(tile_data.begin(), tile_data.end(), decoded_room_bytes.begin());
+  decoded_room_bytes[0x2A0] = 0x00;
+  decoded_room_bytes[0x2A1] = 0x00;
+  decoded_room_bytes[0x2A2] = 0x04;
+  decoded_room_bytes[0x2A3] = 0x00;
+  decoded_room_bytes[0x2A4] = 0x08;
+  decoded_room_bytes[0x2A5] = 0x00;
+
+  const auto encoded = encode_literal_signed_rle(decoded_room_bytes);
+  std::vector<std::uint8_t> resource_bytes(0x20 + encoded.size(), 0x00);
+  resource_bytes[2] = 0x00;
+  resource_bytes[3] = 0x00;
+  resource_bytes[0x04] = 0x04;
+  resource_bytes[0x05] = 0x00;
+  resource_bytes[0x06] = 0x03;
+  resource_bytes[0x07] = 0x00;
+  resource_bytes[0x08] = 0x20;
+  resource_bytes[0x09] = 0x00;
+  std::copy(encoded.begin(), encoded.end(), resource_bytes.begin() + 0x20);
+
+  comic2::RuntimeState state;
+  state.level_tileset.resize(16);
+  const bool loaded = comic2::load_room_tilemap_from_resource_buffer(
+      state, resource_bytes, 0, 0);
+
+  expect(!loaded,
+         "tile index 0x10 should fail validation when the tileset is smaller");
+  expect(state.room_grid.tile_data.empty(),
+         "failed validation should leave room tile data unset for safety");
 }
 
 void test_room_loader_handles_self_referential_resource_bytes_span() {
@@ -999,7 +1113,7 @@ void test_room_loader_loads_level_tileset_from_asset_root_tuple() {
   const std::vector<std::uint8_t> tileset_payload = {
       0x00, 0x00, 0x1A, 0x00, 0x28, 0x00, 0x80, 0x00, 0x80, 0x01, 0x00,
   };
-  const auto room_bytes = make_test_room_resource_bytes(0, 0, 4, 3, 0x5AU);
+  const auto room_bytes = make_test_room_resource_bytes(0, 0, 4, 3, 0x01U);
 
   std::ofstream(root / "FR000.0", std::ios::binary)
       .write(reinterpret_cast<const char *>(tileset_payload.data()),
@@ -1021,7 +1135,7 @@ void test_room_loader_loads_level_tileset_from_asset_root_tuple() {
   expect(state.tile_hazard_bounds[0] == 0x001A &&
              state.tile_hazard_bounds[1] == 0x0028,
          "tuple tileset hazard bounds should be committed to runtime state");
-  expect(state.room_grid.tile_data[0] == 0x5A,
+  expect(state.room_grid.tile_data[0] == 0x01,
          "room payload should still load after tuple tileset hydrate");
 
   std::filesystem::remove_all(root);
@@ -1100,6 +1214,9 @@ void run_subsystem_scaffold_tests() {
   test_room_loader_rejects_malformed_room_header();
   test_room_loader_rejects_sentinel_entries();
   test_room_loader_populates_runtime_state_from_resource_buffer();
+  test_room_loader_decodes_signed_rle_room_tilemap_dimensions();
+  test_room_loader_validates_tile_indices_against_tileset_size();
+  test_room_loader_rejects_out_of_range_tile_indices_cleanly();
   test_room_loader_handles_self_referential_resource_bytes_span();
   test_room_loader_decodes_mapped_objects_from_payload();
   test_room_loader_wires_runtime_tables_from_loaded_mapped_objects();

@@ -241,6 +241,35 @@ build_room_row_pointer_table(std::span<const std::uint8_t> decoded_room_bytes,
   return row_pointers;
 }
 
+std::optional<std::vector<std::uint8_t>>
+extract_room_tile_data(std::span<const std::uint8_t> decoded_room_bytes,
+                       std::uint16_t tile_w, std::uint16_t tile_h) {
+  const std::size_t tile_count =
+      static_cast<std::size_t>(tile_w) * static_cast<std::size_t>(tile_h);
+  if (tile_count == 0 || tile_count > decoded_room_bytes.size()) {
+    return std::nullopt;
+  }
+
+  return std::vector<std::uint8_t>(decoded_room_bytes.begin(),
+                                   decoded_room_bytes.begin() +
+                                       static_cast<std::ptrdiff_t>(tile_count));
+}
+
+bool validate_room_tile_indices_for_tileset(
+    std::span<const std::uint8_t> room_tile_data,
+    std::size_t tileset_tile_count) {
+  if (tileset_tile_count == 0) {
+    return true;
+  }
+
+  for (const auto tile_index : room_tile_data) {
+    if (static_cast<std::size_t>(tile_index) >= tileset_tile_count) {
+      return false;
+    }
+  }
+  return true;
+}
+
 std::optional<std::vector<MappedObject12>>
 decode_room_mapped_objects(std::span<const std::uint8_t> decoded_room_bytes) {
   if (decoded_room_bytes.size() < kMappedObjectCountOffset + 2) {
@@ -341,13 +370,24 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
     return false;
   }
 
+  const auto room_tile_data =
+      extract_room_tile_data(decoded.bytes, spec->room_entry.tile_w,
+                             spec->room_entry.tile_h);
+  if (!room_tile_data.has_value()) {
+    return false;
+  }
+  if (!validate_room_tile_indices_for_tileset(*room_tile_data,
+                                              state.level_tileset.size())) {
+    return false;
+  }
+
   state.current_level = level;
   state.current_room = room;
   state.room_entry = spec->room_entry;
   state.room_grid.tile_w = spec->room_entry.tile_w;
   state.room_grid.tile_h = spec->room_entry.tile_h;
   state.room_grid.row_pointers = *row_pointers;
-  state.room_grid.tile_data = decoded.bytes;
+  state.room_grid.tile_data = *room_tile_data;
   std::vector<std::uint8_t> resource_bytes(bytes.begin(), bytes.end());
   state.room_resource_bytes = std::move(resource_bytes);
 
@@ -381,13 +421,24 @@ bool load_room_tilemap_from_resource_file(
     return false;
   }
 
+  const auto room_tile_data =
+      extract_room_tile_data(decoded.bytes, spec->room_entry.tile_w,
+                             spec->room_entry.tile_h);
+  if (!room_tile_data.has_value()) {
+    return false;
+  }
+  if (!validate_room_tile_indices_for_tileset(*room_tile_data,
+                                              state.level_tileset.size())) {
+    return false;
+  }
+
   state.current_level = level;
   state.current_room = room;
   state.room_entry = spec->room_entry;
   state.room_grid.tile_w = spec->room_entry.tile_w;
   state.room_grid.tile_h = spec->room_entry.tile_h;
   state.room_grid.row_pointers = *row_pointers;
-  state.room_grid.tile_data = decoded.bytes;
+  state.room_grid.tile_data = *room_tile_data;
   std::vector<std::uint8_t> resource_bytes(bytes.begin(), bytes.end());
   state.room_resource_bytes = std::move(resource_bytes);
 

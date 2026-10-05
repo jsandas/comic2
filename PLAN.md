@@ -1288,7 +1288,7 @@ Cross-referencing `comic2.asm` (specifically `load_resource` at line 2396 and ta
 #### 11.3 Real Room Layout & Entity Spawn Pipeline (`FR###.1`)
 - [x] Update `load_room_tilemap_from_resource_file` to consume `FR###.1` payloads directly via the level tuple resolver.
 - [x] Parse room table header (`room_count`, `level_id`) and individual room dimensions (`tile_w`, `tile_h`).
-- [ ] Decode Signed-RLE room tilemap bytes into `RuntimeState::room_grid.tile_data` with indices indexing `RuntimeState::level_tileset`.
+- [x] Decode Signed-RLE room tilemap bytes into `RuntimeState::room_grid.tile_data` with indices indexing `RuntimeState::level_tileset`.
 - [ ] Extract `MappedObject12` records from room payload and populate `RuntimeState::mapped_objects`.
 - [ ] Update `draw_room_tilemap_from_asset` in `src/bootstrap.cpp` to render tiles directly from `RuntimeState::level_tileset` instead of slicing `FRPAK.001`.
 - [ ] Add tests verifying Room 0 through Room N layouts for Level 0, valid tile index bounds, and entity list population.
