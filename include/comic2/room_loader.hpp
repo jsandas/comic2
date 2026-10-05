@@ -20,8 +20,8 @@ struct RoomTableHeader {
   bool operator==(const RoomTableHeader &) const = default;
 };
 
-std::optional<RoomTableHeader> parse_room_table_header(
-    std::span<const std::uint8_t> bytes);
+std::optional<RoomTableHeader>
+parse_room_table_header(std::span<const std::uint8_t> bytes);
 
 struct RoomLoadSpec {
   std::filesystem::path source_path;

@@ -468,7 +468,8 @@ void test_room_loader_parses_room_count_and_level_id_header() {
   bytes[0x0F] = 0x00;
 
   const auto header = comic2::parse_room_table_header(bytes);
-  expect(header.has_value(), "room loader should parse an explicit FR###.1 header");
+  expect(header.has_value(),
+         "room loader should parse an explicit FR###.1 header");
   expect(header->room_count == 2,
          "room table header should expose the explicit room count");
   expect(header->level_id == 3,
@@ -509,13 +510,14 @@ void test_room_loader_rejects_malformed_room_header() {
   std::vector<std::uint8_t> bytes = {0x05, 0x00, 0x03, 0x00};
 
   const auto header = comic2::parse_room_table_header(bytes);
-  expect(header.has_value(), "header parser should accept a structurally valid FR###.1 header");
+  expect(header.has_value(),
+         "header parser should accept a structurally valid FR###.1 header");
   expect(header->room_count == 5, "header parser should retain room_count");
 
   const auto spec = comic2::resolve_room_load_spec(
       "/tmp/FR003.1", bytes, 3, 0, comic2::ResourceAssetKind::RoomPayload);
-  expect(!spec.has_value(),
-         "resolver should reject a malformed room header when the table is truncated");
+  expect(!spec.has_value(), "resolver should reject a malformed room header "
+                            "when the table is truncated");
 
   std::vector<std::uint8_t> truncated = {0x02, 0x00, 0x03};
   expect(!comic2::parse_room_table_header(truncated).has_value(),

@@ -120,8 +120,8 @@ bool try_load_level_tileset_for_root(RuntimeState &state,
 
 } // namespace
 
-std::optional<RoomTableHeader> parse_room_table_header(
-    std::span<const std::uint8_t> bytes) {
+std::optional<RoomTableHeader>
+parse_room_table_header(std::span<const std::uint8_t> bytes) {
   if (bytes.size() < 4) {
     return std::nullopt;
   }
@@ -133,8 +133,8 @@ std::optional<RoomTableHeader> parse_room_table_header(
 
   RoomTableHeader header{};
   header.room_count = room_count;
-  header.level_id = static_cast<std::uint16_t>(bytes[2] |
-                                              (static_cast<std::uint16_t>(bytes[3]) << 8));
+  header.level_id = static_cast<std::uint16_t>(
+      bytes[2] | (static_cast<std::uint16_t>(bytes[3]) << 8));
   return header;
 }
 
