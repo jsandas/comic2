@@ -316,15 +316,15 @@ decode_masked_sprite_sheet(std::span<const std::uint8_t> payload) {
     const std::size_t mask_byte_count =
         static_cast<std::size_t>(width / 8U) * static_cast<std::size_t>(height);
     const std::size_t record_header_size = 6U;
-    const std::size_t image_offset = record_header_size +
-                                     static_cast<std::size_t>(image_data_off);
+    const std::size_t image_offset =
+        record_header_size + static_cast<std::size_t>(image_data_off);
     if (image_offset < record_header_size + mask_byte_count) {
       return std::nullopt;
     }
 
-    const std::size_t record_size =
-        record_header_size + static_cast<std::size_t>(image_data_off) +
-        (4U * mask_byte_count);
+    const std::size_t record_size = record_header_size +
+                                    static_cast<std::size_t>(image_data_off) +
+                                    (4U * mask_byte_count);
     if (offset + record_size > payload.size()) {
       return std::nullopt;
     }
@@ -333,17 +333,19 @@ decode_masked_sprite_sheet(std::span<const std::uint8_t> payload) {
     sprite.width_pixels = width;
     sprite.height_rows = height;
     sprite.image_data_off = image_data_off;
-    const auto mask_begin = payload.begin() +
-                            static_cast<std::ptrdiff_t>(offset + record_header_size);
-    const auto mask_end = mask_begin + static_cast<std::ptrdiff_t>(mask_byte_count);
+    const auto mask_begin = payload.begin() + static_cast<std::ptrdiff_t>(
+                                                  offset + record_header_size);
+    const auto mask_end =
+        mask_begin + static_cast<std::ptrdiff_t>(mask_byte_count);
     sprite.mask_bytes.assign(mask_begin, mask_end);
 
-    const auto image_begin = payload.begin() +
-                             static_cast<std::ptrdiff_t>(offset + image_offset);
+    const auto image_begin =
+        payload.begin() + static_cast<std::ptrdiff_t>(offset + image_offset);
     for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
       const auto plane_begin =
           image_begin + static_cast<std::ptrdiff_t>(plane * mask_byte_count);
-      const auto plane_end = plane_begin + static_cast<std::ptrdiff_t>(mask_byte_count);
+      const auto plane_end =
+          plane_begin + static_cast<std::ptrdiff_t>(mask_byte_count);
       sprite.planes[plane].assign(plane_begin, plane_end);
     }
 
