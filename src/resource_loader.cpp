@@ -313,8 +313,11 @@ decode_masked_sprite_sheet(std::span<const std::uint8_t> payload) {
       break;
     }
 
-    const std::size_t mask_byte_count =
-        static_cast<std::size_t>(width / 8U) * static_cast<std::size_t>(height);
+    MaskedSpriteRecord sprite{};
+    sprite.width_pixels = width;
+    sprite.height_rows = height;
+    sprite.image_data_off = image_data_off;
+    const std::size_t mask_byte_count = sprite.mask_byte_count();
     const std::size_t record_header_size = 6U;
     const std::size_t image_offset =
         record_header_size + static_cast<std::size_t>(image_data_off);
@@ -329,10 +332,6 @@ decode_masked_sprite_sheet(std::span<const std::uint8_t> payload) {
       return std::nullopt;
     }
 
-    MaskedSpriteRecord sprite{};
-    sprite.width_pixels = width;
-    sprite.height_rows = height;
-    sprite.image_data_off = image_data_off;
     const auto mask_begin = payload.begin() + static_cast<std::ptrdiff_t>(
                                                   offset + record_header_size);
     const auto mask_end =

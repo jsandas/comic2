@@ -1298,7 +1298,7 @@ Cross-referencing `comic2.asm` (specifically `load_resource` at line 2396 and ta
 - [x] Implement `decode_masked_sprite_sheet(std::span<const uint8_t> payload)` in `src/resource_loader.cpp`.
 - [x] Parse sequential `MaskedSpriteRecord` entries (`width`, `height`, `image_data_off`, mask bytes, and 4-plane image bytes).
 - [x] Convert records into `MaskedSpriteRecord` entries with explicit mask data stored in `RuntimeState::level_sprites`.
-- [ ] Map player animation states (`Idle`, `WalkCycle`, `JumpRise`, `JumpFall`, `Attack`, `Hurt`, `Death`) to Comic's 16x24 sprite frames in `FR###.2`.
+- [x] Map player animation states (`Idle`, `WalkCycle`, `JumpRise`, `JumpFall`, `Attack`, `Hurt`, `Death`) to Comic's 16x24 sprite frames in `FR###.2`.
 - [ ] Map entity behavior types to enemy (16x16) and item (16x16) sprite records.
 - [ ] Map projectile state to fireball (16x8) sprite records.
 - [x] Add tests verifying sprite count, dimensions, mask parity, and deterministic plane bytes for `FR000.2`.
