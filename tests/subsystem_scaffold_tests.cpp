@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "comic2/bootstrap.hpp"
 #include "comic2/entity_runtime.hpp"
 #include "comic2/projectiles.hpp"
 #include "comic2/room_loader.hpp"
@@ -1350,6 +1351,66 @@ void test_phase11_fr000_tileset_decode_parity() {
          "each plane should contribute exactly 32 bytes in a 16x16 tile");
 }
 
+void test_phase11_player_animation_state_mapping_contract() {
+  comic2::RuntimeState state = comic2::make_default_runtime_state();
+  state.level_sprites.resize(16);
+  for (std::size_t i = 0; i < state.level_sprites.size(); ++i) {
+    auto &sprite = state.level_sprites[i];
+    sprite.width_pixels = 16;
+    sprite.height_rows = 24;
+    sprite.mask_bytes.assign(48, 0xFFU);
+    for (std::size_t plane = 0; plane < sprite.planes.size(); ++plane) {
+      sprite.planes[plane].assign(48, static_cast<std::uint8_t>(i + plane));
+    }
+  }
+
+  auto assert_index = [&](std::uint8_t animation_state, std::uint8_t frame,
+                          bool facing_right, std::size_t expected) {
+    state.player.animation_state = animation_state;
+    state.player.animation_frame = frame;
+    state.player.facing_right = facing_right;
+    const auto actual = comic2::select_player_sprite_frame(state);
+    expect(actual == expected,
+           "player animation contract should map to the expected sprite index");
+  };
+
+  assert_index(static_cast<std::uint8_t>(comic2::PlayerAnimationState::Idle), 0,
+               true, 0U);
+  assert_index(
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::WalkCycle), 0,
+      true, 1U);
+  assert_index(
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::WalkCycle), 1,
+      true, 2U);
+  assert_index(
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::WalkCycle), 2,
+      true, 3U);
+  assert_index(
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::JumpRise), 0,
+      true, 4U);
+  assert_index(static_cast<std::uint8_t>(comic2::PlayerAnimationState::Attack),
+               0, true, 5U);
+  assert_index(static_cast<std::uint8_t>(comic2::PlayerAnimationState::Hurt), 0,
+               true, 6U);
+  assert_index(static_cast<std::uint8_t>(comic2::PlayerAnimationState::Death),
+               0, true, 7U);
+
+  assert_index(static_cast<std::uint8_t>(comic2::PlayerAnimationState::Idle), 0,
+               false, 8U);
+  assert_index(
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::WalkCycle), 2,
+      false, 11U);
+  assert_index(
+      static_cast<std::uint8_t>(comic2::PlayerAnimationState::JumpRise), 0,
+      false, 12U);
+  assert_index(static_cast<std::uint8_t>(comic2::PlayerAnimationState::Attack),
+               0, false, 13U);
+  assert_index(static_cast<std::uint8_t>(comic2::PlayerAnimationState::Hurt), 0,
+               false, 14U);
+  assert_index(static_cast<std::uint8_t>(comic2::PlayerAnimationState::Death),
+               0, false, 15U);
+}
+
 } // namespace
 
 void run_subsystem_scaffold_tests() {
@@ -1389,6 +1450,7 @@ void run_subsystem_scaffold_tests() {
   test_room_loader_falls_back_when_canonical_room_file_is_corrupt();
   test_room_loader_loads_level_tileset_from_asset_root_tuple();
   test_phase11_masked_sprite_sheet_decode_synthetic();
+  test_phase11_player_animation_state_mapping_contract();
   test_phase11_fr000_masked_sprite_sheet_decode_parity();
   test_phase11_level_resource_tuple_catalog();
   test_phase11_fr000_tileset_decode_parity();
