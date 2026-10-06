@@ -19,10 +19,10 @@
 
 namespace comic2 {
 
-std::size_t select_player_sprite_frame(const RuntimeState &state) {
+namespace {
+std::size_t fallback_player_sprite_frame_index(const RuntimeState &state) {
   const auto animation_state =
       static_cast<PlayerAnimationState>(state.player.animation_state);
-
   const auto facing_offset = state.player.facing_right ? 0U : 8U;
 
   switch (animation_state) {
@@ -42,6 +42,112 @@ std::size_t select_player_sprite_frame(const RuntimeState &state) {
   default:
     return static_cast<std::size_t>(state.player.hp % 4U) + facing_offset;
   }
+}
+
+bool has_valid_player_sprite_sheet(const RuntimeState &state) {
+  if (state.level_sprites.size() < 16U) {
+    return false;
+  }
+
+  return std::all_of(state.level_sprites.begin(), state.level_sprites.end(),
+                     [](const MaskedSpriteRecord &sprite) {
+                       return sprite.width_pixels > 0U &&
+                              sprite.height_rows > 0U &&
+                              !sprite.mask_bytes.empty() &&
+                              !sprite.planes[0].empty();
+                     });
+}
+
+std::size_t mapped_player_sprite_frame_index(const RuntimeState &state) {
+  const auto animation_state =
+      static_cast<PlayerAnimationState>(state.player.animation_state);
+  const auto facing_offset = state.player.facing_right ? 0U : 8U;
+
+  std::size_t base_index = 0U;
+  switch (animation_state) {
+  case PlayerAnimationState::Idle:
+    base_index = 0U;
+    break;
+  case PlayerAnimationState::WalkCycle:
+    base_index =
+        1U + (static_cast<std::size_t>(state.player.animation_frame) % 3U);
+    break;
+  case PlayerAnimationState::JumpRise:
+  case PlayerAnimationState::JumpFall:
+    base_index = 4U;
+    break;
+  case PlayerAnimationState::Attack:
+    base_index = 5U;
+    break;
+  case PlayerAnimationState::Hurt:
+    base_index = 6U;
+    break;
+  case PlayerAnimationState::Death:
+    base_index = 7U;
+    break;
+  default:
+    base_index = 0U;
+    break;
+  }
+
+  return base_index + facing_offset;
+}
+
+bool draw_level_sprite_record(EgaPlanarSurface &frame,
+                              const RuntimeState &state,
+                              std::size_t sprite_index) {
+  if (sprite_index >= state.level_sprites.size()) {
+    return false;
+  }
+
+  const auto &record = state.level_sprites[sprite_index];
+  if (record.width_pixels == 0U || record.height_rows == 0U ||
+      record.mask_bytes.size() != record.mask_byte_count() ||
+      record.planes[0].size() != record.mask_byte_count() ||
+      record.mask_bytes.empty() || record.planes[0].empty()) {
+    return false;
+  }
+
+  Ega4PlaneImage sprite{};
+  sprite.width_bytes =
+      static_cast<std::uint16_t>((record.width_pixels + 7U) / 8U);
+  sprite.height_rows = record.height_rows;
+  sprite.row_span_bytes = static_cast<std::uint16_t>(
+      sprite.width_bytes * static_cast<std::uint16_t>(record.height_rows));
+
+  for (std::size_t plane = 0; plane < record.planes.size(); ++plane) {
+    const auto &source = record.planes[plane];
+    auto &target = sprite.planes[plane];
+    target.assign(source.begin(), source.end());
+  }
+
+  const std::int32_t px = state.player.x - state.camera_x;
+  const std::int32_t py = state.player.y - state.camera_y;
+  if (!is_sprite_in_viewport(px, py,
+                             static_cast<std::int32_t>(record.width_pixels),
+                             static_cast<std::int32_t>(record.height_rows))) {
+    return true;
+  }
+
+  const std::size_t clamped_px =
+      static_cast<std::size_t>(std::max<std::int16_t>(
+          0, std::min<std::int16_t>(px, frame.width_pixels() -
+                                            record.width_pixels)));
+  const std::size_t clamped_py =
+      static_cast<std::size_t>(std::max<std::int16_t>(
+          0, std::min<std::int16_t>(py,
+                                    frame.height_rows() - record.height_rows)));
+  gfx_rle_blit_masked_or_4plane(frame, clamped_px, clamped_py, sprite);
+  return true;
+}
+} // namespace
+
+std::size_t select_player_sprite_frame(const RuntimeState &state) {
+  if (has_valid_player_sprite_sheet(state)) {
+    return mapped_player_sprite_frame_index(state);
+  }
+
+  return fallback_player_sprite_frame_index(state);
 }
 
 bool should_render_player_sprite(const RuntimeState &state) {
@@ -393,6 +499,13 @@ bool draw_room_tilemap_from_asset(EgaPlanarSurface &frame,
 bool draw_player_sprite_from_asset(EgaPlanarSurface &frame,
                                    const RuntimeState &state,
                                    const Ega4PlaneImage &atlas) {
+  if (has_valid_player_sprite_sheet(state)) {
+    const std::size_t sprite_index = select_player_sprite_frame(state);
+    if (draw_level_sprite_record(frame, state, sprite_index)) {
+      return true;
+    }
+  }
+
   const std::size_t sprite_index = select_player_sprite_frame(state);
   Ega4PlaneImage sprite;
   if (!extract_tile_from_asset(atlas, sprite_index, sprite)) {
