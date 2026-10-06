@@ -591,8 +591,8 @@ void test_room_loader_populates_runtime_state_from_resource_buffer() {
   expect(state.room_grid.row_pointers == std::vector<std::uint16_t>{0, 4, 8},
          "room loader should build row pointer table");
   const std::vector<std::uint8_t> expected_tile_data =
-      std::vector<std::uint8_t>{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x00,
-                               0x00, 0x00, 0x00, 0x00, 0x00};
+      std::vector<std::uint8_t>{0x11, 0x22, 0x33, 0x44, 0x55, 0x66,
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
   expect(state.room_grid.tile_data == expected_tile_data,
          "room loader should store only room tile indices, not the trailing "
          "row-pointer and object metadata");
@@ -600,9 +600,8 @@ void test_room_loader_populates_runtime_state_from_resource_buffer() {
 
 void test_room_loader_decodes_signed_rle_room_tilemap_dimensions() {
   std::vector<std::uint8_t> decoded_room_bytes(0x2D2, 0x00);
-  const std::vector<std::uint8_t> tile_data = {0x00, 0x01, 0x02, 0x03,
-                                              0x04, 0x05, 0x06, 0x07,
-                                              0x08, 0x09, 0x0A, 0x0B};
+  const std::vector<std::uint8_t> tile_data = {
+      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B};
   std::copy(tile_data.begin(), tile_data.end(), decoded_room_bytes.begin());
   decoded_room_bytes[0x2A0] = 0x00;
   decoded_room_bytes[0x2A1] = 0x00;
@@ -628,8 +627,9 @@ void test_room_loader_decodes_signed_rle_room_tilemap_dimensions() {
   const bool loaded = comic2::load_room_tilemap_from_resource_buffer(
       state, resource_bytes, 0, 0);
 
-  expect(loaded,
-         "valid Signed-RLE room tilemap payload should decode into runtime state");
+  expect(
+      loaded,
+      "valid Signed-RLE room tilemap payload should decode into runtime state");
   expect(state.room_grid.tile_w == 4 && state.room_grid.tile_h == 3,
          "room loader should preserve Level 0 Room 0 dimensions");
   expect(state.room_grid.tile_data == tile_data,
@@ -638,9 +638,8 @@ void test_room_loader_decodes_signed_rle_room_tilemap_dimensions() {
 
 void test_room_loader_validates_tile_indices_against_tileset_size() {
   std::vector<std::uint8_t> decoded_room_bytes(0x2D2, 0x00);
-  const std::vector<std::uint8_t> tile_data = {0x00, 0x01, 0x02, 0x03,
-                                              0x04, 0x05, 0x06, 0x07,
-                                              0x08, 0x09, 0x0A, 0x0B};
+  const std::vector<std::uint8_t> tile_data = {
+      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B};
   std::copy(tile_data.begin(), tile_data.end(), decoded_room_bytes.begin());
   decoded_room_bytes[0x2A0] = 0x00;
   decoded_room_bytes[0x2A1] = 0x00;
@@ -674,8 +673,7 @@ void test_room_loader_validates_tile_indices_against_tileset_size() {
 void test_room_loader_rejects_out_of_range_tile_indices_cleanly() {
   std::vector<std::uint8_t> decoded_room_bytes(0x2D2, 0x00);
   const std::vector<std::uint8_t> tile_data = {
-      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-      0x08, 0x09, 0x0A, 0x10,
+      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x10,
   };
   std::copy(tile_data.begin(), tile_data.end(), decoded_room_bytes.begin());
   decoded_room_bytes[0x2A0] = 0x00;

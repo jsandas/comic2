@@ -262,12 +262,11 @@ bool validate_room_tile_indices_for_tileset(
     return true;
   }
 
-  for (const auto tile_index : room_tile_data) {
-    if (static_cast<std::size_t>(tile_index) >= tileset_tile_count) {
-      return false;
-    }
-  }
-  return true;
+  return std::all_of(room_tile_data.begin(), room_tile_data.end(),
+                     [tileset_tile_count](std::uint8_t tile_index) {
+                       return static_cast<std::size_t>(tile_index) <
+                              tileset_tile_count;
+                     });
 }
 
 std::optional<std::vector<MappedObject12>>
@@ -370,9 +369,8 @@ bool load_room_tilemap_from_resource_buffer(RuntimeState &state,
     return false;
   }
 
-  const auto room_tile_data =
-      extract_room_tile_data(decoded.bytes, spec->room_entry.tile_w,
-                             spec->room_entry.tile_h);
+  const auto room_tile_data = extract_room_tile_data(
+      decoded.bytes, spec->room_entry.tile_w, spec->room_entry.tile_h);
   if (!room_tile_data.has_value()) {
     return false;
   }
@@ -421,9 +419,8 @@ bool load_room_tilemap_from_resource_file(
     return false;
   }
 
-  const auto room_tile_data =
-      extract_room_tile_data(decoded.bytes, spec->room_entry.tile_w,
-                             spec->room_entry.tile_h);
+  const auto room_tile_data = extract_room_tile_data(
+      decoded.bytes, spec->room_entry.tile_w, spec->room_entry.tile_h);
   if (!room_tile_data.has_value()) {
     return false;
   }
@@ -484,13 +481,12 @@ bool load_room_tilemap_from_asset_root(RuntimeState &state,
     }
   }
 
-  for (const auto &candidate : discover_room_payload_candidates(root)) {
-    if (try_load_room_payload_from_file(state, candidate, level, room)) {
-      return true;
-    }
-  }
-
-  return false;
+  const auto candidates = discover_room_payload_candidates(root);
+  return std::any_of(candidates.begin(), candidates.end(),
+                     [&](const std::filesystem::path &candidate) {
+                       return try_load_room_payload_from_file(state, candidate,
+                                                              level, room);
+                     });
 }
 
 } // namespace comic2
