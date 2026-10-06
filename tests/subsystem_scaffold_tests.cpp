@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <span>
 #include <stdexcept>
 #include <vector>
 
@@ -1175,6 +1176,127 @@ void test_room_loader_loads_level_tileset_from_asset_root_tuple() {
   std::filesystem::remove_all(root);
 }
 
+std::vector<std::uint8_t> make_test_masked_sprite_sheet_bytes() {
+  auto append_record = [](std::vector<std::uint8_t> &out, std::uint16_t width,
+                          std::uint16_t height,
+                          const std::vector<std::uint8_t> &mask,
+                          const std::array<std::vector<std::uint8_t>, 4> &planes) {
+    const std::size_t image_offset = mask.size();
+    const std::size_t record_size = 6U + image_offset + (4U * mask.size());
+    std::vector<std::uint8_t> record(record_size, 0x00);
+    record[0] = static_cast<std::uint8_t>(width & 0xFFU);
+    record[1] = static_cast<std::uint8_t>((width >> 8) & 0xFFU);
+    record[2] = static_cast<std::uint8_t>(height & 0xFFU);
+    record[3] = static_cast<std::uint8_t>((height >> 8) & 0xFFU);
+    record[4] = static_cast<std::uint8_t>(image_offset & 0xFFU);
+    record[5] = static_cast<std::uint8_t>((image_offset >> 8) & 0xFFU);
+    std::copy(mask.begin(), mask.end(), record.begin() + 6);
+    const std::size_t plane_bytes = mask.size();
+    for (std::size_t plane = 0; plane < 4; ++plane) {
+      std::copy(planes[plane].begin(), planes[plane].end(),
+                record.begin() + static_cast<std::ptrdiff_t>(6U + image_offset +
+                                                            plane * plane_bytes));
+    }
+    out.insert(out.end(), record.begin(), record.end());
+  };
+
+  std::vector<std::uint8_t> payload;
+
+  std::vector<std::uint8_t> record1_mask(48, 0x00);
+  for (std::size_t i = 0; i < record1_mask.size(); ++i) {
+    record1_mask[i] = static_cast<std::uint8_t>((i % 5U) + 1U);
+  }
+  std::array<std::vector<std::uint8_t>, 4> record1_planes = {
+      std::vector<std::uint8_t>(48, 0x11U),
+      std::vector<std::uint8_t>(48, 0x22U),
+      std::vector<std::uint8_t>(48, 0x33U),
+      std::vector<std::uint8_t>(48, 0x44U),
+  };
+  append_record(payload, 16, 24, record1_mask, record1_planes);
+
+  std::vector<std::uint8_t> record2_mask(8, 0x00);
+  for (std::size_t i = 0; i < record2_mask.size(); ++i) {
+    record2_mask[i] = static_cast<std::uint8_t>((i % 7U) + 2U);
+  }
+  std::array<std::vector<std::uint8_t>, 4> record2_planes = {
+      std::vector<std::uint8_t>(8, 0xAAU),
+      std::vector<std::uint8_t>(8, 0xBBU),
+      std::vector<std::uint8_t>(8, 0xCCU),
+      std::vector<std::uint8_t>(8, 0xDDU),
+  };
+  append_record(payload, 8, 8, record2_mask, record2_planes);
+
+  std::vector<std::uint8_t> terminator(6, 0x00);
+  payload.insert(payload.end(), terminator.begin(), terminator.end());
+  return payload;
+}
+
+void test_phase11_masked_sprite_sheet_decode_synthetic() {
+  const auto payload = make_test_masked_sprite_sheet_bytes();
+  const auto decoded = comic2::decode_masked_sprite_sheet(payload);
+
+  expect(decoded.has_value(), "synthetic sprite payload should decode");
+  expect_eq(decoded->size(), 2,
+            "synthetic sprite sheet should decode exactly two records");
+
+  expect(decoded->at(0).width_pixels == 16,
+         "first sprite width should match the synthetic record");
+  expect(decoded->at(0).height_rows == 24,
+         "first sprite height should match the synthetic record");
+  expect(decoded->at(0).image_data_off == 48,
+         "first sprite image offset should match mask byte count");
+  expect(decoded->at(0).mask_bytes.size() == 48,
+         "first sprite mask should be 2 bytes x 24 rows");
+  expect(decoded->at(0).planes[0].size() == 48,
+         "first sprite plane 0 should contain the expected image bytes");
+  expect(decoded->at(0).planes[0][0] == 0x11U,
+         "first sprite plane 0 should preserve its synthetic image bytes");
+  expect(decoded->at(0).planes[3][47] == 0x44U,
+         "first sprite plane 3 should preserve the last synthetic image byte");
+
+  expect(decoded->at(1).width_pixels == 8,
+         "second sprite width should match the synthetic record");
+  expect(decoded->at(1).mask_bytes.size() == 8,
+         "second sprite mask size should match 8x8 / 8 bytes");
+  expect(decoded->at(1).planes[1][0] == 0xBBU,
+         "second sprite plane 1 should preserve raw image data");
+  expect(decoded->at(1).planes[3][7] == 0xDDU,
+         "second sprite plane 3 should preserve the last raw image byte");
+}
+
+void test_phase11_fr000_masked_sprite_sheet_decode_parity() {
+  const auto root = find_original_asset_root();
+  expect(!root.empty(), "original asset root should be discoverable");
+
+  const auto path = root / "FR000.2";
+  expect(std::filesystem::exists(path), "FR000.2 should exist in the original asset root");
+
+  const auto bytes = comic2::load_file_bytes(path);
+  expect(bytes.has_value(), "FR000.2 should be readable for sprite decode parity");
+
+  const auto decoded = comic2::decode_masked_sprite_sheet(
+      std::span<const std::uint8_t>(*bytes));
+  expect(decoded.has_value(), "FR000.2 should decode as a valid sprite sheet");
+  expect_eq(decoded->size(), 32,
+            "FR000.2 should contain 32 sequential masked records");
+  expect(decoded->front().width_pixels == 16,
+         "first sprite in FR000.2 should be a 16-pixel wide Comic frame");
+  expect(decoded->front().height_rows == 24,
+         "first sprite in FR000.2 should be 24 rows tall");
+  expect(decoded->front().mask_bytes.size() == 48,
+         "first FR000.2 mask should be 48 bytes for 16x24 data");
+  expect(decoded->front().planes.size() == 4,
+         "FR000.2 sprite plane array should carry four image planes");
+  expect(decoded->front().planes[0].size() == 48,
+         "FR000.2 first sprite plane 0 should be 48 bytes");
+  expect(decoded->front().planes[1].size() == 48,
+         "FR000.2 first sprite plane 1 should be 48 bytes");
+  expect(decoded->front().planes[2].size() == 48,
+         "FR000.2 first sprite plane 2 should be 48 bytes");
+  expect(decoded->front().planes[3].size() == 48,
+         "FR000.2 first sprite plane 3 should be 48 bytes");
+}
+
 void test_phase11_level_resource_tuple_catalog() {
   const auto root = find_original_asset_root();
   expect(!root.empty(), "original asset root should be discoverable");
@@ -1263,6 +1385,8 @@ void run_subsystem_scaffold_tests() {
   test_room_loader_prefers_exact_level_tuple_room_file();
   test_room_loader_falls_back_when_canonical_room_file_is_corrupt();
   test_room_loader_loads_level_tileset_from_asset_root_tuple();
+  test_phase11_masked_sprite_sheet_decode_synthetic();
+  test_phase11_fr000_masked_sprite_sheet_decode_parity();
   test_phase11_level_resource_tuple_catalog();
   test_phase11_fr000_tileset_decode_parity();
 }

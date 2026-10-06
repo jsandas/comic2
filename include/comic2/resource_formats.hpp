@@ -43,6 +43,21 @@ struct Ega4PlaneImage {
   bool operator==(const Ega4PlaneImage &) const = default;
 };
 
+struct MaskedSpriteRecord {
+  std::uint16_t width_pixels = 0;
+  std::uint16_t height_rows = 0;
+  std::uint16_t image_data_off = 0;
+  std::vector<std::uint8_t> mask_bytes;
+  std::array<std::vector<std::uint8_t>, kEgaPlaneCount> planes;
+
+  std::size_t mask_byte_count() const {
+    return static_cast<std::size_t>(width_pixels / 8U) *
+           static_cast<std::size_t>(height_rows);
+  }
+
+  bool operator==(const MaskedSpriteRecord &) const = default;
+};
+
 struct LevelResourceTuple {
   std::uint16_t level_id = 0;
   std::string tileset_filename;

@@ -183,6 +183,7 @@ struct RuntimeState {
   RoomTileGrid room_grid;
   std::array<std::uint16_t, 2> tile_hazard_bounds{0, 0};
   std::vector<Ega4PlaneImage> level_tileset;
+  std::vector<MaskedSpriteRecord> level_sprites;
   std::vector<std::uint8_t> room_resource_bytes;
   std::vector<std::uint8_t> level_metadata_bytes;
   FrpakCatalog frpak_catalog;
