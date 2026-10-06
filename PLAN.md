@@ -1275,6 +1275,7 @@ Cross-referencing `comic2.asm` (specifically `load_resource` at line 2396 and ta
 - [x] Implement `resolve_level_resource_tuple(uint16_t level_id, const std::filesystem::path &root)` with support for level 4 tileset reuse (`FR001.0`) and optional script nullability.
 - [x] Replace heuristic `FR###.#` directory searches in `src/room_loader.cpp` with exact tuple-based path resolution, while keeping the old scan as a guarded fallback for missing/corrupt canonical files.
 - [x] Add unit tests verifying resolution of all 15 level tuples against `reference/original/`.
+- [x] Harden original-asset discovery so tests and bootstrap logic can resolve the asset root when executed from a temp working directory, repo subdirectory, or CI workspace root instead of assuming the current process CWD is the repo root.
 
 #### 11.2 16x16 Planar Tileset Decoder (`FR###.0`)
 - [x] Implement `decode_level_tileset(std::span<const uint8_t> payload)` in `src/resource_loader.cpp`.

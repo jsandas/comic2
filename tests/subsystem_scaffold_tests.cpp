@@ -1029,19 +1029,55 @@ void test_bootstrap_populates_frpak_catalog_for_known_files() {
 }
 
 std::filesystem::path find_original_asset_root() {
-  std::filesystem::path cwd = std::filesystem::current_path();
-  for (int i = 0; i < 6; ++i) {
-    const auto candidate = cwd / "reference" / "original";
-    if (std::filesystem::exists(candidate) &&
-        std::filesystem::is_directory(candidate)) {
-      return candidate;
-    }
-    const auto parent = cwd.parent_path();
-    if (parent == cwd) {
-      break;
-    }
-    cwd = parent;
+  std::vector<std::filesystem::path> seeds;
+
+  const std::filesystem::path file_path(__FILE__);
+  if (file_path.is_absolute()) {
+    seeds.push_back(file_path.parent_path().parent_path());
   }
+
+  seeds.push_back(std::filesystem::current_path());
+
+  if (const char *github_workspace = std::getenv("GITHUB_WORKSPACE");
+      github_workspace != nullptr && *github_workspace != '\0') {
+    seeds.emplace_back(github_workspace);
+  }
+
+  for (const auto &seed : seeds) {
+    std::filesystem::path cursor = seed;
+    for (;;) {
+      const auto reference_candidate = cursor / "reference" / "original";
+      if (std::filesystem::exists(reference_candidate) &&
+          std::filesystem::is_directory(reference_candidate)) {
+        for (const auto &entry :
+             std::filesystem::directory_iterator(reference_candidate)) {
+          const auto name = entry.path().filename().string();
+          if (name.rfind("FRDATA.", 0) == 0 && entry.is_regular_file()) {
+            return reference_candidate;
+          }
+        }
+      }
+
+      const auto original_candidate = cursor / "original";
+      if (std::filesystem::exists(original_candidate) &&
+          std::filesystem::is_directory(original_candidate)) {
+        for (const auto &entry :
+             std::filesystem::directory_iterator(original_candidate)) {
+          const auto name = entry.path().filename().string();
+          if (name.rfind("FRDATA.", 0) == 0 && entry.is_regular_file()) {
+            return original_candidate;
+          }
+        }
+      }
+
+      const auto parent = cursor.parent_path();
+      if (parent == cursor || parent.empty()) {
+        break;
+      }
+      cursor = parent;
+    }
+  }
+
   return {};
 }
 
