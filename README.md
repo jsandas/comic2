@@ -8,7 +8,8 @@ All changes and findings have been synchronized into:
 
 1. The Ghidra project database (`comic2.gpr`): all 182 functions across the binary have been renamed with semantic labels, categorized by subsystem, and tagged with function header purpose comments.
 2. The annotated assembly source (`comic2_annotated.asm`): an 8,582-line 8086 assembly listing with function headers, caller lists, memory references, and line-by-line disassembly.
-3. The comprehensive technical documentation (`CAPTAIN_COMIC_2_REVERSE_ENGINEERING.md`): a full architecture breakdown of the graphics, audio, level streaming, physics, interrupt vectors, and file compression engines.
+3. The comprehensive technical documentation ([docs/CAPTAIN_COMIC_2_REVERSE_ENGINEERING.md](docs/CAPTAIN_COMIC_2_REVERSE_ENGINEERING.md)): a full architecture breakdown of the graphics, audio, level streaming, physics, interrupt vectors, and file compression engines.
+4. Compilable NASM assembly sources ([comic2_nasm.asm](comic2_nasm.asm), [comic2_standalone.asm](comic2_standalone.asm)) and build guide ([docs/NASM.md](docs/NASM.md)): byte-exact real-mode 8086 assembly compilable with standard NASM to a runnable MS-DOS `.EXE`.
 
 ---
 
@@ -74,6 +75,25 @@ The function `sys_generate_system_hash` checksums 64 words from the Video BIOS (
 
 ## Deliverable Files
 
-- `comic2_annotated.asm`: standalone annotated assembly source code.
-- `CAPTAIN_COMIC_2_REVERSE_ENGINEERING.md`: comprehensive reverse engineering architecture report.
-- `comic2.gpr`: saved Ghidra project with synchronized labels, symbols, and function purpose comments.
+- `comic2_nasm.asm`: 100% compilable NASM source for the code segment (`CS:0000`–`CS:D5D0`).
+- `comic2_standalone.asm`: Standalone NASM source packaging MZ header, relocations, code, and data into a playable `comic2.exe`.
+- `comic2_annotated.asm`: Standalone annotated assembly listing with cross-references.
+- `docs/CAPTAIN_COMIC_2_REVERSE_ENGINEERING.md`: Comprehensive reverse engineering architecture report.
+- `docs/NASM.md`: NASM assembly rebuild and verification guide.
+- `run-dosbox.sh`: Script to automatically run the re-assembled game in DOSBox-X.
+- `dosbox_deterministic.conf`: DOSBox-X configuration for deterministic gameplay validation.
+
+---
+
+## Quick Start (Build & Run)
+
+```bash
+# 1. Assemble code segment binary (54,736 bytes):
+nasm -f bin comic2_nasm.asm -o comic2_code.bin
+
+# 2. Assemble complete standalone MS-DOS executable (196,288 bytes):
+nasm -f bin comic2_standalone.asm -o comic2.exe
+
+# 3. Launch in DOSBox-X:
+./run-dosbox.sh
+```

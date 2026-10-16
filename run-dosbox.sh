@@ -11,31 +11,14 @@ RESET='\033[0m'
 
 BUILD_DIR=$PWD/build
 ORIGINAL_DIR="$PWD/original"
-
 EXE_NAME="comic2.exe"
-# EXE_NAME="FR.exe"
-# if [[ -n "${1-}" ]]; then
-#   EXE_NAME="$1"
-# fi
 
-# if [[ ! -d "$ORIGINAL_DIR" ]]; then
-#   echo "Error: assets directory not found: $ORIGINAL_DIR" >&2
-#   exit 1
-# fi
-
-# if [[ ! -d "$BUILD_DIR" ]]; then
-#   echo -e "${RED}Error: build directory not found: $BUILD_DIR${RESET}" >&2
-#   echo -e "${RED}Please build the project first (e.g. 'make build').${RESET}" >&2
-#   exit 1
-# fi
-
-# if [[ -f "$ORIGINAL_DIR/COMIC-C.EXE" ]]; then
-#   echo -e "${GREEN}Deleting existing COMIC-C.EXE in $ORIGINAL_DIR...${RESET}"
-#   rm "$ORIGINAL_DIR/COMIC-C.EXE"
-# fi
-
-# echo -e "${GREEN}Copying built COMIC-C.EXE to $ORIGINAL_DIR...${RESET}"
-# cp "$BUILD_DIR/COMIC-C.EXE" "$ORIGINAL_DIR/COMIC-C.EXE"
+if [[ -f "$PWD/comic2.exe" ]]; then
+  if [[ ! -f "$ORIGINAL_DIR/comic2.exe" ]] || [[ "$PWD/comic2.exe" -nt "$ORIGINAL_DIR/comic2.exe" ]]; then
+    echo -e "${GREEN}Copying newly assembled comic2.exe to $ORIGINAL_DIR...${RESET}"
+    cp "$PWD/comic2.exe" "$ORIGINAL_DIR/comic2.exe"
+  fi
+fi
 
 if ! command -v dosbox-x >/dev/null 2>&1; then
   echo -e "${RED}Error: 'dosbox-x' not found in PATH. Install it (e.g. 'brew install dosbox-x').${RESET}" >&2
