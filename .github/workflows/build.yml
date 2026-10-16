@@ -1,0 +1,32 @@
+name: Build and Verify
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install NASM
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y nasm
+
+      - name: Assemble Code Segment
+        run: nasm -f bin comic2_nasm.asm -o comic2_code.bin
+
+      - name: Verify Code Segment Parity
+        run: |
+          size=$(stat -c%s comic2_code.bin 2>/dev/null || wc -c < comic2_code.bin)
+          echo "comic2_code.bin assembled size: $size bytes"
+          if [ "$size" -ne 54736 ]; then
+            echo "Error: Code segment size mismatch! Expected 54,736 bytes, got $size."
+            exit 1
+          fi
+          echo "✓ Success: Code segment matches exact 54,736 byte specification."

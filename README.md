@@ -87,6 +87,13 @@ The function `sys_generate_system_hash` checksums 64 words from the Video BIOS (
 
 ## Quick Start (Build & Run)
 
+Using `make`:
+```bash
+make all      # Builds comic2_code.bin, comic2.exe, and verifies exact byte parity
+make run      # Launches the assembled game in DOSBox-X
+```
+
+Or manually using NASM:
 ```bash
 # 1. Assemble code segment binary (54,736 bytes):
 nasm -f bin comic2_nasm.asm -o comic2_code.bin

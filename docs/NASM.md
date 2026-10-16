@@ -54,8 +54,15 @@ snd_api_int03:
 
 ## How to Compile and Run
 
-### 1. Prerequisites for Standalone Executable
-`comic2_standalone.asm` embeds `data_0.bin` (the 141,040-byte data segment appended at load module offset `0xD5D0`). If `data_0.bin` is missing, extract it from `original/unpacked.exe`:
+### 1. Build with Make (Recommended)
+```bash
+make all      # Automatically extracts data_0.bin if needed, builds both binaries, and validates exact parity
+make run      # Boots the assembled comic2.exe directly in DOSBox-X
+make verify   # Validates code segment (54,736 B), exe (196,288 B), and all 30 relocation words
+```
+
+### 2. Manual Build with NASM
+If building manually without `make`, first ensure `data_0.bin` is extracted:
 ```bash
 python3 scripts/extract_data.py
 ```
