@@ -77,5 +77,3 @@ The function `sys_generate_system_hash` checksums 64 words from the Video BIOS (
 - `comic2_annotated.asm`: standalone annotated assembly source code.
 - `CAPTAIN_COMIC_2_REVERSE_ENGINEERING.md`: comprehensive reverse engineering architecture report.
 - `comic2.gpr`: saved Ghidra project with synchronized labels, symbols, and function purpose comments.
-
-# comic2
