@@ -6,7 +6,7 @@ The 16-bit real-mode MS-DOS executable `unpacked.exe` has been reverse engineere
 
 All changes and findings have been synchronized into:
 
-1. The Ghidra project database (`comic2.gpr`): all 182 functions across the binary have been renamed with semantic labels, categorized by subsystem, and tagged with function header purpose comments.
+1. The Ghidra automation script ([`scripts/ApplyAllAnnotations.java`](scripts/ApplyAllAnnotations.java)): automatically labels and documents all 182 functions in Ghidra with semantic names, subsystem categories, and purpose comments.
 2. The annotated assembly source (`comic2_annotated.asm`): an 8,582-line 8086 assembly listing with function headers, caller lists, memory references, and line-by-line disassembly.
 3. The comprehensive technical documentation ([docs/CAPTAIN_COMIC_2_REVERSE_ENGINEERING.md](docs/CAPTAIN_COMIC_2_REVERSE_ENGINEERING.md)): a full architecture breakdown of the graphics, audio, level streaming, physics, interrupt vectors, and file compression engines.
 4. Compilable NASM assembly sources ([comic2_nasm.asm](comic2_nasm.asm), [comic2_standalone.asm](comic2_standalone.asm)) and build guide ([docs/NASM.md](docs/NASM.md)): byte-exact real-mode 8086 assembly compilable with standard NASM to a runnable MS-DOS `.EXE`.
