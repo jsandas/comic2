@@ -73,15 +73,23 @@ The function `sys_generate_system_hash` checksums 64 words from the Video BIOS (
 
 ---
 
-## Deliverable Files
+## Deliverable Files & Documentation
 
-- `comic2_nasm.asm`: 100% compilable NASM source for the code segment (`CS:0000`–`CS:D5D0`).
-- `comic2_standalone.asm`: Standalone NASM source packaging MZ header, relocations, code, and data into a playable `comic2.exe`.
-- `comic2_annotated.asm`: Standalone annotated assembly listing with cross-references.
-- `docs/CAPTAIN_COMIC_2_REVERSE_ENGINEERING.md`: Comprehensive reverse engineering architecture report.
-- `docs/NASM.md`: NASM assembly rebuild and verification guide.
-- `run-dosbox.sh`: Script to automatically run the re-assembled game in DOSBox-X.
-- `dosbox_deterministic.conf`: DOSBox-X configuration for deterministic gameplay validation.
+### Assembly Sources & Build Files
+- [`comic2_nasm.asm`](comic2_nasm.asm): 100% compilable NASM source for the code segment (`CS:0000`–`CS:D5D0`).
+- [`comic2_standalone.asm`](comic2_standalone.asm): Standalone NASM source packaging MZ header, relocations, code, and data into a playable `comic2.exe`.
+- [`comic2_annotated.asm`](comic2_annotated.asm): Standalone annotated assembly listing with procedure cross-references.
+- [`Makefile`](Makefile): Automated build, verification, and execution workflow.
+- [`run-dosbox.sh`](run-dosbox.sh): Script to automatically sync and run the re-assembled game in DOSBox-X.
+- [`dosbox_deterministic.conf`](dosbox_deterministic.conf): DOSBox-X configuration for deterministic gameplay validation.
+
+### Technical Documentation
+- [`docs/CAPTAIN_COMIC_2_REVERSE_ENGINEERING.md`](docs/CAPTAIN_COMIC_2_REVERSE_ENGINEERING.md): Comprehensive 182-function reverse engineering architecture report.
+- [`docs/NASM.md`](docs/NASM.md): NASM assembly rebuild and relocation verification guide.
+- [`docs/FILE_FORMATS.md`](docs/FILE_FORMATS.md): Detailed specifications for `KEYS.DEF`, `FR.CFG`, `GAME.000`–`GAME.003`, and room quad-files.
+- [`docs/MEMORY_MAP.md`](docs/MEMORY_MAP.md): Real-mode segment allocations, EGA VRAM double-buffering, and `DS`/`CS` state variable catalog.
+- [`docs/MODDING.md`](docs/MODDING.md): Practical recipes for infinite lives, super-jump, rapid fire, and copy-protection bypass.
+- [`LICENSE.md`](LICENSE.md): MIT tool license and historical software preservation statement.
 
 ---
 

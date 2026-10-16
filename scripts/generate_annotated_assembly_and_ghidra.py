@@ -1,8 +1,6 @@
 import os
 import re
 import sys
-sys.path.append('scripts')
-from parse_functions import parse_file
 
 # Complete Dictionary of all 182 functions
 ANNOTATIONS = {

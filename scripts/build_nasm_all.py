@@ -11,7 +11,13 @@ for addr, (name, cat, desc) in ANNOTATIONS.items():
     off = addr.split(':')[1].lower()
     func_labels[off] = (name, cat, desc)
 
-with open('ghidra_code0_listing.txt', 'r') as f:
+import os
+listing_paths = ['scripts/data/ghidra_code0_listing.txt', 'ghidra_code0_listing.txt']
+listing_file = next((p for p in listing_paths if os.path.exists(p)), None)
+if not listing_file:
+    raise FileNotFoundError(f"Ghidra listing file not found in: {listing_paths}")
+
+with open(listing_file, 'r') as f:
     raw_lines = f.readlines()
 
 JUMP_MNEMS = {

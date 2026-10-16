@@ -10,7 +10,9 @@ import java.io.PrintWriter;
 public class ExportGhidraListing extends GhidraScript {
     @Override
     public void run() throws Exception {
-        File outFile = new File("/Users/hedge/workspace/comic2-rea/ghidra_code0_listing.txt");
+        File outDir = new File("scripts/data");
+        if (!outDir.exists()) outDir.mkdirs();
+        File outFile = new File("scripts/data/ghidra_code0_listing.txt");
         PrintWriter writer = new PrintWriter(outFile);
 
         Listing listing = currentProgram.getListing();
