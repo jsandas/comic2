@@ -181,6 +181,37 @@ vid_fade_screen:
     INT3                                 ; 1000:01bf
 
 ; ------------------------------------------------------------------------------
+; FUNCTION: ui_intro_cutscene_setup  [UI / Cutscene]
+; ADDRESS:  1000:01c0  (Length: 0x42 bytes)
+; PURPOSE:  Fades screen, loads title palette, plays intro melody, and jumps to story screen.
+; ------------------------------------------------------------------------------
+ui_intro_cutscene_setup:
+    CALL sys_flush_keyboard_buffer       ; 1000:01c0
+    PUSH DS                              ; 1000:01c3
+    MOV AX,0x3206                        ; 1000:01c4 (relocated SEG_PALETTE)
+    MOV DS,AX                            ; 1000:01c7
+    MOV SI,0x1cd0                        ; 1000:01c9
+    MOV DI,word ptr CS:[0x773f]          ; 1000:01cc
+    CALL 0x1000:79c7                     ; 1000:01d1 ; -> vid_load_palette_buffer
+    POP DS                               ; 1000:01d4
+    MOV DX,0x1f5                         ; 1000:01d5
+    MOV DI,word ptr CS:[0x773f]          ; 1000:01d8
+    CALL 0x1000:7a13                     ; 1000:01dd ; -> vid_apply_palette
+    MOV DX,0x24                          ; 1000:01e0
+    CALL 0x1000:015d                     ; 1000:01e3 ; -> vid_set_ega_palette
+    CALL 0x1000:774e                     ; 1000:01e6 ; -> vid_wait_vblank
+    MOV AX,0x1                           ; 1000:01e9
+    MOV BX,0x96b6                        ; 1000:01ec
+    MOV CX,0x1                           ; 1000:01ef
+    INT3                                 ; 1000:01f2
+    CALL sys_flush_keyboard_buffer       ; 1000:01f3
+    MOV AX,0xd                           ; 1000:01f6
+    INT 0x10                             ; 1000:01f9
+    CALL 0x1000:7741                     ; 1000:01fb ; -> vid_init_ega_regs
+    JMP 0x1000:63ac                      ; 1000:01fe ; -> ui_story_screen
+    RET                                  ; 1000:0201
+
+; ------------------------------------------------------------------------------
 ; FUNCTION: sys_fatal_error  [System / Error]
 ; ADDRESS:  1000:0202  (Length: 0x12 bytes)
 ; CALLERS:  FUN_1000_633c, FUN_1000_2022, FUN_1000_2049, FUN_1000_631a, FUN_1000_6668, FUN_1000_79a2, FUN_1000_1ffe, FUN_1000_1fa4, FUN_1000_2072
@@ -204,6 +235,13 @@ sys_fatal_error:
 sys_exit_to_dos:
     MOV AX,0x2                           ; 1000:0215
     INT3                                 ; 1000:0218
+    CALL sys_restore_all_interrupts      ; 1000:0219
+    MOV AX,[0x0]                         ; 1000:021c
+    INT 0x10                             ; 1000:021f
+    LEA BX,[0x35]                        ; 1000:0221
+    MOV AH,0x4c                          ; 1000:0225
+    INT 0x21                             ; 1000:0227
+    DW 0x0000                            ; 1000:0229
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: vid_set_active_page_0  [Video / Paging]
@@ -228,6 +266,52 @@ vid_set_active_page_1:
     RET                                  ; 1000:0244
 
 ; ------------------------------------------------------------------------------
+; IN-CODE HARDWARE & INPUT STATE TABLE (CS:0245 - CS:0279)  (Length: 53 bytes)
+; ------------------------------------------------------------------------------
+; 1000:0245  game_tick_flag          db 0x00
+; 1000:0246  irq0_parity             db 0x00
+; 1000:0247  sound_is_playing        db 0x00
+; 1000:0248  sound_is_enabled        db 0x01
+; 1000:0249  sound_priority          db 0x00
+; 1000:024a  sound_data_offset       dw 0x0000
+; 1000:024c  sound_note_counter      dw 0x0000
+; 1000:024e  sound_data_segment      dw 0x0000
+; 1000:0250  scancode_esc            db 0x01
+; 1000:0251  scancode_f1             db 0x3b (Unmute)
+; 1000:0252  scancode_f2             db 0x3c (Mute)
+; 1000:0253  scancode_f3             db 0x3d
+; 1000:0254  scancode_f4             db 0x3e
+; 1000:0255  scancode_pgup           db 0x49
+; 1000:0256  scancode_pgdn           db 0x51
+; 1000:0257  scancode_home           db 0x47
+; 1000:0258  key_state_left          db 0x00
+; 1000:0259  key_state_right         db 0x00
+; 1000:025a  key_state_up            db 0x00
+; 1000:025b  key_state_down          db 0x00
+; 1000:025c  key_state_jump          db 0x00
+; 1000:025d  key_state_fire          db 0x00
+; 1000:025e  map_scancode_left       db 0x4b (Left Arrow)
+; 1000:025f  map_scancode_right      db 0x4d (Right Arrow)
+; 1000:0260  map_scancode_up         db 0x48 (Up Arrow)
+; 1000:0261  map_scancode_down       db 0x50 (Down Arrow)
+; 1000:0262  map_scancode_jump       db 0x39 (Spacebar)
+; 1000:0263  map_scancode_fire       db 0x52 (Insert)
+; 1000:0264  key_state_jump_tmp      db 0x00
+; 1000:0265  key_state_fire_tmp      db 0x00
+; 1000:0266  key_state_right_tmp     db 0x00
+; 1000:0267  key_state_left_tmp      db 0x00
+; 1000:0268  key_state_up_tmp        db 0x00
+; 1000:0269  key_state_down_tmp      db 0x00
+; 1000:026a  joystick_temp_x         dw 0x0000
+; 1000:026c  joystick_temp_y         dw 0x0000
+; 1000:026e  joystick_x_low          dw 0x0000
+; 1000:0270  joystick_x_high         dw 0x0000
+; 1000:0272  joystick_y_low          dw 0x0000
+; 1000:0274  joystick_y_high         dw 0x0000
+; 1000:0276  joystick_is_calibrated  dw 0x0000
+; 1000:0278  current_melody_ptr      dw 0x0000
+
+; ------------------------------------------------------------------------------
 ; FUNCTION: timer_delay_ticks  [System / Timing]
 ; ADDRESS:  1000:027a  (Length: 0x12 bytes)
 ; CALLERS:  FUN_1000_3c13, FUN_1000_21f2, FUN_1000_20fe, FUN_1000_3db6, FUN_1000_2341, FUN_1000_46e6, entry, FUN_1000_7278
@@ -240,6 +324,45 @@ timer_delay_ticks:
     DEC AX                               ; 1000:0288
     JNZ 0x1000:027a                      ; 1000:0289 ; -> 1000:027a
     RET                                  ; 1000:028b
+
+; ------------------------------------------------------------------------------
+; FUNCTION: sys_print_string  [System / Text]
+; ADDRESS:  1000:028c  (Length: 0x13 bytes)
+; PURPOSE:  Prints null-terminated string at DS:BX using BIOS teletype INT 10h AH=0Eh.
+; ------------------------------------------------------------------------------
+sys_print_string:
+    MOV AL,[BX]                          ; 1000:028c
+    INC BX                               ; 1000:028e
+    OR AL,AL                             ; 1000:028f
+    JZ .done                             ; 1000:0291
+    PUSH BX                              ; 1000:0293
+    MOV BX,0x7                           ; 1000:0294
+    MOV AH,0xe                           ; 1000:0297
+    INT 0x10                             ; 1000:0299
+    POP BX                               ; 1000:029b
+    JMP sys_print_string                 ; 1000:029c
+.done:
+    RET                                  ; 1000:029e
+
+; ------------------------------------------------------------------------------
+; FUNCTION: sys_print_xor_string  [System / Text]
+; ADDRESS:  1000:029f  (Length: 0x15 bytes)
+; PURPOSE:  Decodes and prints XOR 0x25 obfuscated string at DS:BX via BIOS teletype INT 10h AH=0Eh.
+; ------------------------------------------------------------------------------
+sys_print_xor_string:
+    MOV AL,[BX]                          ; 1000:029f
+    INC BX                               ; 1000:02a1
+    XOR AL,0x25                          ; 1000:02a2
+    OR AL,AL                             ; 1000:02a4
+    JZ .done                             ; 1000:02a6
+    PUSH BX                              ; 1000:02a8
+    MOV BX,0x7                           ; 1000:02a9
+    MOV AH,0xe                           ; 1000:02ac
+    INT 0x10                             ; 1000:02ae
+    POP BX                               ; 1000:02b0
+    JMP sys_print_xor_string             ; 1000:02b1
+.done:
+    RET                                  ; 1000:02b3
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: vid_init_screen_pages  [Video / Paging]
@@ -269,11 +392,310 @@ vid_init_screen_pages:
     INT3                                 ; 1000:02e9
 
 ; ------------------------------------------------------------------------------
-; FUNCTION: sys_restore_interrupts  [System / Interrupts]
-; ADDRESS:  1000:0599  (Length: 0x25 bytes)
-; CALLERS:  FUN_1000_660b, FUN_1000_7057, FUN_1000_6668, FUN_1000_0202
-; PURPOSE:  Restores original BIOS and DOS interrupt vectors (INT 08h, 09h, 15h, 23h, 03h) before exit.
+; FUNCTION: file_load_keys_def_and_prompt  [Input / Config]
+; ADDRESS:  1000:02ea  (Length: 0x52 bytes)
+; PURPOSE:  Loads KEYBOARD.DEF; prompts user or configures keys/joystick.
 ; ------------------------------------------------------------------------------
+file_load_keys_def_and_prompt:
+    LEA DX,[0x1ff]                       ; 1000:02ea
+    MOV AX,0x3d00                        ; 1000:02ee
+    INT 0x21                             ; 1000:02f1
+    JC .prompt_user                      ; 1000:02f3
+    MOV BX,AX                            ; 1000:02f5
+    PUSH DS                              ; 1000:02f7
+    MOV AX,CS                            ; 1000:02f8
+    MOV DS,AX                            ; 1000:02fa
+    MOV DX,0x25e                         ; 1000:02fc (map_scancode_left)
+    MOV CX,0x6                           ; 1000:02ff
+    MOV AX,0x3f00                        ; 1000:0302
+    INT 0x21                             ; 1000:0305
+    MOV AX,0x3e00                        ; 1000:0307
+    INT 0x21                             ; 1000:030a
+    POP DS                               ; 1000:030c
+.prompt_user:
+    CALL sys_flush_keyboard_buffer       ; 1000:030d
+    CMP byte ptr CS:[0x61],0x25          ; 1000:0310 ('K' - Redefine keys)
+    JNZ .check_exit                      ; 1000:0316
+    JMP input_setup_keyboard             ; 1000:0318
+.check_exit:
+    CMP byte ptr CS:[0x61],0x1           ; 1000:031b (Esc - Exit)
+    JNZ .check_joystick                  ; 1000:0321
+    JMP sys_exit_to_dos                  ; 1000:0323
+.check_joystick:
+    CMP byte ptr CS:[0x61],0x24          ; 1000:0326 ('J' - Calibrate joystick)
+    JZ input_calibrate_joystick          ; 1000:032c
+vid_set_mode_and_init:
+    MOV AX,0xd                           ; 1000:032e
+    INT 0x10                             ; 1000:0331
+    MOV AX,0xa000                        ; 1000:0333
+    MOV ES,AX                            ; 1000:0336
+    CALL 0x1000:7741                     ; 1000:0338 ; -> vid_init_ega_regs
+    RET                                  ; 1000:033b
+
+; ------------------------------------------------------------------------------
+; FUNCTION: input_calibrate_joystick  [Input / Joystick]
+; ADDRESS:  1000:033c  (Length: 0xe8 bytes)
+; PURPOSE:  Calibrates joystick center, upper-left, and lower-right thresholds.
+; ------------------------------------------------------------------------------
+input_calibrate_joystick:
+    MOV AX,0x2                           ; 1000:033c
+    INT 0x10                             ; 1000:033f
+    PUSH DS                              ; 1000:0341
+    MOV AX,0x1d5d                        ; 1000:0342 (relocated SEG_SCRATCH)
+    MOV DS,AX                            ; 1000:0345
+    MOV byte ptr CS:[0x61],0x0           ; 1000:0347
+    LEA DX,[0x0]                         ; 1000:034d
+    MOV AH,0x9                           ; 1000:0351
+    INT 0x21                             ; 1000:0353
+    CALL input_wait_joystick_or_key      ; 1000:0355
+    OR AX,AX                             ; 1000:0358
+    JNZ .read_center                     ; 1000:035a
+    JMP .abort                           ; 1000:035c
+.read_center:
+    MOV AH,0x84                          ; 1000:035f
+    MOV DX,0x1                           ; 1000:0361
+    INT 0x15                             ; 1000:0364
+    MOV word ptr CS:[joystick_temp_x],AX ; 1000:0366
+    MOV word ptr CS:[joystick_temp_y],BX ; 1000:036a
+    LEA DX,[0xa8]                        ; 1000:036f
+    MOV AH,0x9                           ; 1000:0373
+    INT 0x21                             ; 1000:0375
+    CALL input_wait_joystick_or_key      ; 1000:0377
+    OR AX,AX                             ; 1000:037a
+    JNZ .read_upper_left                 ; 1000:037c
+    JMP .abort                           ; 1000:037e
+.read_upper_left:
+    MOV AH,0x84                          ; 1000:0381
+    MOV DX,0x1                           ; 1000:0383
+    INT 0x15                             ; 1000:0386
+    MOV BX,word ptr CS:[joystick_temp_x] ; 1000:0388
+    SUB BX,AX                            ; 1000:038d
+    SHR BX,1                             ; 1000:038f
+    MOV word ptr CS:[joystick_x_low],BX  ; 1000:0391
+    LEA DX,[0xe6]                        ; 1000:0396
+    MOV AH,0x9                           ; 1000:039a
+    INT 0x21                             ; 1000:039c
+    CALL input_wait_joystick_or_key      ; 1000:039e
+    OR AX,AX                             ; 1000:03a1
+    JNZ .read_lower_right                ; 1000:03a3
+    JMP .abort                           ; 1000:03a5
+.read_lower_right:
+    MOV AH,0x84                          ; 1000:03a8
+    MOV DX,0x1                           ; 1000:03aa
+    INT 0x15                             ; 1000:03ad
+    MOV BX,word ptr CS:[joystick_temp_x] ; 1000:03af
+    SUB AX,BX                            ; 1000:03b4
+    SHR AX,1                             ; 1000:03b6
+    ADD BX,AX                            ; 1000:03b8
+    MOV word ptr CS:[joystick_x_high],BX ; 1000:03ba
+    LEA DX,[0x125]                       ; 1000:03bf
+    MOV AH,0x9                           ; 1000:03c3
+    INT 0x21                             ; 1000:03c5
+    CALL input_wait_joystick_or_key      ; 1000:03c7
+    OR AX,AX                             ; 1000:03ca
+    JNZ .read_y_low                      ; 1000:03cc
+    JMP .abort                           ; 1000:03ce
+.read_y_low:
+    MOV AH,0x84                          ; 1000:03d1
+    MOV DX,0x1                           ; 1000:03d3
+    INT 0x15                             ; 1000:03d6
+    MOV AX,word ptr CS:[joystick_temp_y] ; 1000:03d8
+    SUB AX,BX                            ; 1000:03dc
+    SHR AX,1                             ; 1000:03de
+    MOV word ptr CS:[joystick_y_low],AX  ; 1000:03e0
+    LEA DX,[0x162]                       ; 1000:03e4
+    MOV AH,0x9                           ; 1000:03e8
+    INT 0x21                             ; 1000:03ea
+    CALL input_wait_joystick_or_key      ; 1000:03ec
+    OR AX,AX                             ; 1000:03ef
+    JNZ .read_y_high                     ; 1000:03f1
+    JMP .abort                           ; 1000:03f3
+.read_y_high:
+    MOV AH,0x84                          ; 1000:03f6
+    MOV DX,0x1                           ; 1000:03f8
+    INT 0x15                             ; 1000:03fb
+    MOV AX,word ptr CS:[joystick_temp_y] ; 1000:03fd
+    SUB BX,AX                            ; 1000:0401
+    SHR BX,1                             ; 1000:0403
+    ADD AX,BX                            ; 1000:0405
+    MOV word ptr CS:[joystick_y_high],AX ; 1000:0407
+    POP DS                               ; 1000:040b
+    MOV word ptr CS:[joystick_is_calibrated],0x1 ; 1000:040c
+    JMP vid_set_mode_and_init            ; 1000:0413
+.abort:
+    POP DS                               ; 1000:0416
+    MOV AX,0xd                           ; 1000:0417
+    INT 0x10                             ; 1000:041a
+    MOV AX,0xa000                        ; 1000:041c
+    MOV ES,AX                            ; 1000:041f
+    JMP vid_init_screen_pages            ; 1000:0421
+
+; ------------------------------------------------------------------------------
+; FUNCTION: input_wait_joystick_or_key  [Input / Poll]
+; ADDRESS:  1000:0424  (Length: 0x38 bytes)
+; PURPOSE:  Waits for joystick button press or keypress, returning status in AX.
+; ------------------------------------------------------------------------------
+input_wait_joystick_or_key:
+    MOV AX,0x2                           ; 1000:0424
+    CALL timer_delay_ticks               ; 1000:0427
+    CMP byte ptr CS:[0x61],0x0           ; 1000:042a
+    JNZ .key_pressed                     ; 1000:0430
+    MOV AH,0x84                          ; 1000:0432
+    XOR DX,DX                            ; 1000:0434
+    INT 0x15                             ; 1000:0436
+    TEST AL,0x10                         ; 1000:0438
+    JZ input_wait_joystick_or_key        ; 1000:043a
+    TEST AL,0x20                         ; 1000:043c
+    JZ input_wait_joystick_or_key        ; 1000:043e
+.wait_release:
+    XOR AX,AX                            ; 1000:0440
+    CMP byte ptr CS:[0x61],0x0           ; 1000:0442
+    JNZ .key_pressed                     ; 1000:0448
+    MOV AH,0x84                          ; 1000:044a
+    XOR DX,DX                            ; 1000:044c
+    INT 0x15                             ; 1000:044e
+    TEST AL,0x10                         ; 1000:0450
+    JZ .button_pressed                   ; 1000:0452
+    TEST AL,0x20                         ; 1000:0454
+    JNZ .wait_release                    ; 1000:0456
+.button_pressed:
+    MOV AX,0x1                           ; 1000:0458
+.key_pressed:
+    RET                                  ; 1000:045b
+
+; ------------------------------------------------------------------------------
+; FUNCTION: input_setup_keyboard  [Input / Config]
+; ADDRESS:  1000:045c  (Length: 0xef bytes)
+; PURPOSE:  Interactive wizard for mapping game keys; saves to KEYBOARD.DEF.
+; ------------------------------------------------------------------------------
+input_setup_keyboard:
+    MOV AX,0x2                           ; 1000:045c
+    INT 0x10                             ; 1000:045f
+    PUSH DS                              ; 1000:0461
+    MOV AX,0x1d5d                        ; 1000:0462 (relocated SEG_SCRATCH)
+    MOV DS,AX                            ; 1000:0465
+    LEA DX,[0x1a0]                       ; 1000:0467
+    MOV AH,0x9                           ; 1000:046b
+    INT 0x21                             ; 1000:046d
+    MOV byte ptr CS:[map_scancode_up],0x0    ; 1000:046f
+    MOV byte ptr CS:[map_scancode_down],0x0  ; 1000:0475
+    MOV byte ptr CS:[map_scancode_left],0x0  ; 1000:047b
+    MOV byte ptr CS:[map_scancode_right],0x0 ; 1000:0481
+    MOV byte ptr CS:[map_scancode_fire],0x0  ; 1000:0487
+    MOV byte ptr CS:[map_scancode_jump],0x0  ; 1000:048d
+    LEA DX,[0x1d6]                       ; 1000:0493
+    MOV AH,0x9                           ; 1000:0497
+    INT 0x21                             ; 1000:0499
+    CALL input_read_mapped_key           ; 1000:049b
+    MOV byte ptr CS:[map_scancode_left],AL ; 1000:049e
+    LEA DX,[0x205]                       ; 1000:04a2
+    MOV AH,0x9                           ; 1000:04a6
+    INT 0x21                             ; 1000:04a8
+    CALL input_read_mapped_key           ; 1000:04aa
+    MOV byte ptr CS:[map_scancode_right],AL ; 1000:04ad
+    LEA DX,[0x234]                       ; 1000:04b1
+    MOV AH,0x9                           ; 1000:04b5
+    INT 0x21                             ; 1000:04b7
+    CALL input_read_mapped_key           ; 1000:04b9
+    MOV byte ptr CS:[map_scancode_up],AL ; 1000:04bc
+    LEA DX,[0x263]                       ; 1000:04c0
+    MOV AH,0x9                           ; 1000:04c4
+    INT 0x21                             ; 1000:04c6
+    CALL input_read_mapped_key           ; 1000:04c8
+    MOV byte ptr CS:[map_scancode_down],AL ; 1000:04cb
+    LEA DX,[0x292]                       ; 1000:04cf
+    MOV AH,0x9                           ; 1000:04d3
+    INT 0x21                             ; 1000:04d5
+    CALL input_read_mapped_key           ; 1000:04d7
+    MOV byte ptr CS:[map_scancode_jump],AL ; 1000:04da
+    LEA DX,[0x2c1]                       ; 1000:04de
+    MOV AH,0x9                           ; 1000:04e2
+    INT 0x21                             ; 1000:04e4
+    CALL input_read_mapped_key           ; 1000:04e6
+    MOV byte ptr CS:[map_scancode_fire],AL ; 1000:04e9
+    LEA DX,[0x2f0]                       ; 1000:04ed
+    MOV AH,0x9                           ; 1000:04f1
+    INT 0x21                             ; 1000:04f3
+    XOR AX,AX                            ; 1000:04f5
+    CALL sys_flush_keyboard_buffer       ; 1000:04f7
+    CMP byte ptr CS:[0x61],0x31          ; 1000:04fa ('N' - Redo)
+    JZ .redo                             ; 1000:0500
+    LEA DX,[0x327]                       ; 1000:0502
+    MOV AH,0x9                           ; 1000:0506
+    INT 0x21                             ; 1000:0508
+    CALL sys_flush_keyboard_buffer       ; 1000:050a
+    CMP byte ptr CS:[0x61],0x15          ; 1000:050d ('Y' - Save)
+    JZ .save_keys                        ; 1000:0513
+    POP DS                               ; 1000:0515
+    JMP vid_set_mode_and_init            ; 1000:0516
+.redo:
+    POP DS                               ; 1000:0519
+    JMP input_setup_keyboard             ; 1000:051a
+.save_keys:
+    POP DS                               ; 1000:051d
+    LEA DX,[0x1ff]                       ; 1000:051e
+    MOV AX,0x3c00                        ; 1000:0522
+    XOR CX,CX                            ; 1000:0525
+    INT 0x21                             ; 1000:0527
+    JC .error_exit                       ; 1000:0529
+    MOV BX,AX                            ; 1000:052b
+    MOV SI,DS                            ; 1000:052d
+    MOV AX,CS                            ; 1000:052f
+    MOV DS,AX                            ; 1000:0531
+    MOV AX,0x4000                        ; 1000:0533
+    MOV CX,0x6                           ; 1000:0536
+    MOV DX,0x25e                         ; 1000:0539 (map_scancode_left)
+    INT 0x21                             ; 1000:053c
+    MOV DS,SI                            ; 1000:053e
+    MOV AX,0x3e00                        ; 1000:0540
+    INT 0x21                             ; 1000:0543
+    JMP vid_set_mode_and_init            ; 1000:0545
+.error_exit:
+    JMP sys_exit_to_dos                  ; 1000:0548
+
+; ------------------------------------------------------------------------------
+; FUNCTION: input_read_mapped_key  [Input / Config]
+; ADDRESS:  1000:054b  (Length: 0x4e bytes)
+; PURPOSE:  Reads user key, validates against duplicates, displays key name.
+; ------------------------------------------------------------------------------
+input_read_mapped_key:
+    CALL sys_flush_keyboard_buffer       ; 1000:054b
+    MOV BL,AL                            ; 1000:054e
+    XOR BH,BH                            ; 1000:0550
+    MOV SI,BX                            ; 1000:0552
+    CMP BL,byte ptr CS:[map_scancode_jump] ; 1000:0554
+    JZ input_read_mapped_key             ; 1000:0559
+    CMP BL,byte ptr CS:[map_scancode_left] ; 1000:055b
+    JZ input_read_mapped_key             ; 1000:0560
+    CMP BL,byte ptr CS:[map_scancode_right]; 1000:0562
+    JZ input_read_mapped_key             ; 1000:0567
+    CMP BL,byte ptr CS:[map_scancode_fire] ; 1000:0569
+    JZ input_read_mapped_key             ; 1000:056e
+    CMP BL,byte ptr CS:[map_scancode_up]   ; 1000:0570
+    JZ input_read_mapped_key             ; 1000:0575
+    CMP BL,byte ptr CS:[map_scancode_down] ; 1000:0577
+    JZ input_read_mapped_key             ; 1000:057c
+    DEC BX                               ; 1000:057e
+    JZ input_read_mapped_key             ; 1000:057f
+    CMP BX,0x52                          ; 1000:0581
+    JG input_read_mapped_key             ; 1000:0584
+    SHL BX,1                             ; 1000:0586
+    SHL BX,1                             ; 1000:0588
+    SHL BX,1                             ; 1000:058a
+    LEA DX,[0x35f]                       ; 1000:058c
+    ADD DX,BX                            ; 1000:0590
+    MOV AH,0x9                           ; 1000:0592
+    INT 0x21                             ; 1000:0594
+    MOV AX,SI                            ; 1000:0596
+    RET                                  ; 1000:0598
+
+; ------------------------------------------------------------------------------
+; FUNCTION: sys_flush_keyboard_buffer  [System / Input]
+; ADDRESS:  1000:0599  (Length: 0x25 bytes)
+; CALLERS:  ui_intro_cutscene_setup, file_load_keys_def_and_prompt, input_setup_keyboard, input_read_mapped_key
+; PURPOSE:  Flushes BIOS keyboard buffer and waits for scancode.
+; ------------------------------------------------------------------------------
+sys_flush_keyboard_buffer:
 sys_restore_interrupts:
     MOV byte ptr CS:[0x61],0x0           ; 1000:0599 ; -> 1000:0061
     CMP byte ptr CS:[0x61],0x0           ; 1000:059f ; -> 1000:0061
@@ -704,6 +1126,77 @@ sys_install_interrupts:
     STI                                  ; 1000:0a5b
     POP DS                               ; 1000:0a5c
     RET                                  ; 1000:0a5d
+
+; ------------------------------------------------------------------------------
+; FUNCTION: sys_restore_all_interrupts  [System / Interrupts]
+; ADDRESS:  1000:0a5e  (Length: 0x5e bytes)
+; PURPOSE:  Restores original BIOS and DOS interrupt vectors (INT 08h, 09h, 15h, 23h, 03h) from saved CS pointers.
+; ------------------------------------------------------------------------------
+sys_restore_all_interrupts:
+    PUSH DS                              ; 1000:0a5e
+    XOR AX,AX                            ; 1000:0a5f
+    MOV DS,AX                            ; 1000:0a61
+    CLI                                  ; 1000:0a63
+    LEA BX,[0x5be]                       ; 1000:0a64
+    MOV AX,word ptr CS:[BX + 0x2]        ; 1000:0a68
+    MOV [0x26],AX                        ; 1000:0a6c
+    MOV AX,word ptr CS:[BX]              ; 1000:0a6f
+    MOV [0x24],AX                        ; 1000:0a72
+    LEA BX,[0x67f]                       ; 1000:0a75
+    MOV AX,word ptr CS:[BX + 0x2]        ; 1000:0a79
+    MOV [0x22],AX                        ; 1000:0a7d
+    MOV AX,word ptr CS:[BX]              ; 1000:0a80
+    MOV [0x20],AX                        ; 1000:0a83
+    LEA BX,[0x678]                       ; 1000:0a86
+    MOV AX,word ptr CS:[BX + 0x2]        ; 1000:0a8a
+    MOV [0x8e],AX                        ; 1000:0a8e
+    MOV AX,word ptr CS:[BX]              ; 1000:0a91
+    MOV [0x8c],AX                        ; 1000:0a94
+    LEA BX,[0x8c3]                       ; 1000:0a97
+    MOV AX,word ptr CS:[BX + 0x2]        ; 1000:0a9b
+    MOV [0xe],AX                         ; 1000:0a9f
+    MOV AX,word ptr CS:[BX]              ; 1000:0aa2
+    MOV [0xc],AX                         ; 1000:0aa5
+    LEA BX,[0x936]                       ; 1000:0aa8
+    MOV AX,word ptr CS:[BX + 0x2]        ; 1000:0aac
+    MOV [0x56],AX                        ; 1000:0ab0
+    MOV AX,word ptr CS:[BX]              ; 1000:0ab3
+    MOV [0x54],AX                        ; 1000:0ab6
+    STI                                  ; 1000:0ab9
+    POP DS                               ; 1000:0aba
+    RET                                  ; 1000:0abb
+
+; ------------------------------------------------------------------------------
+; FUNCTION: sys_detect_cpu  [System / CPU]
+; ADDRESS:  1000:0abc  (Length: 0x27 bytes)
+; PURPOSE:  Detects CPU architecture (0=8086/8088, 1=80286, 2=80386+) using FLAGS bit 12-15 probing.
+; ------------------------------------------------------------------------------
+sys_detect_cpu:
+    PUSHF                                ; 1000:0abc
+    XOR AX,AX                            ; 1000:0abd
+    PUSH AX                              ; 1000:0abf
+    POPF                                 ; 1000:0ac0
+    PUSHF                                ; 1000:0ac1
+    POP AX                               ; 1000:0ac2
+    SUB AX,0xf000                        ; 1000:0ac3
+    JNC .is_8086                         ; 1000:0ac6
+    MOV BX,0xf000                        ; 1000:0ac8
+    PUSH BX                              ; 1000:0acb
+    POPF                                 ; 1000:0acc
+    PUSHF                                ; 1000:0acd
+    POP BX                               ; 1000:0ace
+    TEST BX,0xf000                       ; 1000:0acf
+    JZ .is_286                           ; 1000:0ad3
+    MOV AX,0x2                           ; 1000:0ad5
+    JMP .done                            ; 1000:0ad8
+.is_286:
+    MOV AX,0x1                           ; 1000:0ada
+    JMP .done                            ; 1000:0add
+.is_8086:
+    XOR AX,AX                            ; 1000:0adf
+.done:
+    POPF                                 ; 1000:0ae1
+    RET                                  ; 1000:0ae2
 
 ; ------------------------------------------------------------------------------
 ; FUNCTION: spr_render_player  [Sprites / Player]
