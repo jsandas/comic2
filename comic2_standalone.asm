@@ -248,12 +248,36 @@ vid_fade_screen:
     mov          BX,0xdb                         ; 1000:01b9: bbdb00
     mov          CX,0x1                          ; 1000:01bc: b90100
     int3                                         ; 1000:01bf: cc
-    db 0xe8, 0xd6, 0x03, 0x1e                       ; 1000:01c0
-    mov          ax, SEG_PALETTE                      ; 1000:01c4: b8 (relocated segment)
-    db 0x8e, 0xd8, 0xbe, 0xd0, 0x1c, 0x2e, 0x8b, 0x3e, 0x3f, 0x77, 0xe8, 0xf3, 0x77, 0x1f, 0xba, 0xf5 ; 1000:01c7
-    db 0x01, 0x2e, 0x8b, 0x3e, 0x3f, 0x77, 0xe8, 0xb9, 0x77, 0xba, 0x24, 0x00, 0xe8, 0x77, 0xff, 0xe8 ; 1000:01d7
-    db 0x65, 0x75, 0xb8, 0x01, 0x00, 0xbb, 0xb6, 0x96, 0xb9, 0x01, 0x00, 0xcc, 0xe8, 0xa3, 0x03, 0xb8 ; 1000:01e7
-    db 0x0d, 0x00, 0xcd, 0x10, 0xe8, 0x43, 0x75, 0xe9, 0xaa, 0x61, 0xc3 ; 1000:01f7
+; ----------------------------------------------------------------------------
+; FUNCTION: ui_intro_cutscene_setup  [UI / Cutscene]
+; ADDRESS:  1000:01c0
+; PURPOSE:  Fades screen, loads title palette, plays intro melody, and jumps to story screen.
+; ----------------------------------------------------------------------------
+ui_intro_cutscene_setup:
+    call         sys_restore_interrupts          ; 1000:01c0: e8d603
+    push         DS                              ; 1000:01c3: 1e
+    mov          ax, SEG_PALETTE                 ; 1000:01c4: b8 (relocated segment)
+    mov          DS,AX                           ; 1000:01c7: 8ed8
+    mov          SI,0x1cd0                       ; 1000:01c9: bed01c
+    mov          DI,word [cs:0x773f]             ; 1000:01cc: 2e8b3e3f77
+    call         vid_load_palette_buffer         ; 1000:01d1: e8f377
+    pop          DS                              ; 1000:01d4: 1f
+    mov          DX,0x1f5                        ; 1000:01d5: baf501
+    mov          DI,word [cs:0x773f]             ; 1000:01d8: 2e8b3e3f77
+    call         vid_apply_palette               ; 1000:01dd: e8b977
+    mov          DX,0x24                         ; 1000:01e0: ba2400
+    call         vid_set_ega_palette             ; 1000:01e3: e877ff
+    call         vid_wait_vblank                 ; 1000:01e6: e86575
+    mov          AX,0x1                          ; 1000:01e9: b80100
+    mov          BX,0x96b6                       ; 1000:01ec: bbb696
+    mov          CX,0x1                          ; 1000:01ef: b90100
+    int3                                         ; 1000:01f2: cc
+    call         sys_restore_interrupts          ; 1000:01f3: e8a303
+    mov          AX,0xd                          ; 1000:01f6: b80d00
+    int          0x10                            ; 1000:01f9: cd10
+    call         vid_init_ega_regs               ; 1000:01fb: e84375
+    jmp          ui_story_screen                 ; 1000:01fe: e9aa61
+    ret                                          ; 1000:0201: c3
 
 ; ----------------------------------------------------------------------------
 ; FUNCTION: sys_fatal_error  [System / Error]
@@ -278,8 +302,13 @@ sys_fatal_error:
 sys_exit_to_dos:
     mov          AX,0x2                          ; 1000:0215: b80200
     int3                                         ; 1000:0218: cc
-    db 0xe8, 0x42, 0x08, 0xa1, 0x00, 0x00, 0xcd, 0x10, 0x8d, 0x1e, 0x35, 0x00, 0xb4, 0x4c, 0xcd, 0x21 ; 1000:0219
-    db 0x00, 0x00                                   ; 1000:0229
+    call         sys_restore_all_interrupts      ; 1000:0219: e84208
+    mov          AX,[0x0]                        ; 1000:021c: a10000
+    int          0x10                            ; 1000:021f: cd10
+    lea          BX,[0x35]                       ; 1000:0221: 8d1e3500
+    mov          AH,0x4c                         ; 1000:0225: b44c
+    int          0x21                            ; 1000:0227: cd21
+    dw           0x0000                          ; 1000:0229: 0000
 
 ; ----------------------------------------------------------------------------
 ; FUNCTION: vid_set_active_page_0  [Video / Paging]
@@ -300,10 +329,51 @@ vid_set_active_page_1:
     mov          byte [cs:0x22a],0x0             ; 1000:0238: 2ec6062a0200
     mov          byte [cs:0x229],0x1             ; 1000:023e: 2ec606290201
     ret                                          ; 1000:0244: c3
-    db 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x3b, 0x3c, 0x3d, 0x3e ; 1000:0245
-    db 0x49, 0x51, 0x47, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4b, 0x4d, 0x48, 0x50, 0x39, 0x52, 0x00 ; 1000:0255
-    db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ; 1000:0265
-    db 0x00, 0x00, 0x00, 0x00, 0x00                 ; 1000:0275
+; ----------------------------------------------------------------------------
+; IN-CODE HARDWARE & INPUT STATE TABLE (CS:0245 - CS:027A)
+; ----------------------------------------------------------------------------
+game_tick_flag          db 0x00                         ; 1000:0245
+irq0_parity             db 0x00                         ; 1000:0246
+sound_is_playing        db 0x00                         ; 1000:0247
+sound_is_enabled        db 0x01                         ; 1000:0248
+sound_priority          db 0x00                         ; 1000:0249
+sound_data_offset       dw 0x0000                       ; 1000:024a
+sound_note_counter      dw 0x0000                       ; 1000:024c
+sound_data_segment      dw 0x0000                       ; 1000:024e
+scancode_esc            db 0x01                         ; 1000:0250: Esc scancode
+scancode_f1             db 0x3b                         ; 1000:0251: F1 (Unmute)
+scancode_f2             db 0x3c                         ; 1000:0252: F2 (Mute)
+scancode_f3             db 0x3d                         ; 1000:0253: F3
+scancode_f4             db 0x3e                         ; 1000:0254: F4
+scancode_pgup           db 0x49                         ; 1000:0255: Page Up
+scancode_pgdn           db 0x51                         ; 1000:0256: Page Down
+scancode_home           db 0x47                         ; 1000:0257: Home
+key_state_left          db 0x00                         ; 1000:0258
+key_state_right         db 0x00                         ; 1000:0259
+key_state_up            db 0x00                         ; 1000:025a
+key_state_down          db 0x00                         ; 1000:025b
+key_state_jump          db 0x00                         ; 1000:025c
+key_state_fire          db 0x00                         ; 1000:025d
+map_scancode_left       db 0x4b                         ; 1000:025e
+map_scancode_right      db 0x4d                         ; 1000:025f
+map_scancode_up         db 0x48                         ; 1000:0260
+map_scancode_down       db 0x50                         ; 1000:0261
+map_scancode_jump       db 0x39                         ; 1000:0262
+map_scancode_fire       db 0x52                         ; 1000:0263
+key_state_jump_tmp      db 0x00                         ; 1000:0264
+key_state_fire_tmp      db 0x00                         ; 1000:0265
+key_state_right_tmp     db 0x00                         ; 1000:0266
+key_state_left_tmp      db 0x00                         ; 1000:0267
+key_state_up_tmp        db 0x00                         ; 1000:0268
+key_state_down_tmp      db 0x00                         ; 1000:0269
+joystick_temp_x         dw 0x0000                       ; 1000:026a
+joystick_temp_y         dw 0x0000                       ; 1000:026c
+joystick_x_low          dw 0x0000                       ; 1000:026e
+joystick_x_high         dw 0x0000                       ; 1000:0270
+joystick_y_low          dw 0x0000                       ; 1000:0272
+joystick_y_high         dw 0x0000                       ; 1000:0274
+joystick_is_calibrated  dw 0x0000                       ; 1000:0276
+current_melody_ptr      dw 0x0000                       ; 1000:0278
 
 ; ----------------------------------------------------------------------------
 ; FUNCTION: timer_delay_ticks  [System / Timing]
@@ -317,9 +387,44 @@ timer_delay_ticks:
     dec          AX                              ; 1000:0288: 48
     jnz          timer_delay_ticks               ; 1000:0289: 75ef
     ret                                          ; 1000:028b: c3
-    db 0x8a, 0x07, 0x43, 0x0a, 0xc0, 0x74, 0x0b, 0x53, 0xbb, 0x07, 0x00, 0xb4, 0x0e, 0xcd, 0x10, 0x5b ; 1000:028c
-    db 0xeb, 0xee, 0xc3, 0x8a, 0x07, 0x43, 0x34, 0x25, 0x0a, 0xc0, 0x74, 0x0b, 0x53, 0xbb, 0x07, 0x00 ; 1000:029c
-    db 0xb4, 0x0e, 0xcd, 0x10, 0x5b, 0xeb, 0xec, 0xc3 ; 1000:02ac
+; ----------------------------------------------------------------------------
+; FUNCTION: sys_print_string  [System / Text]
+; ADDRESS:  1000:028c
+; PURPOSE:  Prints null-terminated string at DS:BX using BIOS teletype INT 10h AH=0Eh.
+; ----------------------------------------------------------------------------
+sys_print_string:
+    mov          AL,[BX]                         ; 1000:028c: 8a07
+    inc          BX                              ; 1000:028e: 43
+    or           AL,AL                           ; 1000:028f: 0ac0
+    jz           .done                           ; 1000:0291: 740b
+    push         BX                              ; 1000:0293: 53
+    mov          BX,0x7                          ; 1000:0294: bb0700
+    mov          AH,0xe                          ; 1000:0297: b40e
+    int          0x10                            ; 1000:0299: cd10
+    pop          BX                              ; 1000:029b: 5b
+    jmp short    sys_print_string                ; 1000:029c: ebee
+.done:
+    ret                                          ; 1000:029e: c3
+
+; ----------------------------------------------------------------------------
+; FUNCTION: sys_print_xor_string  [System / Text]
+; ADDRESS:  1000:029f
+; PURPOSE:  Decodes and prints XOR 0x25 obfuscated string at DS:BX via BIOS teletype INT 10h AH=0Eh.
+; ----------------------------------------------------------------------------
+sys_print_xor_string:
+    mov          AL,[BX]                         ; 1000:029f: 8a07
+    inc          BX                              ; 1000:02a1: 43
+    xor          AL,0x25                         ; 1000:02a2: 3425
+    or           AL,AL                           ; 1000:02a4: 0ac0
+    jz           .done                           ; 1000:02a6: 740b
+    push         BX                              ; 1000:02a8: 53
+    mov          BX,0x7                          ; 1000:02a9: bb0700
+    mov          AH,0xe                          ; 1000:02ac: b40e
+    int          0x10                            ; 1000:02ae: cd10
+    pop          BX                              ; 1000:02b0: 5b
+    jmp short    sys_print_xor_string            ; 1000:02b1: ebec
+.done:
+    ret                                          ; 1000:02b3: c3
 
 ; ----------------------------------------------------------------------------
 ; FUNCTION: vid_init_screen_pages  [Video / Paging]
@@ -346,58 +451,293 @@ vid_init_screen_pages:
     mov          BX,0xdb                         ; 1000:02e3: bbdb00
     mov          CX,0x1                          ; 1000:02e6: b90100
     int3                                         ; 1000:02e9: cc
-    db 0x8d, 0x16, 0xff, 0x01, 0xb8, 0x00, 0x3d, 0xcd, 0x21, 0x72, 0x18, 0x8b, 0xd8, 0x1e, 0x8c, 0xc8 ; 1000:02ea
-    db 0x8e, 0xd8, 0xba, 0x5e, 0x02, 0xb9, 0x06, 0x00, 0xb8, 0x00, 0x3f, 0xcd, 0x21, 0xb8, 0x00, 0x3e ; 1000:02fa
-    db 0xcd, 0x21, 0x1f, 0xe8, 0x89, 0x02, 0x2e, 0x80, 0x3e, 0x61, 0x00, 0x25, 0x75, 0x03, 0xe9, 0x41 ; 1000:030a
-    db 0x01, 0x2e, 0x80, 0x3e, 0x61, 0x00, 0x01, 0x75, 0x03, 0xe9, 0xef, 0xfe, 0x2e, 0x80, 0x3e, 0x61 ; 1000:031a
-    db 0x00, 0x24, 0x74, 0x0e, 0xb8, 0x0d, 0x00, 0xcd, 0x10, 0xb8, 0x00, 0xa0, 0x8e, 0xc0, 0xe8, 0x06 ; 1000:032a
-    db 0x74, 0xc3, 0xb8, 0x02, 0x00, 0xcd, 0x10, 0x1e ; 1000:033a
-    mov          ax, SEG_SCRATCH                      ; 1000:0342: b8 (relocated segment)
-    db 0x8e, 0xd8, 0x2e, 0xc6, 0x06, 0x61, 0x00, 0x00, 0x8d, 0x16, 0x00, 0x00, 0xb4, 0x09, 0xcd, 0x21 ; 1000:0345
-    db 0xe8, 0xcc, 0x00, 0x0b, 0xc0, 0x75, 0x03, 0xe9, 0xb7, 0x00, 0xb4, 0x84, 0xba, 0x01, 0x00, 0xcd ; 1000:0355
-    db 0x15, 0x2e, 0xa3, 0x6a, 0x02, 0x2e, 0x89, 0x1e, 0x6c, 0x02, 0x8d, 0x16, 0xa8, 0x00, 0xb4, 0x09 ; 1000:0365
-    db 0xcd, 0x21, 0xe8, 0xaa, 0x00, 0x0b, 0xc0, 0x75, 0x03, 0xe9, 0x95, 0x00, 0xb4, 0x84, 0xba, 0x01 ; 1000:0375
-    db 0x00, 0xcd, 0x15, 0x2e, 0x8b, 0x1e, 0x6a, 0x02, 0x2b, 0xd8, 0xd1, 0xeb, 0x2e, 0x89, 0x1e, 0x6e ; 1000:0385
-    db 0x02, 0x8d, 0x16, 0xe6, 0x00, 0xb4, 0x09, 0xcd, 0x21, 0xe8, 0x83, 0x00, 0x0b, 0xc0, 0x75, 0x03 ; 1000:0395
-    db 0xeb, 0x6f, 0x90, 0xb4, 0x84, 0xba, 0x01, 0x00, 0xcd, 0x15, 0x2e, 0x8b, 0x1e, 0x6a, 0x02, 0x2b ; 1000:03a5
-    db 0xc3, 0xd1, 0xe8, 0x03, 0xd8, 0x2e, 0x89, 0x1e, 0x70, 0x02, 0x8d, 0x16, 0x25, 0x01, 0xb4, 0x09 ; 1000:03b5
-    db 0xcd, 0x21, 0xe8, 0x5a, 0x00, 0x0b, 0xc0, 0x75, 0x03, 0xeb, 0x46, 0x90, 0xb4, 0x84, 0xba, 0x01 ; 1000:03c5
-    db 0x00, 0xcd, 0x15, 0x2e, 0xa1, 0x6c, 0x02, 0x2b, 0xc3, 0xd1, 0xe8, 0x2e, 0xa3, 0x72, 0x02, 0x8d ; 1000:03d5
-    db 0x16, 0x62, 0x01, 0xb4, 0x09, 0xcd, 0x21, 0xe8, 0x35, 0x00, 0x0b, 0xc0, 0x75, 0x03, 0xeb, 0x21 ; 1000:03e5
-    db 0x90, 0xb4, 0x84, 0xba, 0x01, 0x00, 0xcd, 0x15, 0x2e, 0xa1, 0x6c, 0x02, 0x2b, 0xd8, 0xd1, 0xeb ; 1000:03f5
-    db 0x03, 0xc3, 0x2e, 0xa3, 0x74, 0x02, 0x1f, 0x2e, 0xc7, 0x06, 0x76, 0x02, 0x01, 0x00, 0xe9, 0x18 ; 1000:0405
-    db 0xff, 0x1f, 0xb8, 0x0d, 0x00, 0xcd, 0x10, 0xb8, 0x00, 0xa0, 0x8e, 0xc0, 0xe9, 0x90, 0xfe, 0xb8 ; 1000:0415
-    db 0x02, 0x00, 0xe8, 0x50, 0xfe, 0x2e, 0x80, 0x3e, 0x61, 0x00, 0x00, 0x75, 0x29, 0xb4, 0x84, 0x33 ; 1000:0425
-    db 0xd2, 0xcd, 0x15, 0xa8, 0x10, 0x74, 0xe8, 0xa8, 0x20, 0x74, 0xe4, 0x33, 0xc0, 0x2e, 0x80, 0x3e ; 1000:0435
-    db 0x61, 0x00, 0x00, 0x75, 0x11, 0xb4, 0x84, 0x33, 0xd2, 0xcd, 0x15, 0xa8, 0x10, 0x74, 0x04, 0xa8 ; 1000:0445
-    db 0x20, 0x75, 0xe8, 0xb8, 0x01, 0x00, 0xc3, 0xb8, 0x02, 0x00, 0xcd, 0x10, 0x1e ; 1000:0455
-    mov          ax, SEG_SCRATCH                      ; 1000:0462: b8 (relocated segment)
-    db 0x8e, 0xd8, 0x8d, 0x16, 0xa0, 0x01, 0xb4, 0x09, 0xcd, 0x21, 0x2e, 0xc6, 0x06, 0x60, 0x02, 0x00 ; 1000:0465
-    db 0x2e, 0xc6, 0x06, 0x61, 0x02, 0x00, 0x2e, 0xc6, 0x06, 0x5e, 0x02, 0x00, 0x2e, 0xc6, 0x06, 0x5f ; 1000:0475
-    db 0x02, 0x00, 0x2e, 0xc6, 0x06, 0x63, 0x02, 0x00, 0x2e, 0xc6, 0x06, 0x62, 0x02, 0x00, 0x8d, 0x16 ; 1000:0485
-    db 0xd6, 0x01, 0xb4, 0x09, 0xcd, 0x21, 0xe8, 0xad, 0x00, 0x2e, 0xa2, 0x5e, 0x02, 0x8d, 0x16, 0x05 ; 1000:0495
-    db 0x02, 0xb4, 0x09, 0xcd, 0x21, 0xe8, 0x9e, 0x00, 0x2e, 0xa2, 0x5f, 0x02, 0x8d, 0x16, 0x34, 0x02 ; 1000:04a5
-    db 0xb4, 0x09, 0xcd, 0x21, 0xe8, 0x8f, 0x00, 0x2e, 0xa2, 0x60, 0x02, 0x8d, 0x16, 0x63, 0x02, 0xb4 ; 1000:04b5
-    db 0x09, 0xcd, 0x21, 0xe8, 0x80, 0x00, 0x2e, 0xa2, 0x61, 0x02, 0x8d, 0x16, 0x92, 0x02, 0xb4, 0x09 ; 1000:04c5
-    db 0xcd, 0x21, 0xe8, 0x71, 0x00, 0x2e, 0xa2, 0x62, 0x02, 0x8d, 0x16, 0xc1, 0x02, 0xb4, 0x09, 0xcd ; 1000:04d5
-    db 0x21, 0xe8, 0x62, 0x00, 0x2e, 0xa2, 0x63, 0x02, 0x8d, 0x16, 0xf0, 0x02, 0xb4, 0x09, 0xcd, 0x21 ; 1000:04e5
-    db 0x33, 0xc0, 0xe8, 0x9f, 0x00, 0x2e, 0x80, 0x3e, 0x61, 0x00, 0x31, 0x74, 0x17, 0x8d, 0x16, 0x27 ; 1000:04f5
-    db 0x03, 0xb4, 0x09, 0xcd, 0x21, 0xe8, 0x8c, 0x00, 0x2e, 0x80, 0x3e, 0x61, 0x00, 0x15, 0x74, 0x08 ; 1000:0505
-    db 0x1f, 0xe9, 0x15, 0xfe, 0x1f, 0xe9, 0x3f, 0xff, 0x1f, 0x8d, 0x16, 0xff, 0x01, 0xb8, 0x00, 0x3c ; 1000:0515
-    db 0x33, 0xc9, 0xcd, 0x21, 0x72, 0x1d, 0x8b, 0xd8, 0x8c, 0xde, 0x8c, 0xc8, 0x8e, 0xd8, 0xb8, 0x00 ; 1000:0525
-    db 0x40, 0xb9, 0x06, 0x00, 0xba, 0x5e, 0x02, 0xcd, 0x21, 0x8e, 0xde, 0xb8, 0x00, 0x3e, 0xcd, 0x21 ; 1000:0535
-    db 0xe9, 0xe6, 0xfd, 0xe9, 0xca, 0xfc, 0xe8, 0x4b, 0x00, 0x8a, 0xd8, 0x32, 0xff, 0x8b, 0xf3, 0x2e ; 1000:0545
-    db 0x3a, 0x1e, 0x62, 0x02, 0x74, 0xf0, 0x2e, 0x3a, 0x1e, 0x5e, 0x02, 0x74, 0xe9, 0x2e, 0x3a, 0x1e ; 1000:0555
-    db 0x5f, 0x02, 0x74, 0xe2, 0x2e, 0x3a, 0x1e, 0x63, 0x02, 0x74, 0xdb, 0x2e, 0x3a, 0x1e, 0x60, 0x02 ; 1000:0565
-    db 0x74, 0xd4, 0x2e, 0x3a, 0x1e, 0x61, 0x02, 0x74, 0xcd, 0x4b, 0x74, 0xca, 0x83, 0xfb, 0x52, 0x7f ; 1000:0575
-    db 0xc5, 0xd1, 0xe3, 0xd1, 0xe3, 0xd1, 0xe3, 0x8d, 0x16, 0x5f, 0x03, 0x03, 0xd3, 0xb4, 0x09, 0xcd ; 1000:0585
-    db 0x21, 0x8b, 0xc6, 0xc3                       ; 1000:0595
+file_load_keys_def_and_prompt:
+    lea          dx,[0x1ff]                      ; 1000:02ea: 8d16ff01
+    mov          ax,0x3d00                       ; 1000:02ee: b8003d
+    int          0x21                            ; 1000:02f1: cd21
+    jc           .prompt_user                    ; 1000:02f3: 7218
+    mov          bx,ax                           ; 1000:02f5: 8bd8
+    push         ds                              ; 1000:02f7: 1e
+    mov          ax,cs                           ; 1000:02f8: 8cc8
+    mov          ds,ax                           ; 1000:02fa: 8ed8
+    mov          dx,map_scancode_left                        ; 1000:02fc: ba5e02
+    mov          cx,0x6                          ; 1000:02ff: b90600
+    mov          ax,0x3f00                       ; 1000:0302: b8003f
+    int          0x21                            ; 1000:0305: cd21
+    mov          ax,0x3e00                       ; 1000:0307: b8003e
+    int          0x21                            ; 1000:030a: cd21
+    pop          ds                              ; 1000:030c: 1f
+.prompt_user:
+    call         sys_flush_keyboard_buffer                           ; 1000:030d: e88902
+    cmp          byte [cs:0x61],0x25             ; 1000:0310: 2e803e610025
+    jnz          .check_exit                     ; 1000:0316: 7503
+    jmp          input_setup_keyboard            ; 1000:0318: e94101
+.check_exit:
+    cmp          byte [cs:0x61],0x1              ; 1000:031b: 2e803e610001
+    jnz          .check_joystick                 ; 1000:0321: 7503
+    jmp          sys_exit_to_dos                           ; 1000:0323: e9effe
+.check_joystick:
+    cmp          byte [cs:0x61],0x24             ; 1000:0326: 2e803e610024
+    jz           input_calibrate_joystick        ; 1000:032c: 740e
+vid_set_mode_and_init:
+    mov          ax,0xd                          ; 1000:032e: b80d00
+    int          0x10                            ; 1000:0331: cd10
+    mov          ax,0xa000                       ; 1000:0333: b800a0
+    mov          es,ax                           ; 1000:0336: 8ec0
+    call         vid_init_ega_regs                          ; 1000:0338: e80674
+    ret                                          ; 1000:033b: c3
+
+input_calibrate_joystick:
+    mov          ax,0x2                          ; 1000:033c: b80200
+    int          0x10                            ; 1000:033f: cd10
+    push         ds                              ; 1000:0341: 1e
+    mov          ax, SEG_SCRATCH                 ; 1000:0342: b85d0d
+    mov          ds,ax                           ; 1000:0345: 8ed8
+    mov          byte [cs:0x61],0x0              ; 1000:0347: 2ec606610000
+    lea          dx,[0x0]                        ; 1000:034d: 8d160000
+    mov          ah,0x9                          ; 1000:0351: b409
+    int          0x21                            ; 1000:0353: cd21
+    call         input_wait_joystick_or_key      ; 1000:0355: e8cc00
+    or           ax,ax                           ; 1000:0358: 0bc0
+    jnz          .read_center                    ; 1000:035a: 7503
+    jmp near     .abort                          ; 1000:035c: e9b700
+.read_center:
+    mov          ah,0x84                         ; 1000:035f: b484
+    mov          dx,0x1                          ; 1000:0361: ba0100
+    int          0x15                            ; 1000:0364: cd15
+    mov          [cs:joystick_temp_x],ax                   ; 1000:0366: 2ea36a02
+    mov          [cs:joystick_temp_y],bx                   ; 1000:036a: 2e891e6c02
+    lea          dx,[0xa8]                       ; 1000:036f: 8d16a800
+    mov          ah,0x9                          ; 1000:0373: b409
+    int          0x21                            ; 1000:0375: cd21
+    call         input_wait_joystick_or_key      ; 1000:0377: e8aa00
+    or           ax,ax                           ; 1000:037a: 0bc0
+    jnz          .read_upper_left                ; 1000:037c: 7503
+    jmp near     .abort                          ; 1000:037e: e99500
+.read_upper_left:
+    mov          ah,0x84                         ; 1000:0381: b484
+    mov          dx,0x1                          ; 1000:0383: ba0100
+    int          0x15                            ; 1000:0386: cd15
+    mov          bx,[cs:joystick_temp_x]                   ; 1000:0388: 2e8b1e6a02
+    sub          bx,ax                           ; 1000:038d: 2bd8
+    shr          bx,1                            ; 1000:038f: d1eb
+    mov          [cs:joystick_x_low],bx                   ; 1000:0391: 2e891e6e02
+    lea          dx,[0xe6]                       ; 1000:0396: 8d16e600
+    mov          ah,0x9                          ; 1000:039a: b409
+    int          0x21                            ; 1000:039c: cd21
+    call         input_wait_joystick_or_key      ; 1000:039e: e88300
+    or           ax,ax                           ; 1000:03a1: 0bc0
+    jnz          .read_lower_right               ; 1000:03a3: 7503
+    jmp short    .abort                          ; 1000:03a5: eb6f
+    nop                                          ; 1000:03a7: 90
+.read_lower_right:
+    mov          ah,0x84                         ; 1000:03a8: b484
+    mov          dx,0x1                          ; 1000:03aa: ba0100
+    int          0x15                            ; 1000:03ad: cd15
+    mov          bx,[cs:joystick_temp_x]                   ; 1000:03af: 2e8b1e6a02
+    sub          ax,bx                           ; 1000:03b4: 2bc3
+    shr          ax,1                            ; 1000:03b6: d1e8
+    add          bx,ax                           ; 1000:03b8: 03d8
+    mov          [cs:joystick_x_high],bx                   ; 1000:03ba: 2e891e7002
+    lea          dx,[0x125]                      ; 1000:03bf: 8d162501
+    mov          ah,0x9                          ; 1000:03c3: b409
+    int          0x21                            ; 1000:03c5: cd21
+    call         input_wait_joystick_or_key      ; 1000:03c7: e85a00
+    or           ax,ax                           ; 1000:03ca: 0bc0
+    jnz          .read_y_low                     ; 1000:03cc: 7503
+    jmp short    .abort                          ; 1000:03ce: eb46
+    nop                                          ; 1000:03d0: 90
+.read_y_low:
+    mov          ah,0x84                         ; 1000:03d1: b484
+    mov          dx,0x1                          ; 1000:03d3: ba0100
+    int          0x15                            ; 1000:03d6: cd15
+    mov          ax,[cs:joystick_temp_y]                   ; 1000:03d8: 2ea16c02
+    sub          ax,bx                           ; 1000:03dc: 2bc3
+    shr          ax,1                            ; 1000:03de: d1e8
+    mov          [cs:joystick_y_low],ax                   ; 1000:03e0: 2ea37202
+    lea          dx,[0x162]                      ; 1000:03e4: 8d166201
+    mov          ah,0x9                          ; 1000:03e8: b409
+    int          0x21                            ; 1000:03ea: cd21
+    call         input_wait_joystick_or_key      ; 1000:03ec: e83500
+    or           ax,ax                           ; 1000:03ef: 0bc0
+    jnz          .read_y_high                    ; 1000:03f1: 7503
+    jmp short    .abort                          ; 1000:03f3: eb21
+    nop                                          ; 1000:03f5: 90
+.read_y_high:
+    mov          ah,0x84                         ; 1000:03f6: b484
+    mov          dx,0x1                          ; 1000:03f8: ba0100
+    int          0x15                            ; 1000:03fb: cd15
+    mov          ax,[cs:joystick_temp_y]                   ; 1000:03fd: 2ea16c02
+    sub          bx,ax                           ; 1000:0401: 2bd8
+    shr          bx,1                            ; 1000:0403: d1eb
+    add          ax,bx                           ; 1000:0405: 03c3
+    mov          [cs:joystick_y_high],ax                   ; 1000:0407: 2ea37402
+    pop          ds                              ; 1000:040b: 1f
+    mov          word [cs:joystick_is_calibrated],0x1             ; 1000:040c: 2ec70676020100
+    jmp          vid_set_mode_and_init           ; 1000:0413: e918ff
+.abort:
+    pop          ds                              ; 1000:0416: 1f
+    mov          ax,0xd                          ; 1000:0417: b80d00
+    int          0x10                            ; 1000:041a: cd10
+    mov          ax,0xa000                       ; 1000:041c: b800a0
+    mov          es,ax                           ; 1000:041f: 8ec0
+    jmp          vid_init_screen_pages                           ; 1000:0421: e990fe
+
+input_wait_joystick_or_key:
+    mov          ax,0x2                          ; 1000:0424: b80200
+    call         timer_delay_ticks                           ; 1000:0427: e850fe
+    cmp          byte [cs:0x61],0x0              ; 1000:042a: 2e803e610000
+    jnz          .key_pressed                    ; 1000:0430: 7529
+    mov          ah,0x84                         ; 1000:0432: b484
+    xor          dx,dx                           ; 1000:0434: 33d2
+    int          0x15                            ; 1000:0436: cd15
+    test         al,0x10                         ; 1000:0438: a810
+    jz           input_wait_joystick_or_key      ; 1000:043a: 74e8
+    test         al,0x20                         ; 1000:043c: a820
+    jz           input_wait_joystick_or_key      ; 1000:043e: 74e4
+.wait_release:
+    xor          ax,ax                           ; 1000:0440: 33c0
+    cmp          byte [cs:0x61],0x0              ; 1000:0442: 2e803e610000
+    jnz          .key_pressed                    ; 1000:0448: 7511
+    mov          ah,0x84                         ; 1000:044a: b484
+    xor          dx,dx                           ; 1000:044c: 33d2
+    int          0x15                            ; 1000:044e: cd15
+    test         al,0x10                         ; 1000:0450: a810
+    jz           .button_pressed                 ; 1000:0452: 7404
+    test         al,0x20                         ; 1000:0454: a820
+    jnz          .wait_release                   ; 1000:0456: 75e8
+.button_pressed:
+    mov          ax,0x1                          ; 1000:0458: b80100
+.key_pressed:
+    ret                                          ; 1000:045b: c3
+
+input_setup_keyboard:
+    mov          ax,0x2                          ; 1000:045c: b80200
+    int          0x10                            ; 1000:045f: cd10
+    push         ds                              ; 1000:0461: 1e
+    mov          ax, SEG_SCRATCH                 ; 1000:0462: b85d0d
+    mov          ds,ax                           ; 1000:0465: 8ed8
+    lea          dx,[0x1a0]                      ; 1000:0467: 8d16a001
+    mov          ah,0x9                          ; 1000:046b: b409
+    int          0x21                            ; 1000:046d: cd21
+    mov          byte [cs:map_scancode_up],0x0             ; 1000:046f: 2ec606600200
+    mov          byte [cs:map_scancode_down],0x0             ; 1000:0475: 2ec606610200
+    mov          byte [cs:map_scancode_left],0x0             ; 1000:047b: 2ec6065e0200
+    mov          byte [cs:map_scancode_right],0x0             ; 1000:0481: 2ec6065f0200
+    mov          byte [cs:map_scancode_fire],0x0             ; 1000:0487: 2ec606630200
+    mov          byte [cs:map_scancode_jump],0x0             ; 1000:048d: 2ec606620200
+    lea          dx,[0x1d6]                      ; 1000:0493: 8d16d601
+    mov          ah,0x9                          ; 1000:0497: b409
+    int          0x21                            ; 1000:0499: cd21
+    call         input_read_mapped_key           ; 1000:049b: e8ad00
+    mov          [cs:map_scancode_left],al                   ; 1000:049e: 2ea25e02
+    lea          dx,[0x205]                      ; 1000:04a2: 8d160502
+    mov          ah,0x9                          ; 1000:04a6: b409
+    int          0x21                            ; 1000:04a8: cd21
+    call         input_read_mapped_key           ; 1000:04aa: e89e00
+    mov          [cs:map_scancode_right],al                   ; 1000:04ad: 2ea25f02
+    lea          dx,[0x234]                      ; 1000:04b1: 8d163402
+    mov          ah,0x9                          ; 1000:04b5: b409
+    int          0x21                            ; 1000:04b7: cd21
+    call         input_read_mapped_key           ; 1000:04b9: e88f00
+    mov          [cs:map_scancode_up],al                   ; 1000:04bc: 2ea26002
+    lea          dx,[0x263]                      ; 1000:04c0: 8d166302
+    mov          ah,0x9                          ; 1000:04c4: b409
+    int          0x21                            ; 1000:04c6: cd21
+    call         input_read_mapped_key           ; 1000:04c8: e88000
+    mov          [cs:map_scancode_down],al                   ; 1000:04cb: 2ea26102
+    lea          dx,[0x292]                      ; 1000:04cf: 8d169202
+    mov          ah,0x9                          ; 1000:04d3: b409
+    int          0x21                            ; 1000:04d5: cd21
+    call         input_read_mapped_key           ; 1000:04d7: e87100
+    mov          [cs:map_scancode_jump],al                   ; 1000:04da: 2ea26202
+    lea          dx,[0x2c1]                      ; 1000:04de: 8d16c102
+    mov          ah,0x9                          ; 1000:04e2: b409
+    int          0x21                            ; 1000:04e4: cd21
+    call         input_read_mapped_key           ; 1000:04e6: e86200
+    mov          [cs:map_scancode_fire],al                   ; 1000:04e9: 2ea26302
+    lea          dx,[0x2f0]                      ; 1000:04ed: 8d16f002
+    mov          ah,0x9                          ; 1000:04f1: b409
+    int          0x21                            ; 1000:04f3: cd21
+    xor          ax,ax                           ; 1000:04f5: 33c0
+    call         sys_flush_keyboard_buffer                           ; 1000:04f7: e89f00
+    cmp          byte [cs:0x61],0x31             ; 1000:04fa: 2e803e610031
+    jz           .redo                           ; 1000:0500: 7417
+    lea          dx,[0x327]                      ; 1000:0502: 8d162703
+    mov          ah,0x9                          ; 1000:0506: b409
+    int          0x21                            ; 1000:0508: cd21
+    call         sys_flush_keyboard_buffer                           ; 1000:050a: e88c00
+    cmp          byte [cs:0x61],0x15             ; 1000:050d: 2e803e610015
+    jz           .save_keys                      ; 1000:0513: 7408
+    pop          ds                              ; 1000:0515: 1f
+    jmp          vid_set_mode_and_init           ; 1000:0516: e915fe
+.redo:
+    pop          ds                              ; 1000:0519: 1f
+    jmp          input_setup_keyboard            ; 1000:051a: e93fff
+.save_keys:
+    pop          ds                              ; 1000:051d: 1f
+    lea          dx,[0x1ff]                      ; 1000:051e: 8d16ff01
+    mov          ax,0x3c00                       ; 1000:0522: b8003c
+    xor          cx,cx                           ; 1000:0525: 33c9
+    int          0x21                            ; 1000:0527: cd21
+    jc           .error_exit                     ; 1000:0529: 721d
+    mov          bx,ax                           ; 1000:052b: 8bd8
+    mov          si,ds                           ; 1000:052d: 8cde
+    mov          ax,cs                           ; 1000:052f: 8cc8
+    mov          ds,ax                           ; 1000:0531: 8ed8
+    mov          ax,0x4000                       ; 1000:0533: b80040
+    mov          cx,0x6                          ; 1000:0536: b90600
+    mov          dx,map_scancode_left                        ; 1000:0539: ba5e02
+    int          0x21                            ; 1000:053c: cd21
+    mov          ds,si                           ; 1000:053e: 8ede
+    mov          ax,0x3e00                       ; 1000:0540: b8003e
+    int          0x21                            ; 1000:0543: cd21
+    jmp          vid_set_mode_and_init           ; 1000:0545: e9e6fd
+.error_exit:
+    jmp          sys_exit_to_dos                           ; 1000:0548: e9cafc
+
+input_read_mapped_key:
+    call         sys_flush_keyboard_buffer                           ; 1000:054b: e84b00
+    mov          bl,al                           ; 1000:054e: 8ad8
+    xor          bh,bh                           ; 1000:0550: 32ff
+    mov          si,bx                           ; 1000:0552: 8bf3
+    cmp          bl,[cs:map_scancode_jump]                   ; 1000:0554: 2e3a1e6202
+    jz           input_read_mapped_key           ; 1000:0559: 74f0
+    cmp          bl,[cs:map_scancode_left]                   ; 1000:055b: 2e3a1e5e02
+    jz           input_read_mapped_key           ; 1000:0560: 74e9
+    cmp          bl,[cs:map_scancode_right]                   ; 1000:0562: 2e3a1e5f02
+    jz           input_read_mapped_key           ; 1000:0567: 74e2
+    cmp          bl,[cs:map_scancode_fire]                   ; 1000:0569: 2e3a1e6302
+    jz           input_read_mapped_key           ; 1000:056e: 74db
+    cmp          bl,[cs:map_scancode_up]                   ; 1000:0570: 2e3a1e6002
+    jz           input_read_mapped_key           ; 1000:0575: 74d4
+    cmp          bl,[cs:map_scancode_down]                   ; 1000:0577: 2e3a1e6102
+    jz           input_read_mapped_key           ; 1000:057c: 74cd
+    dec          bx                              ; 1000:057e: 4b
+    jz           input_read_mapped_key           ; 1000:057f: 74ca
+    cmp          bx,0x52                         ; 1000:0581: 83fb52
+    jg           input_read_mapped_key           ; 1000:0584: 7fc5
+    shl          bx,1                            ; 1000:0586: d1e3
+    shl          bx,1                            ; 1000:0588: d1e3
+    shl          bx,1                            ; 1000:058a: d1e3
+    lea          dx,[0x35f]                      ; 1000:058c: 8d165f03
+    add          dx,bx                           ; 1000:0590: 03d3
+    mov          ah,0x9                          ; 1000:0592: b409
+    int          0x21                            ; 1000:0594: cd21
+    mov          ax,si                           ; 1000:0596: 8bc6
+    ret                                          ; 1000:0598: c3
+
+
+; ----------------------------------------------------------------------------
+; FUNCTION: sys_restore_interrupts  [System / Interrupts]
+
 
 ; ----------------------------------------------------------------------------
 ; FUNCTION: sys_restore_interrupts  [System / Interrupts]
 ; ADDRESS:  1000:0599
-; PURPOSE:  Restores original BIOS and DOS interrupt vectors (INT 08h, 09h, 15h, 23h, 03h) before exit.
+; PURPOSE:  Flushes BIOS keyboard buffer and waits for scancode.
 ; ----------------------------------------------------------------------------
+sys_flush_keyboard_buffer:
 sys_restore_interrupts:
     mov          byte [cs:0x61],0x0              ; 1000:0599: 2ec606610000
 loc_059f:
@@ -939,15 +1279,77 @@ sys_install_interrupts:
     sti                                          ; 1000:0a5b: fb
     pop          DS                              ; 1000:0a5c: 1f
     ret                                          ; 1000:0a5d: c3
-    db 0x1e, 0x33, 0xc0, 0x8e, 0xd8, 0xfa, 0x8d, 0x1e, 0xbe, 0x05, 0x2e, 0x8b, 0x47, 0x02, 0xa3, 0x26 ; 1000:0a5e
-    db 0x00, 0x2e, 0x8b, 0x07, 0xa3, 0x24, 0x00, 0x8d, 0x1e, 0x7f, 0x06, 0x2e, 0x8b, 0x47, 0x02, 0xa3 ; 1000:0a6e
-    db 0x22, 0x00, 0x2e, 0x8b, 0x07, 0xa3, 0x20, 0x00, 0x8d, 0x1e, 0x78, 0x06, 0x2e, 0x8b, 0x47, 0x02 ; 1000:0a7e
-    db 0xa3, 0x8e, 0x00, 0x2e, 0x8b, 0x07, 0xa3, 0x8c, 0x00, 0x8d, 0x1e, 0xc3, 0x08, 0x2e, 0x8b, 0x47 ; 1000:0a8e
-    db 0x02, 0xa3, 0x0e, 0x00, 0x2e, 0x8b, 0x07, 0xa3, 0x0c, 0x00, 0x8d, 0x1e, 0x36, 0x09, 0x2e, 0x8b ; 1000:0a9e
-    db 0x47, 0x02, 0xa3, 0x56, 0x00, 0x2e, 0x8b, 0x07, 0xa3, 0x54, 0x00, 0xfb, 0x1f, 0xc3, 0x9c, 0x33 ; 1000:0aae
-    db 0xc0, 0x50, 0x9d, 0x9c, 0x58, 0x2d, 0x00, 0xf0, 0x73, 0x17, 0xbb, 0x00, 0xf0, 0x53, 0x9d, 0x9c ; 1000:0abe
-    db 0x5b, 0xf7, 0xc3, 0x00, 0xf0, 0x74, 0x05, 0xb8, 0x02, 0x00, 0xeb, 0x07, 0xb8, 0x01, 0x00, 0xeb ; 1000:0ace
-    db 0x02, 0x33, 0xc0, 0x9d, 0xc3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ; 1000:0ade
+; ----------------------------------------------------------------------------
+; FUNCTION: sys_restore_all_interrupts  [System / Interrupts]
+; ADDRESS:  1000:0a5e
+; PURPOSE:  Restores original BIOS and DOS interrupt vectors for INT 08h, 09h, 15h, 23h, 03h from saved pointers in CS.
+; ----------------------------------------------------------------------------
+sys_restore_all_interrupts:
+    push         DS                              ; 1000:0a5e: 1e
+    xor          AX,AX                           ; 1000:0a5f: 33c0
+    mov          DS,AX                           ; 1000:0a61: 8ed8
+    cli                                          ; 1000:0a63: fa
+    lea          BX,[0x5be]                      ; 1000:0a64: 8d1ebe05
+    mov          AX,word [cs:BX + 0x2]           ; 1000:0a68: 2e8b4702
+    mov          [0x26],AX                       ; 1000:0a6c: a32600
+    mov          AX,word [cs:BX]                 ; 1000:0a6f: 2e8b07
+    mov          [0x24],AX                       ; 1000:0a72: a32400
+    lea          BX,[0x67f]                      ; 1000:0a75: 8d1e7f06
+    mov          AX,word [cs:BX + 0x2]           ; 1000:0a79: 2e8b4702
+    mov          [0x22],AX                       ; 1000:0a7d: a32200
+    mov          AX,word [cs:BX]                 ; 1000:0a80: 2e8b07
+    mov          [0x20],AX                       ; 1000:0a83: a32000
+    lea          BX,[0x678]                      ; 1000:0a86: 8d1e7806
+    mov          AX,word [cs:BX + 0x2]           ; 1000:0a8a: 2e8b4702
+    mov          [0x8e],AX                       ; 1000:0a8e: a38e00
+    mov          AX,word [cs:BX]                 ; 1000:0a91: 2e8b07
+    mov          [0x8c],AX                       ; 1000:0a94: a38c00
+    lea          BX,[0x8c3]                      ; 1000:0a97: 8d1ec308
+    mov          AX,word [cs:BX + 0x2]           ; 1000:0a9b: 2e8b4702
+    mov          [0xe],AX                        ; 1000:0a9f: a30e00
+    mov          AX,word [cs:BX]                 ; 1000:0aa2: 2e8b07
+    mov          [0xc],AX                        ; 1000:0aa5: a30c00
+    lea          BX,[0x936]                      ; 1000:0aa8: 8d1e3609
+    mov          AX,word [cs:BX + 0x2]           ; 1000:0aac: 2e8b4702
+    mov          [0x56],AX                       ; 1000:0ab0: a35600
+    mov          AX,word [cs:BX]                 ; 1000:0ab3: 2e8b07
+    mov          [0x54],AX                       ; 1000:0ab6: a35400
+    sti                                          ; 1000:0ab9: fb
+    pop          DS                              ; 1000:0aba: 1f
+    ret                                          ; 1000:0abb: c3
+
+; ----------------------------------------------------------------------------
+; FUNCTION: sys_detect_cpu  [System / CPU]
+; ADDRESS:  1000:0abc
+; PURPOSE:  Detects CPU architecture (0=8086/8088, 1=80286, 2=80386+) using FLAGS bit 12-15 probing.
+; ----------------------------------------------------------------------------
+sys_detect_cpu:
+    pushf                                        ; 1000:0abc: 9c
+    xor          AX,AX                           ; 1000:0abd: 33c0
+    push         AX                              ; 1000:0abf: 50
+    popf                                         ; 1000:0ac0: 9d
+    pushf                                        ; 1000:0ac1: 9c
+    pop          AX                              ; 1000:0ac2: 58
+    sub          AX,0xf000                       ; 1000:0ac3: 2d00f0
+    jnc          .is_8086                        ; 1000:0ac6: 7317
+    mov          BX,0xf000                       ; 1000:0ac8: bb00f0
+    push         BX                              ; 1000:0acb: 53
+    popf                                         ; 1000:0acc: 9d
+    pushf                                        ; 1000:0acd: 9c
+    pop          BX                              ; 1000:0ace: 5b
+    test         BX,0xf000                       ; 1000:0acf: f7c300f0
+    jz           .is_286                         ; 1000:0ad3: 7405
+    mov          AX,0x2                          ; 1000:0ad5: b80200
+    jmp short    .done                           ; 1000:0ad8: eb07
+.is_286:
+    mov          AX,0x1                          ; 1000:0ada: b80100
+    jmp short    .done                           ; 1000:0add: eb02
+.is_8086:
+    xor          AX,AX                           ; 1000:0adf: 33c0
+.done:
+    popf                                         ; 1000:0ae1: 9d
+    ret                                          ; 1000:0ae2: c3
+    times 11     db 0x00                         ; 1000:0ae3 - 0x0aed
     db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x02, 0x20, 0x00, 0x9c, 0xa0, 0x03, 0x80, 0x00, 0x00 ; 1000:0aee
     db 0x00, 0x00, 0x80, 0x00, 0xb0, 0x00, 0x5e, 0x9d, 0x06, 0x80, 0x00, 0x00, 0x00, 0x00, 0xd0, 0x00 ; 1000:0afe
     db 0x20, 0x01, 0xb8, 0x9c, 0x05, 0x80, 0x00, 0x00, 0x00, 0x00, 0x20, 0x04, 0xf0, 0x00, 0x8e, 0xa2 ; 1000:0b0e
@@ -11536,4 +11938,4 @@ loc_7e46:
 ; DATA SEGMENTS & ASSETS (141,040 bytes)
 ; Appended at load module offset 0xD5D0
 ; ----------------------------------------------------------------------------
-incbin "data_0.bin"
+%include "comic2_data.asm"
