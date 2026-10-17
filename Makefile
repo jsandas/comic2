@@ -27,7 +27,10 @@ comic2_code.bin: comic2_nasm.asm
 data_0.bin:
 	$(PYTHON) scripts/extract_data.py
 
-comic2.exe: comic2_standalone.asm data_0.bin
+comic2_data.asm: data_0.bin
+	$(PYTHON) scripts/disassemble_data.py
+
+comic2.exe: comic2_standalone.asm comic2_data.asm
 	$(NASM) -f bin $< -o $@
 
 verify: code exe

@@ -11536,4 +11536,4 @@ loc_7e46:
 ; DATA SEGMENTS & ASSETS (141,040 bytes)
 ; Appended at load module offset 0xD5D0
 ; ----------------------------------------------------------------------------
-incbin "data_0.bin"
+%include "comic2_data.asm"
