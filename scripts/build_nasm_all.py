@@ -4,6 +4,7 @@ import struct
 
 sys.path.append('scripts')
 from generate_annotated_assembly_and_ghidra import ANNOTATIONS
+from disassembled_overrides import DISASSEMBLED_OVERRIDES
 
 # Build function label map
 func_labels = {}
@@ -204,11 +205,25 @@ relocation_table:
             pending_bytes = []
             pending_start_off = None
 
+        skip_until_off = None
+
         for line in raw_lines:
             parts = line.strip().split('\t')
             record_type = parts[0]
             off_hex = parts[1].lower()
             off_int = int(off_hex, 16)
+
+            if skip_until_off is not None:
+                if off_int < skip_until_off:
+                    continue
+                skip_until_off = None
+
+            if off_int in DISASSEMBLED_OVERRIDES:
+                flush_bytes()
+                end_off, block_text = DISASSEMBLED_OVERRIDES[off_int]
+                out.write(block_text)
+                skip_until_off = end_off
+                continue
 
             has_func = off_hex in func_labels
             has_branch = off_hex in branch_targets
@@ -266,6 +281,7 @@ relocation_table:
             out.write('; ' + '-' * 76 + '\n')
             out.write('%include "comic2_data.asm"\n')
 
-generate_asm('comic2_nasm.asm', is_standalone=False)
-generate_asm('comic2_standalone.asm', is_standalone=True)
-print('Generated comic2_nasm.asm and comic2_standalone.asm successfully.')
+if __name__ == '__main__':
+    generate_asm('comic2_nasm.asm', is_standalone=False)
+    generate_asm('comic2_standalone.asm', is_standalone=True)
+    print('Generated comic2_nasm.asm and comic2_standalone.asm successfully.')

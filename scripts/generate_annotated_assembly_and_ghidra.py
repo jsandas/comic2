@@ -213,12 +213,13 @@ ANNOTATIONS = {
     "1000:7dbb": ("vid_blit_planar_block", "Video / Blitting", "Universal planar block blitter: blits arbitrary width and height rectangles across all 4 EGA planes.")
 }
 
-print(f"Total handcrafted annotations: {len(ANNOTATIONS)}")
+if __name__ == '__main__':
+    print(f"Total handcrafted annotations: {len(ANNOTATIONS)}")
 
-# Write Ghidra Script to apply all annotations
-ghidra_script_path = "/Users/hedge/workspace/comic2-rea/scripts/ApplyAllAnnotations.java"
-with open(ghidra_script_path, "w") as f:
-    f.write('''import ghidra.app.script.GhidraScript;
+    # Write Ghidra Script to apply all annotations
+    ghidra_script_path = os.path.join(os.path.dirname(__file__), "ApplyAllAnnotations.java")
+    with open(ghidra_script_path, "w") as f:
+        f.write('''import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
@@ -235,12 +236,12 @@ public class ApplyAllAnnotations extends GhidraScript {
         int commentedCount = 0;
 
 ''')
-    for addr, (name, category, desc) in ANNOTATIONS.items():
-        clean_desc = desc.replace('"', '\\"')
-        f.write(f'        applyFunc(fm, "{addr}", "{name}", "{category}", "{clean_desc}");\n')
-        f.write(f'        renamedCount++; commentedCount++;\n')
+        for addr, (name, category, desc) in ANNOTATIONS.items():
+            clean_desc = desc.replace('"', '\\"')
+            f.write(f'        applyFunc(fm, "{addr}", "{name}", "{category}", "{clean_desc}");\n')
+            f.write(f'        renamedCount++; commentedCount++;\n')
 
-    f.write('''
+        f.write('''
         println("Successfully applied annotations to " + renamedCount + " functions in Ghidra database.");
     }
 
@@ -267,4 +268,4 @@ public class ApplyAllAnnotations extends GhidraScript {
 }
 ''')
 
-print("Generated Ghidra script ApplyAllAnnotations.java")
+    print("Generated Ghidra script ApplyAllAnnotations.java")
