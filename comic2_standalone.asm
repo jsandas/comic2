@@ -732,10 +732,6 @@ input_read_mapped_key:
 
 ; ----------------------------------------------------------------------------
 ; FUNCTION: sys_restore_interrupts  [System / Interrupts]
-
-
-; ----------------------------------------------------------------------------
-; FUNCTION: sys_restore_interrupts  [System / Interrupts]
 ; ADDRESS:  1000:0599
 ; PURPOSE:  Flushes BIOS keyboard buffer and waits for scancode.
 ; ----------------------------------------------------------------------------
