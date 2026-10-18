@@ -196,7 +196,7 @@ ui_intro_cutscene_setup:
     POP DS                               ; 1000:01d4
     MOV DX,0x1f5                         ; 1000:01d5
     MOV DI,word ptr CS:[0x773f]          ; 1000:01d8
-    CALL 0x1000:7a13                     ; 1000:01dd ; -> vid_apply_palette
+    CALL 0x1000:7999                     ; 1000:01dd ; -> vid_load_alt_palette
     MOV DX,0x24                          ; 1000:01e0
     CALL 0x1000:015d                     ; 1000:01e3 ; -> vid_set_ega_palette
     CALL 0x1000:774e                     ; 1000:01e6 ; -> vid_wait_vblank
@@ -208,7 +208,7 @@ ui_intro_cutscene_setup:
     MOV AX,0xd                           ; 1000:01f6
     INT 0x10                             ; 1000:01f9
     CALL 0x1000:7741                     ; 1000:01fb ; -> vid_init_ega_regs
-    JMP 0x1000:63ac                      ; 1000:01fe ; -> ui_story_screen
+    JMP 0x1000:63ab                      ; 1000:01fe ; -> loc_63ab
     RET                                  ; 1000:0201
 
 ; ------------------------------------------------------------------------------

@@ -6,11 +6,11 @@
 ; ==============================================================================
 
 [BITS 16]
-[ORG 0x0000]
 
 ; ----------------------------------------------------------------------------
 ; MS-DOS MZ EXECUTABLE HEADER (32 paragraphs / 512 bytes)
 ; ----------------------------------------------------------------------------
+section .header vstart=0
 mz_header:
     db 'MZ'                       ; Magic signature
     dw 196288 % 512               ; Bytes on last 512-byte page (192)
@@ -60,6 +60,8 @@ relocation_table:
     dw 0x770d, 0x0000
     dw 0x79af, 0x0000
     times 512 - ($ - mz_header) db 0
+
+section .text vstart=0 follows=.header
 
 ; ----------------------------------------------------------------------------
 ; SEGMENT DEFINITIONS & CONSTANTS
@@ -264,7 +266,7 @@ ui_intro_cutscene_setup:
     pop          DS                              ; 1000:01d4: 1f
     mov          DX,0x1f5                        ; 1000:01d5: baf501
     mov          DI,word [cs:0x773f]             ; 1000:01d8: 2e8b3e3f77
-    call         vid_apply_palette               ; 1000:01dd: e8b977
+    call         vid_load_alt_palette            ; 1000:01dd: e8b977
     mov          DX,0x24                         ; 1000:01e0: ba2400
     call         vid_set_ega_palette             ; 1000:01e3: e877ff
     call         vid_wait_vblank                 ; 1000:01e6: e86575
@@ -276,7 +278,7 @@ ui_intro_cutscene_setup:
     mov          AX,0xd                          ; 1000:01f6: b80d00
     int          0x10                            ; 1000:01f9: cd10
     call         vid_init_ega_regs               ; 1000:01fb: e84375
-    jmp          ui_story_screen                 ; 1000:01fe: e9aa61
+    jmp          loc_63ab                        ; 1000:01fe: e9aa61
     ret                                          ; 1000:0201: c3
 
 ; ----------------------------------------------------------------------------
@@ -7596,7 +7598,9 @@ loc_6348:
     db 0xb8, 0x00, 0x3d, 0xcd, 0x21, 0x73, 0x03, 0xe9, 0x89, 0x9e, 0x8b, 0xd8, 0x1e, 0xba, 0xf0, 0x0a ; 1000:636f
     db 0x8b, 0x0e, 0x42, 0x09, 0x8c, 0xc8, 0x8e, 0xd8, 0xb8, 0x00, 0x3f, 0xcd, 0x21, 0x1f, 0xb9, 0x8f ; 1000:637f
     db 0x02, 0xba, 0x10, 0x02, 0x2b, 0xca, 0xb8, 0x00, 0x3f, 0xcd, 0x21, 0xb8, 0x00, 0x3e, 0xcd, 0x21 ; 1000:638f
-    db 0x81, 0x3e, 0x27, 0x02, 0x50, 0x01, 0x74, 0x03, 0xe9, 0x58, 0x9e, 0xc3, 0xe8, 0x41, 0x02, 0xa0 ; 1000:639f
+    db 0x81, 0x3e, 0x27, 0x02, 0x50, 0x01, 0x74, 0x03, 0xe9, 0x58, 0x9e, 0xc3 ; 1000:639f
+loc_63ab:
+    db 0xe8, 0x41, 0x02, 0xa0                   ; 1000:63ab
     db 0x1c, 0x02, 0x32, 0xe4, 0x2e, 0xf7, 0x06, 0xc2, 0x0c, 0x00, 0x0f, 0x75, 0x01, 0x40, 0x2e, 0xf7 ; 1000:63af
     db 0x06, 0x3e, 0x0f, 0x00, 0x0f, 0x75, 0x01, 0x40, 0x2e, 0xf7, 0x06, 0xaa, 0x0f, 0x00, 0x0f, 0x75 ; 1000:63bf
     db 0x01, 0x40, 0x2e, 0xf7, 0x06, 0xbe, 0x10, 0x00, 0x0f, 0x75, 0x01, 0x40, 0x2e, 0xf7, 0x06, 0xea ; 1000:63cf
