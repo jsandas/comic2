@@ -77,7 +77,7 @@ The function `sys_generate_system_hash` checksums 64 words from the Video BIOS (
 
 ### Assembly Sources & Build Files
 - [`comic2_nasm.asm`](comic2_nasm.asm): 100% compilable NASM source for the code segment (`CS:0000`–`CS:D5D0`).
-- [`comic2_data.asm`](comic2_data.asm): Disassembled and annotated NASM source for data segments, font glyphs, EGA palettes, and state tables (`0xD5D0`–`0x2FD40`, 141,040 bytes).
+- [`comic2_data.asm`](comic2_data.asm): Disassembled and annotated NASM source for data segments, font glyphs, EGA palettes, and state tables (`0xD5D0`–`0x2FCC0`, 141,040 bytes).
 - [`comic2_standalone.asm`](comic2_standalone.asm): Standalone NASM source packaging MZ header, relocations, code, and data into a playable `comic2.exe`.
 - [`comic2_annotated.asm`](comic2_annotated.asm): Standalone annotated assembly listing with procedure cross-references.
 - [`Makefile`](Makefile): Automated build, verification, and execution workflow.
