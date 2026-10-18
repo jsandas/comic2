@@ -69,14 +69,7 @@ def escape_nasm_string(b_arr):
     def flush_ascii():
         if curr_ascii:
             s = curr_ascii.decode('latin1')
-            escaped = '"'
-            for ch in s:
-                if ch == '"':
-                    escaped += '", \'"\', "'
-                else:
-                    escaped += ch
-            escaped += '"'
-            escaped = escaped.replace('"", ', '').replace(', ""', '')
+            escaped = '"' + s + '"'
             tokens.append(escaped)
             curr_ascii.clear()
 
