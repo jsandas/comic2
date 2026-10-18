@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 disassemble_data.py - Disassembles data_0.bin into fully documented NASM assembly source (comic2_data.asm).
-Validates that assembling comic2_data.asm produces a byte-exact replica of data_0.bin.
+Verifies that data_0.bin matches the expected size (141,040 bytes) and formats data segments,
+known variables, strings, and palettes into labeled NASM assembly directives.
 """
 
 import sys
