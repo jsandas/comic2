@@ -1,5 +1,7 @@
 # Captain Comic II: Fractured Reality
 
+This disassembly is based on Captain Comic 2 v1.5, sourced from https://www.myabandonware.com/game/captain-comic-ii-fractured-reality-ug.  There is a v1.1 download floating around which may not be compatible with this.
+
 ## Reverse Engineering and Function Annotation Summary
 
 The 16-bit real-mode MS-DOS executable `unpacked.exe` has been reverse engineered, decomposed into its constituent subsystems, and fully annotated.
