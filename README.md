@@ -9,7 +9,7 @@ All changes and findings have been synchronized into:
 1. The Ghidra automation script ([`scripts/ApplyAllAnnotations.java`](scripts/ApplyAllAnnotations.java)): automatically labels and documents all 182 functions in Ghidra with semantic names, subsystem categories, and purpose comments.
 2. The annotated assembly source (`comic2_annotated.asm`): an 8,582-line 8086 assembly listing with function headers, caller lists, memory references, and line-by-line disassembly.
 3. The comprehensive technical documentation ([docs/CAPTAIN_COMIC_2_REVERSE_ENGINEERING.md](docs/CAPTAIN_COMIC_2_REVERSE_ENGINEERING.md)): a full architecture breakdown of the graphics, audio, level streaming, physics, interrupt vectors, and file compression engines.
-4. Compilable NASM assembly sources ([comic2_nasm.asm](comic2_nasm.asm), [comic2_standalone.asm](comic2_standalone.asm)) and build guide ([docs/NASM.md](docs/NASM.md)): byte-exact real-mode 8086 assembly compilable with standard NASM to a runnable MS-DOS `.EXE`.
+4. Compilable NASM assembly sources ([comic2_nasm.asm](comic2_nasm.asm), [comic2_data.asm](comic2_data.asm), [comic2_standalone.asm](comic2_standalone.asm)) and build guide ([docs/NASM.md](docs/NASM.md)): byte-exact real-mode 8086 code and data segments compilable with standard NASM to a runnable MS-DOS `.EXE`.
 
 ---
 
@@ -77,9 +77,12 @@ The function `sys_generate_system_hash` checksums 64 words from the Video BIOS (
 
 ### Assembly Sources & Build Files
 - [`comic2_nasm.asm`](comic2_nasm.asm): 100% compilable NASM source for the code segment (`CS:0000`–`CS:D5D0`).
+- [`comic2_data.asm`](comic2_data.asm): Disassembled and annotated NASM source for data segments, font glyphs, EGA palettes, and state tables (`0xD5D0`–`0x2FCC0`, 141,040 bytes).
 - [`comic2_standalone.asm`](comic2_standalone.asm): Standalone NASM source packaging MZ header, relocations, code, and data into a playable `comic2.exe`.
 - [`comic2_annotated.asm`](comic2_annotated.asm): Standalone annotated assembly listing with procedure cross-references.
 - [`Makefile`](Makefile): Automated build, verification, and execution workflow.
+- [`scripts/extract_data.py`](scripts/extract_data.py): Asset extractor generating `data_0.bin` from `original/unpacked.exe`.
+- [`scripts/disassemble_data.py`](scripts/disassemble_data.py): Disassembler transforming `data_0.bin` into documented `comic2_data.asm`.
 - [`run-dosbox.sh`](run-dosbox.sh): Script to automatically sync and run the re-assembled game in DOSBox-X.
 - [`dosbox_deterministic.conf`](dosbox_deterministic.conf): DOSBox-X configuration for deterministic gameplay validation.
 
@@ -103,12 +106,16 @@ make run      # Launches the assembled game in DOSBox-X
 
 Or manually using NASM:
 ```bash
-# 1. Assemble code segment binary (54,736 bytes):
+# 1. Extract data asset binary and disassemble data objects (if not already generated):
+python3 scripts/extract_data.py
+python3 scripts/disassemble_data.py
+
+# 2. Assemble code segment binary (54,736 bytes):
 nasm -f bin comic2_nasm.asm -o comic2_code.bin
 
-# 2. Assemble complete standalone MS-DOS executable (196,288 bytes):
+# 3. Assemble complete standalone MS-DOS executable (196,288 bytes):
 nasm -f bin comic2_standalone.asm -o comic2.exe
 
-# 3. Launch in DOSBox-X:
+# 4. Launch in DOSBox-X:
 ./run-dosbox.sh
 ```

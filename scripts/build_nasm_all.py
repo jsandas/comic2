@@ -4,6 +4,7 @@ import struct
 
 sys.path.append('scripts')
 from generate_annotated_assembly_and_ghidra import ANNOTATIONS
+from disassembled_overrides import DISASSEMBLED_OVERRIDES
 
 # Build function label map
 func_labels = {}
@@ -129,12 +130,12 @@ def generate_asm(out_filename, is_standalone=False):
         out.write('; ' + '=' * 78 + '\n\n')
 
         out.write('[BITS 16]\n')
-        out.write('[ORG 0x0000]\n\n')
 
         if is_standalone:
-            out.write('; ' + '-' * 76 + '\n')
+            out.write('\n; ' + '-' * 76 + '\n')
             out.write('; MS-DOS MZ EXECUTABLE HEADER (32 paragraphs / 512 bytes)\n')
             out.write('; ' + '-' * 76 + '\n')
+            out.write('section .header vstart=0\n')
             out.write("""mz_header:
     db 'MZ'                       ; Magic signature
     dw 196288 % 512               ; Bytes on last 512-byte page (192)
@@ -160,6 +161,9 @@ relocation_table:
                     off, seg = struct.unpack('<HH', f.read(4))
                     out.write(f'    dw 0x{off:04x}, 0x{seg:04x}\n')
             out.write('    times 512 - ($ - mz_header) db 0\n\n')
+            out.write('section .text vstart=0 follows=.header\n\n')
+        else:
+            out.write('[ORG 0x0000]\n\n')
 
         out.write('; ' + '-' * 76 + '\n')
         out.write('; SEGMENT DEFINITIONS & CONSTANTS\n')
@@ -201,11 +205,25 @@ relocation_table:
             pending_bytes = []
             pending_start_off = None
 
+        skip_until_off = None
+
         for line in raw_lines:
             parts = line.strip().split('\t')
             record_type = parts[0]
             off_hex = parts[1].lower()
             off_int = int(off_hex, 16)
+
+            if skip_until_off is not None:
+                if off_int < skip_until_off:
+                    continue
+                skip_until_off = None
+
+            if off_int in DISASSEMBLED_OVERRIDES:
+                flush_bytes()
+                end_off, block_text = DISASSEMBLED_OVERRIDES[off_int]
+                out.write(block_text)
+                skip_until_off = end_off
+                continue
 
             has_func = off_hex in func_labels
             has_branch = off_hex in branch_targets
@@ -261,8 +279,9 @@ relocation_table:
             out.write('; DATA SEGMENTS & ASSETS (141,040 bytes)\n')
             out.write('; Appended at load module offset 0xD5D0\n')
             out.write('; ' + '-' * 76 + '\n')
-            out.write('incbin "data_0.bin"\n')
+            out.write('%include "comic2_data.asm"\n')
 
-generate_asm('comic2_nasm.asm', is_standalone=False)
-generate_asm('comic2_standalone.asm', is_standalone=True)
-print('Generated comic2_nasm.asm and comic2_standalone.asm successfully.')
+if __name__ == '__main__':
+    generate_asm('comic2_nasm.asm', is_standalone=False)
+    generate_asm('comic2_standalone.asm', is_standalone=True)
+    print('Generated comic2_nasm.asm and comic2_standalone.asm successfully.')
